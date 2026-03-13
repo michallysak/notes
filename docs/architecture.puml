@@ -1,0 +1,18 @@
+@startuml
+skinparam rectangle {
+  BorderColor Black
+  FontSize 14
+}
+
+top to bottom direction
+
+rectangle "Domain Layer\n(Entities, Validators, Services)" as DomainLayer
+rectangle "Persistence\n(Repositories)" as Persistence
+rectangle "Controller\n(TBD)" as Controller
+rectangle "Presentation\n(TBD)" as Presentation
+
+Presentation --> Controller
+Controller --> DomainLayer
+Persistence -up-> DomainLayer
+
+@enduml
