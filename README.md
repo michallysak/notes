@@ -26,7 +26,7 @@ The application is structured into four main layers:
 
 ## Build and Run
 ```sh
-cd backend
+cd notes-app
 mvn clean test
 ```
 
