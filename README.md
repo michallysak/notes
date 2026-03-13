@@ -27,7 +27,8 @@ The application is structured into four main layers:
 ## Build and Run
 ```sh
 cd notes-app
-mvn clean test
+mvn clean package
+mvn exec:java -Dexec.args="--cli --persistence=in-memory"
 ```
 
 ## License

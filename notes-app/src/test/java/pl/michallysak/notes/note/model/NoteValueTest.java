@@ -16,6 +16,7 @@ class NoteValueTest {
         // when
         NoteValue value = NoteValue.from(note);
         // then
+        assertEquals(note.getId(), value.id());
         assertEquals(note.getTitle(), value.title());
         assertEquals(note.getContent(), value.content());
         assertEquals(note.getCreated(), value.created());
