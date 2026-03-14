@@ -1,4 +1,4 @@
-package pl.michallysak.notes.note.service;
+package pl.michallysak.notes.note;
 
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;

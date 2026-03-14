@@ -9,7 +9,7 @@ import pl.michallysak.notes.common.exception.ValidationException;
 import pl.michallysak.notes.common.validator.TextRange;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.service.NoteTestUtils;
+import pl.michallysak.notes.note.NoteTestUtils;
 
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -155,7 +155,7 @@ class NoteValidatorImplTest {
         // given
         UUID nullNoteId = null;
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().build();
-        String message = "Note ID cannot be null";
+        String message = "Note id cannot be null";
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(nullNoteId, noteUpdate);
         // then

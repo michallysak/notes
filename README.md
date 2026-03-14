@@ -25,11 +25,19 @@ The application is structured into four main layers:
 - Maven 3.6+
 
 ## Build and Run
+
+### Build
 ```sh
 cd notes-app
 mvn clean package
-mvn exec:java -Dexec.args="--cli --persistence=in-memory"
 ```
+
+### Run
+
+To run app you can use the following implementations README.md file:
+- **CLI Note App**
+A simple command-line interface for managing notes. [docs/cli/README.md](docs/cli/README.md)
+
 
 ## License
 This project is licensed under the terms of the [LICENSE.txt](LICENSE.txt) file.

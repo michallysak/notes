@@ -6,6 +6,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;

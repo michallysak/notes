@@ -26,7 +26,7 @@ public class NoteValidatorImpl implements NoteValidator {
 
     @Override
     public void validateNoteUpdate(UUID noteId, NoteUpdate noteUpdate) throws ValidationException {
-        commonValidator.throwOnNull(noteId, "Note ID cannot be null");
+        commonValidator.throwOnNull(noteId, "Note id cannot be null");
         commonValidator.throwOnNull(noteUpdate, "NoteUpdate cannot be null");
         validateTitle(noteUpdate.title());
         validateContent(noteUpdate.content());
