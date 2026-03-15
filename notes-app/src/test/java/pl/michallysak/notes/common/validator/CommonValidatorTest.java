@@ -1,6 +1,5 @@
 package pl.michallysak.notes.common.validator;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -8,8 +7,7 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import pl.michallysak.notes.common.exception.ValidationException;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CommonValidatorTest {
 
@@ -24,7 +22,7 @@ class CommonValidatorTest {
         Executable executable = () -> commonValidator.throwOnNull(text, message);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @ParameterizedTest
@@ -62,7 +60,7 @@ class CommonValidatorTest {
         Executable executable = () -> commonValidator.throwOnNotInRange(text, range, message);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
 }

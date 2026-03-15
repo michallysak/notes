@@ -1,6 +1,7 @@
 package pl.michallysak.notes.note.model;
 
 import org.junit.jupiter.api.Test;
+import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 
@@ -11,7 +12,7 @@ class NoteValueTest {
     @Test
     void from_shouldMapNoteFieldsCorrectly() {
         // given
-        CreateNote createNote = new CreateNote("title", "content");
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = NoteImpl.create(createNote);
         // when
         NoteValue value = NoteValue.from(note);

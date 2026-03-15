@@ -1,6 +1,5 @@
 package pl.michallysak.notes.application.cli;
 
-import jakarta.annotation.Nonnull;
 import pl.michallysak.notes.application.NotesApplication;
 import pl.michallysak.notes.application.cli.presenter.CliNotePresenter;
 import pl.michallysak.notes.application.cli.presenter.CliPresenter;
@@ -8,8 +7,6 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
-import pl.michallysak.notes.note.validator.NoteValidator;
-import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,9 +31,8 @@ public class CliNotesApp implements NotesApplication {
     private CliNotePresenter getNotePresenter(String[] args) {
         List<String> arguments = Arrays.asList(args);
         final CliNotePresenter cliNotePresenter;
-        NoteValidator noteValidator = new NoteValidatorImpl();
         NoteRepository noteRepository = getNoteRepository(arguments);
-        NoteService noteService = new NoteServiceImpl(noteValidator, noteRepository);
+        NoteService noteService = new NoteServiceImpl(noteRepository);
         cliNotePresenter = new CliNotePresenter(cliPresenter, noteService);
         return cliNotePresenter;
     }

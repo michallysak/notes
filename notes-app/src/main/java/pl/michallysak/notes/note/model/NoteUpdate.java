@@ -7,7 +7,7 @@ import lombok.Builder;
 public record NoteUpdate(
         String title,
         String content,
-        boolean pinned
+        Boolean pinned
 ) {
 
 }

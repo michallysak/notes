@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.ToString;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.validator.NoteValidator;
+import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -22,7 +24,10 @@ public class NoteImpl implements Note {
     private OffsetDateTime updated;
     private boolean isPinned;
 
+    private static final NoteValidator NOTE_VALIDATOR = new NoteValidatorImpl();
+
     public static Note create(CreateNote createNote) {
+        NOTE_VALIDATOR.validateCreateNote(createNote);
         return NoteImpl.builder()
                 .id(UUID.randomUUID())
                 .title(createNote.title())
@@ -40,9 +45,12 @@ public class NoteImpl implements Note {
 
     @Override
     public void update(NoteUpdate noteUpdate) {
+        NOTE_VALIDATOR.validateNoteUpdate(id, noteUpdate, this);
         this.title = noteUpdate.title();
         this.content = noteUpdate.content();
-        this.isPinned = noteUpdate.pinned();
+        if (noteUpdate.pinned() != null) {
+            this.isPinned = noteUpdate.pinned();
+        }
         this.updated = OffsetDateTime.now();
     }
 }

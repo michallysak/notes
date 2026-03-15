@@ -14,7 +14,6 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.repository.NoteRepository;
-import pl.michallysak.notes.note.validator.NoteValidator;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,9 +27,6 @@ import static org.mockito.Mockito.*;
 class NoteServiceImplTest {
 
     @Mock
-    private NoteValidator validator;
-
-    @Mock
     private NoteRepository repository;
 
     @InjectMocks
@@ -39,12 +35,10 @@ class NoteServiceImplTest {
     @Test
     void createNote_shouldValidateAndSave() {
         // given
-        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder()
-                .title("validTitle").content("validContent").build();
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         // when
         NoteValue noteValue = service.createNote(createNote);
         // then
-        verify(validator).validateCreateNote(createNote);
         verify(repository).save(any());
 
         assertEquals(createNote.title(), noteValue.title());
@@ -94,12 +88,11 @@ class NoteServiceImplTest {
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = NoteImpl.create(createNote);
         UUID id = note.getId();
-        NoteUpdate update = NoteTestUtils.createNoteUpdateBuilder().build();
+        NoteUpdate update = NoteTestUtils.createNoteUpdateBuilder().pinned(null).build();
         when(repository.findById(id)).thenReturn(Optional.of(note));
         // when
         NoteValue noteValue = service.updateNote(id, update);
         // then
-        verify(validator).validateNoteUpdate(id, update);
         verify(repository).save(note);
         assertEquals(NoteValue.from(note), noteValue);
     }

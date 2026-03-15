@@ -1,83 +1,25 @@
 package pl.michallysak.notes.note.validator;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import pl.michallysak.notes.common.exception.ValidationException;
-import pl.michallysak.notes.common.validator.TextRange;
+import pl.michallysak.notes.note.NoteTestUtils;
+import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.NoteTestUtils;
 
 import java.util.UUID;
-import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static pl.michallysak.notes.helpers.TestExtensions.concat;
-import static pl.michallysak.notes.helpers.TestExtensions.textsWithLength;
+import static org.junit.jupiter.api.Assertions.*;
+import static pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils.CONTENT_LENGTH_RANGE;
+import static pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils.TITLE_LENGTH_RANGE;
 
 class NoteValidatorImplTest {
 
-    static final TextRange TITLE_LENGTH_RANGE = TextRange.of(3, 64);
-    static final TextRange CONTENT_LENGTH_RANGE = TextRange.of(0, 2048);
-
     private final NoteValidatorImpl noteValidator = new NoteValidatorImpl();
-
-    private static Stream<CreateNote> createNotesCreationWithTitle(Stream<String> list) {
-        return list.map(title -> NoteTestUtils.createCreateNoteBuilder().title(title).content("valid content").build());
-    }
-
-    private static Stream<CreateNote> createNotesCreationWithContent(Stream<String> list) {
-        return list.map(content -> NoteTestUtils.createCreateNoteBuilder().title("valid title").content(content).build());
-    }
-
-    private static Stream<CreateNote> createNotesWithNotInRangeLengthTitle() {
-        return createNotesCreationWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMin() - 1));
-    }
-
-    private static Stream<CreateNote> createNoteWithNotInRangeLengthContent() {
-        return createNotesCreationWithContent(textsWithLength(CONTENT_LENGTH_RANGE.getMax() + 1));
-    }
-
-    private static Stream<CreateNote> createNotesValid() {
-        return concat(
-                createNotesCreationWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMin())),
-                createNotesCreationWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMin())),
-                createNotesCreationWithContent(textsWithLength(CONTENT_LENGTH_RANGE.getMin())),
-                createNotesCreationWithContent(textsWithLength(CONTENT_LENGTH_RANGE.getMin()))
-        );
-    }
-
-    private static Stream<NoteUpdate> createNoteUpdatesWithTitle(Stream<String> list) {
-        return list.map(title -> NoteTestUtils.createNoteUpdateBuilder().title(title).content("valid content").build());
-    }
-
-    private static Stream<NoteUpdate> createNoteUpdatesWithContent(Stream<String> list) {
-        return list.map(content -> NoteTestUtils.createNoteUpdateBuilder().title("valid title").content(content).build());
-    }
-
-    private static Stream<NoteUpdate> invalidNoteUpdatesWithTitle() {
-        return concat(
-                createNoteUpdatesWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMin() - 1)),
-                createNoteUpdatesWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMax() + 1))
-        );
-    }
-
-    private static Stream<NoteUpdate> invalidNoteUpdatesWithContent() {
-        return createNoteUpdatesWithContent(textsWithLength(CONTENT_LENGTH_RANGE.getMax() + 1));
-    }
-
-    private static Stream<NoteUpdate> validNoteUpdates() {
-        return concat(
-                createNoteUpdatesWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMin())),
-                createNoteUpdatesWithTitle(textsWithLength(TITLE_LENGTH_RANGE.getMax())),
-                createNoteUpdatesWithContent(textsWithLength(CONTENT_LENGTH_RANGE.getMin())),
-                createNoteUpdatesWithContent(textsWithLength(CONTENT_LENGTH_RANGE.getMax()))
-        );
-    }
 
     @Test
     void validateCreateNote_shouldThrow_whenNull() {
@@ -88,7 +30,7 @@ class NoteValidatorImplTest {
         Executable executable = () -> noteValidator.validateCreateNote(createNote);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @Test
@@ -100,11 +42,11 @@ class NoteValidatorImplTest {
         Executable executable = () -> noteValidator.validateCreateNote(noteUpdate);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @ParameterizedTest
-    @MethodSource("createNotesWithNotInRangeLengthTitle")
+    @MethodSource("pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils#createNotesWithNotInRangeLengthTitle")
     void validateCreateNote_shouldThrow_whenNotInRangeLengthTitle(CreateNote note) {
         // given
         String message = "Title not meet length requirements %s, is %d".formatted(TITLE_LENGTH_RANGE, note.title().length());
@@ -112,7 +54,7 @@ class NoteValidatorImplTest {
         Executable executable = () -> noteValidator.validateCreateNote(note);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @Test
@@ -124,11 +66,11 @@ class NoteValidatorImplTest {
         Executable executable = () -> noteValidator.validateCreateNote(note);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @ParameterizedTest
-    @MethodSource("createNoteWithNotInRangeLengthContent")
+    @MethodSource("pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils#createNoteWithNotInRangeLengthContent")
     void validateCreateNote_shouldThrow_whenInvalidContent(CreateNote note) {
         // given
         String message = "Content not meet length requirements %s, is %d".formatted(CONTENT_LENGTH_RANGE, note.content().length());
@@ -136,11 +78,11 @@ class NoteValidatorImplTest {
         Executable executable = () -> noteValidator.validateCreateNote(note);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @ParameterizedTest
-    @MethodSource("createNotesValid")
+    @MethodSource("pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils#createNotesValid")
     void validateCreateNote_shouldNotThrow_whenValid(CreateNote note) {
         // given
         // valid note from parameter
@@ -157,10 +99,10 @@ class NoteValidatorImplTest {
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().build();
         String message = "Note id cannot be null";
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(nullNoteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(nullNoteId, noteUpdate, null);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @Test
@@ -170,23 +112,23 @@ class NoteValidatorImplTest {
         NoteUpdate noteUpdate = null;
         String message = "NoteUpdate cannot be null";
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @ParameterizedTest
-    @MethodSource("invalidNoteUpdatesWithTitle")
+    @MethodSource("pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils#invalidNoteUpdatesWithTitle")
     void validateNoteUpdate_shouldThrow_whenNotInRangeLengthTitle(NoteUpdate noteUpdate) {
         // given
         UUID noteId = UUID.randomUUID();
         String message = "Title not meet length requirements %s, is %d".formatted(TITLE_LENGTH_RANGE, noteUpdate.title().length());
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @Test
@@ -196,23 +138,23 @@ class NoteValidatorImplTest {
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().title(null).build();
         String message = "Title cannot be null";
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @ParameterizedTest
-    @MethodSource("invalidNoteUpdatesWithContent")
+    @MethodSource("pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils#invalidNoteUpdatesWithContent")
     void validateNoteUpdate_shouldThrow_whenNotInRangeLengthContent(NoteUpdate noteUpdate) {
         // given
         UUID noteId = UUID.randomUUID();
         String message = "Content not meet length requirements %s, is %d".formatted(CONTENT_LENGTH_RANGE, noteUpdate.content().length());
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
     }
 
     @Test
@@ -222,19 +164,84 @@ class NoteValidatorImplTest {
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().content(null).build();
         String message = "Content cannot be null";
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
-        Assertions.assertEquals(message, validationException.getMessage());
+        assertEquals(message, validationException.getMessage());
+    }
+    
+    @Test
+    void validateNoteUpdate_shouldThrow_whenAlreadyPinned() {
+        // given
+        String message = "Note is already pinned";
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = NoteImpl.create(createNote);
+        UUID noteId = note.getId();
+        // and
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
+        note.update(noteUpdate);
+        // when
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
+        // then
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals(message, validationException.getMessage());
+    }
+
+    @Test
+    void validateNoteUpdate_shouldThrow_whenAlreadyUnpinned() {
+        // given
+        String message = "Note is already unpinned";
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = NoteImpl.create(createNote);
+        UUID noteId = note.getId();
+        // and
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(false).build();
+        // when
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
+        // then
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals(message, validationException.getMessage());
+    }
+
+    @Test
+    void validateNoteUpdate_shouldNotThrow_whenPinStateChanges() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = NoteImpl.create(createNote);
+        UUID noteId = note.getId();
+        // and
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
+        // when
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
+        // then
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void validateNoteUpdate_shouldNotThrow_whenUnpinStateChanges() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = NoteImpl.create(createNote);
+        UUID noteId = note.getId();
+        // and
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
+        note.update(noteUpdate);
+        NoteUpdate noteUpdateSecond = NoteTestUtils.createNoteUpdateBuilder().pinned(false).build();
+        // when
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdateSecond, note);
+        // then
+        assertDoesNotThrow(executable);
     }
 
     @ParameterizedTest
-    @MethodSource("validNoteUpdates")
+    @MethodSource("pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils#validNoteUpdates")
     void validateNoteUpdate_shouldNotThrow_whenValid(NoteUpdate noteUpdate) {
         // given
-        UUID noteId = UUID.randomUUID();
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = NoteImpl.create(createNote);
+        UUID noteId = note.getId();
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
         // then
         assertDoesNotThrow(executable);
     }

@@ -2,6 +2,7 @@ package pl.michallysak.notes.note.domain;
 
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
@@ -11,13 +12,13 @@ class NoteImplTest {
     @Test
     void create_shouldInitializeFieldsCorrectly() {
         // given
-        CreateNote createNote = new CreateNote("title", "content");
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         // when
         Note note = NoteImpl.create(createNote);
         // then
         assertNotNull(note.getId());
-        assertEquals("title", note.getTitle());
-        assertEquals("content", note.getContent());
+        assertEquals(createNote.title(), note.getTitle());
+        assertEquals(createNote.content(), note.getContent());
         assertNotNull(note.getCreated());
         assertTrue(note.getUpdated().isEmpty());
         assertFalse(note.isPinned());
@@ -25,21 +26,46 @@ class NoteImplTest {
 
     @SneakyThrows
     @Test
-    void update_shouldModifyFieldsAndSetUpdated() {
+    void update_shouldModifyFieldsAndSetUpdated_whenNotNullPinned() {
         // given
-        CreateNote createNote = new CreateNote("title", "content");
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = NoteImpl.create(createNote);
-        NoteUpdate noteUpdate = new NoteUpdate("newTitle", "newContent", true);
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder()
+                .title("newTitle")
+                .content("newContent")
+                .pinned(true)
+                .build();
         Thread.sleep(100);
         // when
         note.update(noteUpdate);
         // then
-        assertEquals("newTitle", note.getTitle());
-        assertEquals("newContent", note.getContent());
-        assertTrue(note.isPinned());
+        assertEquals(noteUpdate.title(), note.getTitle());
+        assertEquals(noteUpdate.content(), note.getContent());
+        assertEquals(noteUpdate.pinned(), note.isPinned());
         assertTrue(note.getUpdated().isPresent());
         assertTrue(note.getUpdated().get().isAfter(note.getCreated()));
     }
 
-}
+    @SneakyThrows
+    @Test
+    void update_shouldModifyFieldsAndSetUpdated_whenNullPinned() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = NoteImpl.create(createNote);
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder()
+                .title("newTitle")
+                .content("newContent")
+                .build();
+        Thread.sleep(100);
+        // when
+        note.update(noteUpdate);
+        // then
+        assertEquals(noteUpdate.title(), note.getTitle());
+        assertEquals(noteUpdate.content(), note.getContent());
+        assertEquals(note.isPinned(), note.isPinned());
+        assertTrue(note.getUpdated().isPresent());
+        assertTrue(note.getUpdated().get().isAfter(note.getCreated()));
+    }
 
+
+}

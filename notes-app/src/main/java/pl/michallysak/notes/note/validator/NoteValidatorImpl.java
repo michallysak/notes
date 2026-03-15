@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.common.exception.ValidationException;
 import pl.michallysak.notes.common.validator.CommonValidator;
 import pl.michallysak.notes.common.validator.TextRange;
+import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
@@ -25,11 +26,12 @@ public class NoteValidatorImpl implements NoteValidator {
     }
 
     @Override
-    public void validateNoteUpdate(UUID noteId, NoteUpdate noteUpdate) throws ValidationException {
+    public void validateNoteUpdate(UUID noteId, NoteUpdate noteUpdate, Note note) throws ValidationException {
         commonValidator.throwOnNull(noteId, "Note id cannot be null");
         commonValidator.throwOnNull(noteUpdate, "NoteUpdate cannot be null");
         validateTitle(noteUpdate.title());
         validateContent(noteUpdate.content());
+        validatePinned(noteUpdate.pinned(), note);
     }
 
     private void validateTitle(String title) {
@@ -42,5 +44,17 @@ public class NoteValidatorImpl implements NoteValidator {
         commonValidator.throwOnNotInRange(content, CONTENT_LENGTH_RANGE, "Content not meet length requirements %s, is %d".formatted(CONTENT_LENGTH_RANGE, content.length()));
     }
 
-}
+    private void validatePinned(Boolean pinned, Note note) {
+        if (pinned == null) {
+            return;
+        }
+        boolean currentPinned = note != null && note.isPinned();
+        if (pinned && currentPinned) {
+            throw new ValidationException("Note is already pinned");
+        }
+        if (!pinned && !currentPinned) {
+            throw new ValidationException("Note is already unpinned");
+        }
+    }
 
+}

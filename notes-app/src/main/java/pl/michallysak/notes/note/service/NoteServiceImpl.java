@@ -8,7 +8,6 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.repository.NoteRepository;
-import pl.michallysak.notes.note.validator.NoteValidator;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,12 +16,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NoteServiceImpl implements NoteService {
 
-    private final NoteValidator noteValidator;
     private final NoteRepository noteRepository;
 
     @Override
     public NoteValue createNote(CreateNote createNote) {
-        noteValidator.validateCreateNote(createNote);
         Note note = NoteImpl.create(createNote);
         noteRepository.save(note);
         return NoteValue.from(note);
@@ -41,7 +38,6 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public NoteValue updateNote(UUID id, NoteUpdate noteUpdate) {
-        noteValidator.validateNoteUpdate(id, noteUpdate);
         Note note = noteRepository.findById(id).orElseThrow(NoteNotFoundException::new);
         note.update(noteUpdate);
         noteRepository.save(note);

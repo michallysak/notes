@@ -1,6 +1,7 @@
 package pl.michallysak.notes.note.repository;
 
 import org.junit.jupiter.api.Test;
+import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
@@ -100,14 +101,18 @@ class InMemoryNoteRepositoryTest {
         // given
         Note note = createNote();
         NoteRepository noteRepository = createNoteRepository(note);
-        NoteUpdate update = new NoteUpdate("newT", "newC", true);
-        note.update(update);
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder()
+                .title("newT")
+                .content("newC")
+                .pinned(true)
+                .build();
+        note.update(noteUpdate);
         // when
         noteRepository.save(note);
         // then
         Note found = noteRepository.findById(note.getId()).orElseThrow();
-        assertEquals("newT", found.getTitle());
-        assertEquals("newC", found.getContent());
+        assertEquals(noteUpdate.title(), found.getTitle());
+        assertEquals(noteUpdate.content(), found.getContent());
         assertTrue(found.isPinned());
     }
 
@@ -117,7 +122,8 @@ class InMemoryNoteRepositoryTest {
     }
 
     private Note createNote() {
-        return NoteImpl.create(new CreateNote("t", "c"));
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        return NoteImpl.create(createNote);
     }
 
 }
