@@ -132,16 +132,14 @@ class NoteValidatorImplTest {
     }
 
     @Test
-    void validateNoteUpdate_shouldThrow_whenNullTitle() {
+    void validateNoteUpdate_shouldNotThrow_whenNullTitle() {
         // given
         UUID noteId = UUID.randomUUID();
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().title(null).build();
-        String message = "Title cannot be null";
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
-        ValidationException validationException = assertThrows(ValidationException.class, executable);
-        assertEquals(message, validationException.getMessage());
+        assertDoesNotThrow(executable);
     }
 
     @ParameterizedTest
@@ -158,16 +156,14 @@ class NoteValidatorImplTest {
     }
 
     @Test
-    void validateNoteUpdate_shouldThrow_whenNullContent() {
+    void validateNoteUpdate_shouldNotThrow_whenNullContent() {
         // given
         UUID noteId = UUID.randomUUID();
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().content(null).build();
-        String message = "Content cannot be null";
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
         // then
-        ValidationException validationException = assertThrows(ValidationException.class, executable);
-        assertEquals(message, validationException.getMessage());
+         assertDoesNotThrow(executable);
     }
     
     @Test

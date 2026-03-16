@@ -46,11 +46,21 @@ public class NoteImpl implements Note {
     @Override
     public void update(NoteUpdate noteUpdate) {
         NOTE_VALIDATOR.validateNoteUpdate(id, noteUpdate, this);
-        this.title = noteUpdate.title();
-        this.content = noteUpdate.content();
+        boolean updatedAny = false;
+        if (noteUpdate.title() != null) {
+            this.title = noteUpdate.title();
+            updatedAny = true;
+        }
+        if (noteUpdate.content() != null) {
+            this.content = noteUpdate.content();
+            updatedAny = true;
+        }
         if (noteUpdate.pinned() != null) {
             this.isPinned = noteUpdate.pinned();
+            updatedAny = true;
         }
-        this.updated = OffsetDateTime.now();
+        if (updatedAny) {
+            this.updated = OffsetDateTime.now();
+        }
     }
 }

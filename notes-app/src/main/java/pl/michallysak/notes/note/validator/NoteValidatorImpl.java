@@ -29,8 +29,12 @@ public class NoteValidatorImpl implements NoteValidator {
     public void validateNoteUpdate(UUID noteId, NoteUpdate noteUpdate, Note note) throws ValidationException {
         commonValidator.throwOnNull(noteId, "Note id cannot be null");
         commonValidator.throwOnNull(noteUpdate, "NoteUpdate cannot be null");
-        validateTitle(noteUpdate.title());
-        validateContent(noteUpdate.content());
+        if (noteUpdate.title() != null) {
+            validateTitle(noteUpdate.title());
+        }
+        if (noteUpdate.content() != null) {
+            validateContent(noteUpdate.content());
+        }
         validatePinned(noteUpdate.pinned(), note);
     }
 
