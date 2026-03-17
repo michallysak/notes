@@ -8,6 +8,7 @@ import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -49,10 +50,11 @@ public class NoteValidatorImpl implements NoteValidator {
     }
 
     private void validatePinned(Boolean pinned, Note note) {
+        Objects.requireNonNull(note, "Note cannot be null");
         if (pinned == null) {
             return;
         }
-        boolean currentPinned = note != null && note.isPinned();
+        boolean currentPinned = note.isPinned();
         if (pinned && currentPinned) {
             throw new ValidationException("Note is already pinned");
         }

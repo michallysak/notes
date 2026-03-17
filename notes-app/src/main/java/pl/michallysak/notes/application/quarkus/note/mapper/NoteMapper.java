@@ -1,0 +1,25 @@
+package pl.michallysak.notes.application.quarkus.note.mapper;
+
+import org.mapstruct.Mapper;
+import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.model.NoteValue;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
+
+@Mapper(componentModel = "cdi")
+public interface NoteMapper {
+    CreateNote mapToCreateNote(CreateNoteRequest createNoteRequest);
+
+    NoteUpdate mapToNoteUpdate(NoteUpdateRequest noteUpdateRequest);
+
+    NoteResponse mapToNoteResponse(NoteValue noteValue);
+
+    default OffsetDateTime mapToOffsetDateTime(Optional<OffsetDateTime> value) {
+        return value.orElse(null);
+    }
+}

@@ -59,3 +59,4 @@ class NoteBeansTest {
         assertInstanceOf(InMemoryNoteRepository.class, noteRepository1);
     }
 }
+

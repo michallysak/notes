@@ -14,6 +14,8 @@ import pl.michallysak.notes.note.model.NoteUpdate;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils.CONTENT_LENGTH_RANGE;
 import static pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils.TITLE_LENGTH_RANGE;
 
@@ -137,7 +139,9 @@ class NoteValidatorImplTest {
         UUID noteId = UUID.randomUUID();
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().title(null).build();
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
+        Note note = mock(Note.class);
+        when(note.isPinned()).thenReturn(false);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
         // then
         assertDoesNotThrow(executable);
     }
@@ -149,7 +153,9 @@ class NoteValidatorImplTest {
         UUID noteId = UUID.randomUUID();
         String message = "Content not meet length requirements %s, is %d".formatted(CONTENT_LENGTH_RANGE, noteUpdate.content().length());
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
+        Note mock = mock(Note.class);
+        when(mock.isPinned()).thenReturn(false);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, mock);
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
         assertEquals(message, validationException.getMessage());
@@ -161,7 +167,8 @@ class NoteValidatorImplTest {
         UUID noteId = UUID.randomUUID();
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().content(null).build();
         // when
-        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, null);
+        Note note = mock(Note.class);
+        Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
         // then
          assertDoesNotThrow(executable);
     }
@@ -243,3 +250,4 @@ class NoteValidatorImplTest {
     }
 
 }
+
