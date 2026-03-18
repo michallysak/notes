@@ -1,7 +1,5 @@
 package pl.michallysak.notes.note.domain;
 
-import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import pl.michallysak.notes.note.model.CreateNote;
@@ -15,7 +13,6 @@ import java.util.UUID;
 
 @Getter
 @ToString
-@Builder(access = AccessLevel.PRIVATE)
 public class NoteImpl implements Note {
     private final UUID id;
     private final OffsetDateTime created;
@@ -23,19 +20,19 @@ public class NoteImpl implements Note {
     private String content;
     private OffsetDateTime updated;
     private boolean isPinned;
+    private final UUID authorId;
 
     private static final NoteValidator NOTE_VALIDATOR = new NoteValidatorImpl();
 
-    public static Note create(CreateNote createNote) {
+    public NoteImpl(CreateNote createNote) {
         NOTE_VALIDATOR.validateCreateNote(createNote);
-        return NoteImpl.builder()
-                .id(UUID.randomUUID())
-                .title(createNote.title())
-                .content(createNote.content())
-                .created(OffsetDateTime.now())
-                .updated(null)
-                .isPinned(false)
-                .build();
+        this.authorId = createNote.authorId();
+        this.id = UUID.randomUUID();
+        this.title = createNote.title();
+        this.content = createNote.content();
+        this.created = OffsetDateTime.now();
+        this.updated = null;
+        this.isPinned = false;
     }
 
     @Override

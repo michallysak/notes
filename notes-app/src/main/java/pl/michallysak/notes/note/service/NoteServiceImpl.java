@@ -20,7 +20,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public NoteValue createNote(CreateNote createNote) {
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         noteRepository.save(note);
         return NoteValue.from(note);
     }

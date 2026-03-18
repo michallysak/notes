@@ -16,4 +16,6 @@ public interface Note extends NoteActions {
     Optional<OffsetDateTime> getUpdated();
 
     boolean isPinned();
+
+    UUID getAuthorId();
 }

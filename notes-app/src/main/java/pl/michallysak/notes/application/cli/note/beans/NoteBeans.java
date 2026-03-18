@@ -1,6 +1,5 @@
 package pl.michallysak.notes.application.cli.note.beans;
 
-import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.cli.io.ConsoleIO;
 import pl.michallysak.notes.application.cli.io.IO;
 import pl.michallysak.notes.application.cli.note.presenter.CliNotePresenter;
@@ -13,8 +12,11 @@ import pl.michallysak.notes.note.service.NoteServiceImpl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 public class NoteBeans {
+    private final static UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     private final List<String> arguments;
     private final IO<String> io;
 
@@ -32,6 +34,10 @@ public class NoteBeans {
         return io;
     }
 
+    public UUID getAuthorId() {
+        return AUTHOR_ID;
+    }
+
     public Presenter rootPresenter() {
         if (rootPresenterInstance == null) {
             rootPresenterInstance = new RootPresenter(this);
@@ -41,7 +47,7 @@ public class NoteBeans {
 
     public CliNotePresenter notePresenter() {
         if (notePresenterInstance == null) {
-            notePresenterInstance = new CliNotePresenter(io, noteService());
+            notePresenterInstance = new CliNotePresenter(io, noteService(), AUTHOR_ID);
         }
         return notePresenterInstance;
     }

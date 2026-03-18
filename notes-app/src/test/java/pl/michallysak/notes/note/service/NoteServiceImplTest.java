@@ -49,7 +49,7 @@ class NoteServiceImplTest {
     void getCreatedNotes_shouldReturnMappedValues() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         when(repository.findAll()).thenReturn(List.of(note));
         // when
         List<NoteValue> noteValues = service.getCreatedNotes();
@@ -62,7 +62,7 @@ class NoteServiceImplTest {
     void getCreatedNote_shouldReturnMappedValue() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID id = note.getId();
         when(repository.findById(id)).thenReturn(Optional.of(note));
         // when
@@ -86,7 +86,7 @@ class NoteServiceImplTest {
     void updateNote_shouldValidateAndSave() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID id = note.getId();
         NoteUpdate update = NoteTestUtils.createNoteUpdateBuilder().pinned(null).build();
         when(repository.findById(id)).thenReturn(Optional.of(note));

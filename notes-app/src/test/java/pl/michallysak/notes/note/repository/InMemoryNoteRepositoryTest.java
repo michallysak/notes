@@ -123,7 +123,7 @@ class InMemoryNoteRepositoryTest {
 
     private Note createNote() {
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        return NoteImpl.create(createNote);
+        return new NoteImpl(createNote);
     }
 
 }

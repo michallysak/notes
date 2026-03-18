@@ -95,6 +95,18 @@ class NoteValidatorImplTest {
     }
 
     @Test
+    void validateCreateNote_shouldThrow_whenNullAuthorId() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(null).build();
+        String message = "AuthorId id cannot be null";
+        // when
+        Executable executable = () -> noteValidator.validateCreateNote(createNote);
+        // then
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals(message, validationException.getMessage());
+    }
+
+    @Test
     void validateNoteUpdate_shouldThrow_whenNullNoteId() {
         // given
         UUID nullNoteId = null;
@@ -178,7 +190,7 @@ class NoteValidatorImplTest {
         // given
         String message = "Note is already pinned";
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
@@ -195,7 +207,7 @@ class NoteValidatorImplTest {
         // given
         String message = "Note is already unpinned";
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(false).build();
@@ -210,7 +222,7 @@ class NoteValidatorImplTest {
     void validateNoteUpdate_shouldNotThrow_whenPinStateChanges() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
@@ -224,7 +236,7 @@ class NoteValidatorImplTest {
     void validateNoteUpdate_shouldNotThrow_whenUnpinStateChanges() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
@@ -241,7 +253,7 @@ class NoteValidatorImplTest {
     void validateNoteUpdate_shouldNotThrow_whenValid(NoteUpdate noteUpdate) {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
@@ -250,4 +262,3 @@ class NoteValidatorImplTest {
     }
 
 }
-

@@ -2,6 +2,7 @@ package pl.michallysak.notes.application.cli.note.presenter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.Getter;
 import pl.michallysak.notes.application.cli.io.TestTextIO;
@@ -13,10 +14,11 @@ import pl.michallysak.notes.note.service.NoteService;
 public class CliNotePresenterTestClient {
     private final TestTextIO io;
     private final CliNotePresenter presenter;
+    private final UUID authorId = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     public CliNotePresenterTestClient(NoteService noteService) {
         this.io = TestTextIO.create();
-        this.presenter = new CliNotePresenter(io, noteService);
+        this.presenter = new CliNotePresenter(io, noteService, authorId);
     }
 
     public String getOutput() {

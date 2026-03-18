@@ -3,10 +3,13 @@ package pl.michallysak.notes.note.model;
 
 import lombok.Builder;
 
+import java.util.UUID;
+
 @Builder
-public record CreateNote(
+public record CreateNote (
         String title,
-        String content
+        String content,
+        UUID authorId
 ) {
 
 }

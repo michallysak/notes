@@ -14,9 +14,10 @@ class NoteImplTest {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         // when
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         // then
         assertNotNull(note.getId());
+        assertEquals(createNote.authorId(), note.getAuthorId());
         assertEquals(createNote.title(), note.getTitle());
         assertEquals(createNote.content(), note.getContent());
         assertNotNull(note.getCreated());
@@ -29,7 +30,7 @@ class NoteImplTest {
     void update_shouldModifyFieldsAndSetUpdated_whenNotNullPinned() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder()
                 .title("newTitle")
                 .content("newContent")
@@ -51,7 +52,7 @@ class NoteImplTest {
     void update_shouldModifyFieldsAndSetUpdated_whenNullPinned() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder()
                 .title("newTitle")
                 .content("newContent")
@@ -72,7 +73,7 @@ class NoteImplTest {
     void update_shouldNotModifyFieldsOrSetUpdated_whenAllFieldsNull() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         Thread.sleep(100);
         NoteUpdate noteUpdate = NoteUpdate.builder().build();
         // when
@@ -89,7 +90,7 @@ class NoteImplTest {
     void update_shouldNotModifyTitle_whenTitleIsNull() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         Thread.sleep(100);
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .content("newContent")
@@ -110,7 +111,7 @@ class NoteImplTest {
     void update_shouldNotModifyContent_whenContentIsNull() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         Thread.sleep(100);
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .title("newTitle")
@@ -131,7 +132,7 @@ class NoteImplTest {
     void update_shouldNotModifyPinned_whenPinnedIsNull() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         Thread.sleep(100);
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .title("newTitle")

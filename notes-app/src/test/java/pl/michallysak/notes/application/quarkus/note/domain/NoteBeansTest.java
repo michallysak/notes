@@ -17,6 +17,7 @@ import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,6 +33,16 @@ class NoteBeansTest {
 
     @InjectMocks
     NoteBeans noteBeans;
+
+    @Test
+    void authorId_shouldReturnExpectedUUID() {
+        // given
+        UUID expected = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        // when
+        UUID authorId = noteBeans.authorId();
+        // then
+        assertEquals(expected, authorId);
+    }
 
     @Test
     void noteRepository_shouldReturnInMemoryNoteRepository_whenGetPersistenceReturnEmptyString() {

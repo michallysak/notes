@@ -22,6 +22,7 @@ public class NoteValidatorImpl implements NoteValidator {
     @Override
     public void validateCreateNote(CreateNote createNote) throws ValidationException {
         commonValidator.throwOnNull(createNote, "CreateNote cannot be null");
+        commonValidator.throwOnNull(createNote.authorId(), "AuthorId id cannot be null");
         validateTitle(createNote.title());
         validateContent(createNote.content());
     }

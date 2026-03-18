@@ -13,11 +13,12 @@ class NoteValueTest {
     void from_shouldMapNoteFieldsCorrectly() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-        Note note = NoteImpl.create(createNote);
+        Note note = new NoteImpl(createNote);
         // when
         NoteValue value = NoteValue.from(note);
         // then
         assertEquals(note.getId(), value.id());
+        assertEquals(note.getAuthorId(), value.authorId());
         assertEquals(note.getTitle(), value.title());
         assertEquals(note.getContent(), value.content());
         assertEquals(note.getCreated(), value.created());
@@ -25,4 +26,3 @@ class NoteValueTest {
         assertEquals(note.isPinned(), value.pinned());
     }
 }
-

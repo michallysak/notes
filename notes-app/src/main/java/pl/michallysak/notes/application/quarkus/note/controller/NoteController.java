@@ -1,6 +1,7 @@
 package pl.michallysak.notes.application.quarkus.note.controller;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
@@ -19,9 +20,11 @@ import java.util.UUID;
 public class NoteController {
     private final NoteService noteService;
     private final NoteMapper noteMapper;
+    @Named("authorId")
+    private final UUID authorId;
 
     public NoteResponse createNote(CreateNoteRequest request) {
-        CreateNote createNote = noteMapper.mapToCreateNote(request);
+        CreateNote createNote = noteMapper.mapToCreateNote(request, authorId);
         NoteValue noteValue = noteService.createNote(createNote);
         return noteMapper.mapToNoteResponse(noteValue);
     }

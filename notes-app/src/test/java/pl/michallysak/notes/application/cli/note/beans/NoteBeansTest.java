@@ -1,6 +1,8 @@
 package pl.michallysak.notes.application.cli.note.beans;
 
 import org.junit.jupiter.api.Test;
+import pl.michallysak.notes.application.cli.io.ConsoleIO;
+import pl.michallysak.notes.application.cli.io.IO;
 import pl.michallysak.notes.application.cli.note.presenter.CliNotePresenter;
 import pl.michallysak.notes.application.cli.presenter.Presenter;
 import pl.michallysak.notes.application.cli.presenter.RootPresenter;
@@ -8,6 +10,8 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -58,5 +62,17 @@ class NoteBeansTest {
         assertSame(noteRepository1, noteRepository2);
         assertInstanceOf(InMemoryNoteRepository.class, noteRepository1);
     }
-}
 
+    @Test
+    void console_shouldReturnNonNullIO() {
+        NoteBeans noteBeans = new NoteBeans(new String[]{});
+        assertInstanceOf(ConsoleIO.class, noteBeans.console());
+    }
+
+    @Test
+    void getAuthorId_shouldReturnStaticUUID() {
+        NoteBeans noteBeans = new NoteBeans(new String[]{});
+        UUID expected = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        org.junit.jupiter.api.Assertions.assertEquals(expected, noteBeans.getAuthorId());
+    }
+}

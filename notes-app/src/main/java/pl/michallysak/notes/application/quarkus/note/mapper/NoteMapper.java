@@ -10,10 +10,11 @@ import pl.michallysak.notes.note.model.NoteValue;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Mapper(componentModel = "cdi")
 public interface NoteMapper {
-    CreateNote mapToCreateNote(CreateNoteRequest createNoteRequest);
+    CreateNote mapToCreateNote(CreateNoteRequest createNoteRequest, UUID authorId);
 
     NoteUpdate mapToNoteUpdate(NoteUpdateRequest noteUpdateRequest);
 

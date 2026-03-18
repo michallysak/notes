@@ -15,13 +15,14 @@ import pl.michallysak.notes.note.model.NoteValue;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class NoteMapperTest {
 
+    private final static UUID AUTHOR_ID = UUID.randomUUID();
     private final NoteMapper noteMapper = new NoteMapperImpl();
 
     @Test
@@ -87,18 +88,49 @@ class NoteMapperTest {
         // given
         CreateNoteRequest request = NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
         // when
-        CreateNote createNote = noteMapper.mapToCreateNote(request);
+        CreateNote createNote = noteMapper.mapToCreateNote(request, AUTHOR_ID);
         // then
         assertEquals(request.getTitle(), createNote.title());
         assertEquals(request.getContent(), createNote.content());
+        assertEquals(AUTHOR_ID, createNote.authorId());
     }
 
     @Test
-    void mapToCreateNote_shouldReturnNull_whenNull() {
+    void mapToCreateNote_shouldReturnNull_whenRequestAndAutorIdNull() {
+        // given
         CreateNoteRequest request = null;
+        UUID authorId = null;
         // when
-        var createNote = noteMapper.mapToCreateNote(request);
+        CreateNote createNote = noteMapper.mapToCreateNote(request, authorId);
         // then
         assertNull(createNote);
+    }
+
+    @Test
+    void mapToCreateNote_shouldReturnOnlySetAuthorId_whenRequestNullAndValidAuthorIdId() {
+        // given
+        CreateNoteRequest request = null;
+        UUID authorId = AUTHOR_ID;
+        // when
+        CreateNote createNote = noteMapper.mapToCreateNote(request, authorId);
+        // then
+        assertNotNull(createNote);
+        assertNotNull(createNote.authorId());
+        assertNull(createNote.title());
+        assertNull(createNote.content());
+    }
+
+    @Test
+    void mapToCreateNote_shouldReturnOnlySetTitleAndName_whenRequestNullAndValidAuthorIdId() {
+        // given
+        CreateNoteRequest request = NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
+        UUID authorId = null;
+        // when
+        CreateNote createNote = noteMapper.mapToCreateNote(request, authorId);
+        // then
+        assertNotNull(createNote);
+        assertNull(createNote.authorId());
+        assertNotNull(createNote.title());
+        assertNotNull(createNote.content());
     }
 }

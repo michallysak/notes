@@ -1,8 +1,8 @@
 package pl.michallysak.notes.application.quarkus.note.controller;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
@@ -24,12 +24,17 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NoteControllerTest {
+    private final static UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     @Mock
     NoteService noteService;
     @Mock
     NoteMapper noteMapper;
-    @InjectMocks
     NoteController noteController;
+
+    @BeforeEach
+    void setUp() {
+        noteController = new NoteController(noteService, noteMapper, AUTHOR_ID);
+    }
 
     @Test
     void createNote_shouldMapAndDelegate() {
@@ -38,14 +43,14 @@ class NoteControllerTest {
         CreateNote createNote = mock(CreateNote.class);
         NoteValue noteValue = mock(NoteValue.class);
         NoteResponse response = mock(NoteResponse.class);
-        when(noteMapper.mapToCreateNote(request)).thenReturn(createNote);
+        when(noteMapper.mapToCreateNote(any(CreateNoteRequest.class), eq(AUTHOR_ID))).thenReturn(createNote);
         when(noteService.createNote(createNote)).thenReturn(noteValue);
         when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
         // when
         NoteResponse result = noteController.createNote(request);
         // then
         assertEquals(response, result);
-        verify(noteMapper).mapToCreateNote(request);
+        verify(noteMapper).mapToCreateNote(request, AUTHOR_ID);
         verify(noteService).createNote(createNote);
         verify(noteMapper).mapToNoteResponse(noteValue);
     }
