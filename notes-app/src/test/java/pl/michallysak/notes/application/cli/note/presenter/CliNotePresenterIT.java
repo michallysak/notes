@@ -13,19 +13,21 @@ import pl.michallysak.notes.note.service.NoteServiceImpl;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CliNotePresenterIT {
 
+    private static final UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private final InMemoryNoteRepository noteRepository = new InMemoryNoteRepository();
     private final NoteService noteService = new NoteServiceImpl(noteRepository);
 
     @BeforeEach
     void setUp() {
-        noteService.getCreatedNotes().stream()
+        noteService.getCreatedNotes(AUTHOR_ID).stream()
                 .map(NoteValue::id)
                 .forEach(noteRepository::deleteById);
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
     private CliNotePresenterTestClient createTestClient() {
@@ -43,10 +45,10 @@ class CliNotePresenterIT {
         String output = client.getOutput();
         assertTrue(output.contains("Created:"));
         // and
-        assertTrue(noteService.getCreatedNotes().size() == 1);
-        NoteValue created = noteService.getCreatedNotes().getFirst();
-        assertTrue(created.title().equals(createNote.title()));
-        assertTrue(created.content().equals(createNote.content()));
+        assertEquals(1, noteService.getCreatedNotes(AUTHOR_ID).size());
+        NoteValue created = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
+        assertEquals(createNote.title(), created.title());
+        assertEquals(createNote.content(), created.content());
     }
 
     @Test
@@ -60,7 +62,7 @@ class CliNotePresenterIT {
         String output = client.getOutput();
         assertTrue(output.contains("Error: Title not meet length requirements"));
         // and
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
     @Test
@@ -76,7 +78,7 @@ class CliNotePresenterIT {
         assertTrue(output.contains(createNote.title()));
         assertTrue(output.contains(createNote.content()));
         // and
-        assertTrue(noteService.getCreatedNotes().size() == 1);
+        assertEquals(1, noteService.getCreatedNotes(AUTHOR_ID).size());
     }
 
     @Test
@@ -87,7 +89,7 @@ class CliNotePresenterIT {
         String output = client.getOutput();
         assertTrue(output.contains("No notes found"));
         // and
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
     @Test
@@ -103,9 +105,9 @@ class CliNotePresenterIT {
         assertTrue(output.contains(createNote.title()));
         assertTrue(output.contains(createNote.content()));
         // and
-        NoteValue note = noteService.getCreatedNotes().getFirst();
-        assertTrue(note.title().equals(createNote.title()));
-        assertTrue(note.content().equals(createNote.content()));
+        NoteValue note = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
+        assertEquals(createNote.title(), note.title());
+        assertEquals(createNote.content(), note.content());
     }
 
     @Test
@@ -117,7 +119,7 @@ class CliNotePresenterIT {
         String output = client.getOutput();
         assertTrue(output.contains("Note not found"));
         // and
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
     @Test
@@ -128,7 +130,7 @@ class CliNotePresenterIT {
         String output = client.getOutput();
         assertTrue(output.contains("Error: Invalid UUID string"));
         // and
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
     @Test
@@ -152,9 +154,9 @@ class CliNotePresenterIT {
         assertTrue(output.contains(newTitle));
         assertTrue(output.contains(newContent));
         // and
-        NoteValue updated = noteService.getCreatedNotes().getFirst();
-        assertTrue(updated.title().equals(newTitle));
-        assertTrue(updated.content().equals(newContent));
+        NoteValue updated = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
+        assertEquals(newTitle, updated.title());
+        assertEquals(newContent, updated.content());
         assertTrue(updated.pinned());
     }
 
@@ -176,7 +178,7 @@ class CliNotePresenterIT {
         // then
         String output = updateClient.getOutput();
         assertTrue(output.contains("Error: Title not meet length requirements"));
-        NoteValue note = noteService.getCreatedNotes().getFirst();
+        NoteValue note = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
         assertEquals(createNote.title(), note.title());
     }
 
@@ -199,8 +201,8 @@ class CliNotePresenterIT {
         String output = updateClient.getOutput();
         assertTrue(output.contains("No change will be applied to title."));
         // and
-        NoteValue note = noteService.getCreatedNotes().getFirst();
-        assertTrue(note.title().equals(createNote.title()));
+        NoteValue note = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
+        assertEquals(createNote.title(), note.title());
     }
 
     @Test
@@ -222,8 +224,8 @@ class CliNotePresenterIT {
         String output = updateClient.getOutput();
         assertTrue(output.contains("No change will be applied to pinned status."));
         // and
-        NoteValue note = noteService.getCreatedNotes().getFirst();
-        assertTrue(!note.pinned());
+        NoteValue note = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
+        assertFalse(note.pinned());
     }
 
     @Test
@@ -238,7 +240,7 @@ class CliNotePresenterIT {
         String output = deleteClient.getOutput();
         assertTrue(output.contains("Deleted"));
         // and
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
     @Test
@@ -250,7 +252,7 @@ class CliNotePresenterIT {
         String output = client.getOutput();
         assertTrue(output.contains("Note not found"));
         // and
-        assertTrue(noteService.getCreatedNotes().isEmpty());
+        assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
     }
 
 }

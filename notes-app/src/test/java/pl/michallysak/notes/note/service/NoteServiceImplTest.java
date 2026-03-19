@@ -32,6 +32,8 @@ class NoteServiceImplTest {
     @InjectMocks
     private NoteServiceImpl service;
 
+    private static final UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     @Test
     void createNote_shouldValidateAndSave() {
         // given
@@ -50,9 +52,9 @@ class NoteServiceImplTest {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = new NoteImpl(createNote);
-        when(repository.findAll()).thenReturn(List.of(note));
+        when(repository.findAllWithAuthor(eq(AUTHOR_ID))).thenReturn(List.of(note));
         // when
-        List<NoteValue> noteValues = service.getCreatedNotes();
+        List<NoteValue> noteValues = service.getCreatedNotes(AUTHOR_ID);
         // then
         assertEquals(1, noteValues.size());
         assertEquals(NoteValue.from(note), noteValues.getFirst());
@@ -66,7 +68,7 @@ class NoteServiceImplTest {
         UUID id = note.getId();
         when(repository.findById(id)).thenReturn(Optional.of(note));
         // when
-        NoteValue noteValue = service.getCreatedNote(id);
+        NoteValue noteValue = service.getCreatedNote(id, AUTHOR_ID);
         // then
         assertEquals(NoteValue.from(note), noteValue);
     }
@@ -77,7 +79,7 @@ class NoteServiceImplTest {
         UUID id = UUID.randomUUID();
         when(repository.findById(id)).thenReturn(Optional.empty());
         // when
-        Executable executable = () -> service.getCreatedNote(id);
+        Executable executable = () -> service.getCreatedNote(id, AUTHOR_ID);
         // then
         assertThrows(NoteNotFoundException.class, executable);
     }
@@ -88,7 +90,10 @@ class NoteServiceImplTest {
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = new NoteImpl(createNote);
         UUID id = note.getId();
-        NoteUpdate update = NoteTestUtils.createNoteUpdateBuilder().pinned(null).build();
+        NoteUpdate update = NoteTestUtils.createNoteUpdateBuilder()
+                .actingUserId(createNote.authorId())
+                .pinned(null)
+                .build();
         when(repository.findById(id)).thenReturn(Optional.of(note));
         // when
         NoteValue noteValue = service.updateNote(id, update);
@@ -101,9 +106,11 @@ class NoteServiceImplTest {
     void deleteNote_shouldDelete() {
         // given
         UUID id = UUID.randomUUID();
+        Note note = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().build());
+        when(repository.findById(id)).thenReturn(Optional.of(note));
         when(repository.deleteById(id)).thenReturn(true);
         // when
-        service.deleteNote(id);
+        service.deleteNote(id, AUTHOR_ID);
         // then
         verify(repository).deleteById(id);
     }
@@ -112,9 +119,9 @@ class NoteServiceImplTest {
     void deleteNote_shouldThrow_whenNotExists() {
         // given
         UUID id = UUID.randomUUID();
+        when(repository.findById(id)).thenReturn(Optional.empty());
         // when
-        when(repository.deleteById(id)).thenReturn(false);
-        Executable executable = () -> service.deleteNote(id);
+        Executable executable = () -> service.deleteNote(id, AUTHOR_ID);
         //then
         assertThrows(NoteNotFoundException.class, executable);
     }

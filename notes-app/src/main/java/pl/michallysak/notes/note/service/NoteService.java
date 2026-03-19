@@ -13,12 +13,12 @@ public interface NoteService {
 
     NoteValue createNote(CreateNote createNote);
 
-    List<NoteValue> getCreatedNotes();
+    List<NoteValue> getCreatedNotes(UUID authorId);
 
-    NoteValue getCreatedNote(UUID noteId) throws NoteNotFoundException;
+    NoteValue getCreatedNote(UUID noteId, UUID authorId) throws NoteNotFoundException;
 
-    NoteValue updateNote(UUID id, NoteUpdate noteUpdate);
+    NoteValue updateNote(UUID noteId, NoteUpdate noteUpdate) throws NoteNotFoundException;
 
-    void deleteNote(UUID noteId);
+    void deleteNote(UUID noteId, UUID actingUserId) throws NoteNotFoundException;
 
 }

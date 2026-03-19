@@ -30,13 +30,13 @@ public class NoteController {
     }
 
     public List<NoteResponse> getNotes() {
-        return noteService.getCreatedNotes().stream()
+        return noteService.getCreatedNotes(authorId).stream()
                 .map(noteMapper::mapToNoteResponse)
                 .toList();
     }
 
     public NoteResponse getNote(UUID id) {
-        NoteValue noteValue = noteService.getCreatedNote(id);
+        NoteValue noteValue = noteService.getCreatedNote(id, authorId);
         return noteMapper.mapToNoteResponse(noteValue);
     }
 
@@ -47,6 +47,6 @@ public class NoteController {
     }
 
     public void deleteNote(UUID id) {
-        noteService.deleteNote(id);
+        noteService.deleteNote(id, authorId);
     }
 }

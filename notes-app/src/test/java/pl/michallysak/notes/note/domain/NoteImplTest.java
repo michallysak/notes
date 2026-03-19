@@ -2,9 +2,13 @@ package pl.michallysak.notes.note.domain;
 
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import pl.michallysak.notes.note.NoteTestUtils;
+import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,6 +39,7 @@ class NoteImplTest {
                 .title("newTitle")
                 .content("newContent")
                 .pinned(true)
+                .actingUserId(note.getAuthorId())
                 .build();
         Thread.sleep(100);
         // when
@@ -56,6 +61,7 @@ class NoteImplTest {
         NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder()
                 .title("newTitle")
                 .content("newContent")
+                .actingUserId(note.getAuthorId())
                 .build();
         Thread.sleep(100);
         // when
@@ -75,7 +81,7 @@ class NoteImplTest {
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = new NoteImpl(createNote);
         Thread.sleep(100);
-        NoteUpdate noteUpdate = NoteUpdate.builder().build();
+        NoteUpdate noteUpdate = NoteUpdate.builder().actingUserId(note.getAuthorId()).build();
         // when
         note.update(noteUpdate);
         // then
@@ -95,6 +101,7 @@ class NoteImplTest {
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .content("newContent")
                 .pinned(true)
+                .actingUserId(note.getAuthorId())
                 .build();
         // when
         note.update(noteUpdate);
@@ -116,6 +123,7 @@ class NoteImplTest {
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .title("newTitle")
                 .pinned(true)
+                .actingUserId(note.getAuthorId())
                 .build();
         // when
         note.update(noteUpdate);
@@ -137,6 +145,7 @@ class NoteImplTest {
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .title("newTitle")
                 .content("newContent")
+                .actingUserId(note.getAuthorId())
                 .build();
         // when
         note.update(noteUpdate);
@@ -146,5 +155,47 @@ class NoteImplTest {
         assertFalse(note.isPinned());
         assertTrue(note.getUpdated().isPresent());
         assertTrue(note.getUpdated().get().isAfter(note.getCreated()));
+    }
+
+    @Test
+    void update_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = new NoteImpl(createNote);
+        UUID notAuthorId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        NoteUpdate noteUpdate = NoteUpdate.builder()
+                .title("newTitle")
+                .content("newContent")
+                .pinned(true)
+                .actingUserId(notAuthorId)
+                .build();
+        // when
+        Executable executable = () -> note.update(noteUpdate);
+        // then
+        assertThrows(NoteAccessException.class, executable);
+    }
+
+    @Test
+    void delete_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = new NoteImpl(createNote);
+        UUID notAuthorId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        // when
+        Executable executable = () -> note.delete(notAuthorId);
+        // then
+        assertThrows(NoteAccessException.class, executable);
+    }
+
+    @Test
+    void read_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
+        // given
+        CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+        Note note = new NoteImpl(createNote);
+        UUID notAuthorId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        // when
+        Executable executable = () -> note.read(notAuthorId);
+        // then
+        assertThrows(NoteAccessException.class, executable);
     }
 }

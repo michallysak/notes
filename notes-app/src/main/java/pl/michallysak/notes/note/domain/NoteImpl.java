@@ -2,6 +2,7 @@ package pl.michallysak.notes.note.domain;
 
 import lombok.Getter;
 import lombok.ToString;
+import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.validator.NoteValidator;
@@ -41,7 +42,14 @@ public class NoteImpl implements Note {
     }
 
     @Override
+    public void read(UUID actingUserId) {
+        checkOwnership(actingUserId);
+    }
+
+    @Override
     public void update(NoteUpdate noteUpdate) {
+        UUID actingUserId = noteUpdate.actingUserId();
+        checkOwnership(actingUserId);
         NOTE_VALIDATOR.validateNoteUpdate(id, noteUpdate, this);
         boolean updatedAny = false;
         if (noteUpdate.title() != null) {
@@ -60,4 +68,16 @@ public class NoteImpl implements Note {
             this.updated = OffsetDateTime.now();
         }
     }
+
+    @Override
+    public void delete(UUID actingUserId) {
+        checkOwnership(actingUserId);
+    }
+
+    private void checkOwnership(UUID actingUserId) {
+        if (!authorId.equals(actingUserId)) {
+            throw new NoteAccessException(id, actingUserId);
+        }
+    }
+
 }

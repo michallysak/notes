@@ -13,6 +13,8 @@ public interface NoteRepository {
 
     List<Note> findAll();
 
+    List<Note> findAllWithAuthor(UUID authorId);
+
     Optional<Note> findById(UUID id);
 
     boolean deleteById(UUID id);

@@ -105,6 +105,7 @@ class InMemoryNoteRepositoryTest {
                 .title("newT")
                 .content("newC")
                 .pinned(true)
+                .actingUserId(note.getAuthorId())
                 .build();
         note.update(noteUpdate);
         // when
@@ -114,6 +115,22 @@ class InMemoryNoteRepositoryTest {
         assertEquals(noteUpdate.title(), found.getTitle());
         assertEquals(noteUpdate.content(), found.getContent());
         assertTrue(found.isPinned());
+    }
+
+    @Test
+    void findAllWithAuthor_shouldReturnOnlyNotesWithGivenAuthor() {
+        // given
+        UUID author1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID author2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        Note note1 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());
+        Note note2 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author2).build());
+        Note note3 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());
+        NoteRepository noteRepository = createNoteRepository(note1, note2, note3);
+        // when
+        List<Note> notes = noteRepository.findAllWithAuthor(author1);
+        // then
+        assertEquals(2, notes.size());
+        assertTrue(notes.stream().allMatch(n -> n.getAuthorId().equals(author1)));
     }
 
     private NoteRepository createNoteRepository(Note... notes) {

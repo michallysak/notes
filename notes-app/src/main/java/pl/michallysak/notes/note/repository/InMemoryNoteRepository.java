@@ -26,6 +26,13 @@ public class InMemoryNoteRepository implements NoteRepository {
     }
 
     @Override
+    public List<Note> findAllWithAuthor(UUID authorId) {
+        return notes.values().stream()
+                .filter(note -> note.getAuthorId().equals(authorId))
+                .toList();
+    }
+
+    @Override
     public Optional<Note> findById(UUID id) {
         return Optional.ofNullable(notes.get(id));
     }

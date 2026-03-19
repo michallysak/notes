@@ -26,30 +26,33 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
-    public List<NoteValue> getCreatedNotes() {
-        return noteRepository.findAll().stream().map(NoteValue::from).toList();
+    public List<NoteValue> getCreatedNotes(UUID authorId) {
+        return noteRepository.findAllWithAuthor(authorId).stream()
+                .peek(note -> note.read(authorId))
+                .map(NoteValue::from)
+                .toList();
     }
 
     @Override
-    public NoteValue getCreatedNote(UUID noteId) throws NoteNotFoundException {
+    public NoteValue getCreatedNote(UUID noteId, UUID authorId) throws NoteNotFoundException {
         Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
+        note.read(authorId);
         return NoteValue.from(note);
     }
 
     @Override
-    public NoteValue updateNote(UUID id, NoteUpdate noteUpdate) {
-        Note note = noteRepository.findById(id).orElseThrow(NoteNotFoundException::new);
+    public NoteValue updateNote(UUID noteId, NoteUpdate noteUpdate) throws NoteNotFoundException {
+        Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
         note.update(noteUpdate);
         noteRepository.save(note);
         return NoteValue.from(note);
     }
 
     @Override
-    public void deleteNote(UUID noteId) {
-        boolean deleted = noteRepository.deleteById(noteId);
-        if (!deleted) {
-            throw new NoteNotFoundException();
-        }
+    public void deleteNote(UUID noteId, UUID actingUserId) throws NoteNotFoundException {
+        Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
+        note.delete(actingUserId);
+        noteRepository.deleteById(noteId);
     }
 
 

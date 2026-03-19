@@ -70,7 +70,7 @@ public class CliNotePresenter implements Presenter {
     }
 
     private void listNotes() {
-        List<NoteValue> notes = noteService.getCreatedNotes();
+        List<NoteValue> notes = noteService.getCreatedNotes(authorId);
         if (notes.isEmpty()) {
             io.println("No notes found.");
         } else {
@@ -80,20 +80,25 @@ public class CliNotePresenter implements Presenter {
 
     private void getNote() {
         UUID id = promptId();
-        NoteValue note = noteService.getCreatedNote(id);
+        NoteValue note = noteService.getCreatedNote(id, authorId);
         io.println(note.toString());
     }
 
     private void updateNote() {
         UUID id = promptId();
-        NoteUpdate noteUpdate = new NoteUpdate(promptTitle(), promptContent(), promptPinned());
+        NoteUpdate noteUpdate = NoteUpdate.builder()
+                .title(promptTitle())
+                .content(promptContent())
+                .pinned(promptPinned())
+                .actingUserId(authorId)
+                .build();
         NoteValue note = noteService.updateNote(id, noteUpdate);
         io.println("Updated: " + note);
     }
 
     private void deleteNote() {
         UUID id = promptId();
-        noteService.deleteNote(id);
+        noteService.deleteNote(id, authorId);
         io.println("Deleted note with id: " + id);
     }
 

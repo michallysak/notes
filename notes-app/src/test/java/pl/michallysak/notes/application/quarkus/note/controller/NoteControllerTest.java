@@ -63,7 +63,7 @@ class NoteControllerTest {
         NoteResponse response1 = mock(NoteResponse.class);
         NoteResponse response2 = mock(NoteResponse.class);
         List<NoteValue> noteValues = Arrays.asList(noteValue1, noteValue2);
-        when(noteService.getCreatedNotes()).thenReturn(noteValues);
+        when(noteService.getCreatedNotes(AUTHOR_ID)).thenReturn(noteValues);
         when(noteMapper.mapToNoteResponse(noteValue1)).thenReturn(response1);
         when(noteMapper.mapToNoteResponse(noteValue2)).thenReturn(response2);
         // when
@@ -72,7 +72,7 @@ class NoteControllerTest {
         assertEquals(2, result.size());
         assertTrue(result.contains(response1));
         assertTrue(result.contains(response2));
-        verify(noteService).getCreatedNotes();
+        verify(noteService).getCreatedNotes(AUTHOR_ID);
         verify(noteMapper).mapToNoteResponse(noteValue1);
         verify(noteMapper).mapToNoteResponse(noteValue2);
     }
@@ -83,13 +83,13 @@ class NoteControllerTest {
         UUID id = UUID.randomUUID();
         NoteValue noteValue = mock(NoteValue.class);
         NoteResponse response = mock(NoteResponse.class);
-        when(noteService.getCreatedNote(id)).thenReturn(noteValue);
+        when(noteService.getCreatedNote(id, AUTHOR_ID)).thenReturn(noteValue);
         when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
         // when
         NoteResponse result = noteController.getNote(id);
         // then
         assertEquals(response, result);
-        verify(noteService).getCreatedNote(id);
+        verify(noteService).getCreatedNote(id, AUTHOR_ID);
         verify(noteMapper).mapToNoteResponse(noteValue);
     }
 
@@ -120,7 +120,7 @@ class NoteControllerTest {
         // when
         noteController.deleteNote(id);
         // then
-        verify(noteService).deleteNote(id);
+        verify(noteService).deleteNote(id, AUTHOR_ID);
     }
 }
 

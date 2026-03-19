@@ -193,7 +193,7 @@ class NoteValidatorImplTest {
         Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
-        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).actingUserId(note.getAuthorId()).build();
         note.update(noteUpdate);
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
@@ -210,7 +210,7 @@ class NoteValidatorImplTest {
         Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
-        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(false).build();
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(false).actingUserId(note.getAuthorId()).build();
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
         // then
@@ -239,9 +239,9 @@ class NoteValidatorImplTest {
         Note note = new NoteImpl(createNote);
         UUID noteId = note.getId();
         // and
-        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).build();
+        NoteUpdate noteUpdate = NoteTestUtils.createNoteUpdateBuilder().pinned(true).actingUserId(note.getAuthorId()).build();
         note.update(noteUpdate);
-        NoteUpdate noteUpdateSecond = NoteTestUtils.createNoteUpdateBuilder().pinned(false).build();
+        NoteUpdate noteUpdateSecond = NoteTestUtils.createNoteUpdateBuilder().pinned(false).actingUserId(note.getAuthorId()).build();
         // when
         Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdateSecond, note);
         // then
