@@ -26,25 +26,58 @@ class NoteMapperTest {
     private final NoteMapper noteMapper = new NoteMapperImpl();
 
     @Test
-    void toNoteUpdate_shouldMapCorrectly() {
+    void mapToNoteUpdate_shouldMapCorrectly() {
         // given
-        NoteUpdateRequest noteUpdateRequest = NoteDtoRequestUtils.createNoteUpdateRequestBuilder().build();
+        NoteUpdateRequest request = NoteDtoRequestUtils.createNoteUpdateRequestBuilder().build();
+        UUID actingUserId = AUTHOR_ID;
         // when
-        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(noteUpdateRequest);
+        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, actingUserId);
         // then
-        assertEquals(noteUpdateRequest.getTitle(), noteUpdate.title());
-        assertEquals(noteUpdateRequest.getContent(), noteUpdate.content());
-        assertEquals(noteUpdateRequest.getPinned(), noteUpdate.pinned());
+        assertEquals(request.getTitle(), noteUpdate.title());
+        assertEquals(request.getContent(), noteUpdate.content());
+        assertEquals(request.getPinned(), noteUpdate.pinned());
+        assertEquals(actingUserId, noteUpdate.actingUserId());
     }
 
     @Test
-    void toNoteUpdate_shouldMapCorrectly_whenNull() {
+    void mapToNoteUpdate_shouldReturnNull_whenRequestAndActingUserIdNull() {
         // given
-        NoteUpdateRequest value = null;
+        NoteUpdateRequest request = null;
+        UUID actingUserId = null;
         // when
-        NoteUpdate noteResponse = noteMapper.mapToNoteUpdate(value);
+        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, actingUserId);
         // then
-        assertNull(noteResponse);
+        assertNull(noteUpdate);
+    }
+
+    @Test
+    void mapToNoteUpdate_shouldReturnOnlySetActingUserId_whenRequestNullAndValidActingUserId() {
+        // given
+        NoteUpdateRequest request = null;
+        UUID actingUserId = AUTHOR_ID;
+        // when
+        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, actingUserId);
+        // then
+        assertNotNull(noteUpdate);
+        assertEquals(actingUserId, noteUpdate.actingUserId());
+        assertNull(noteUpdate.title());
+        assertNull(noteUpdate.content());
+        assertNull(noteUpdate.pinned());
+    }
+
+    @Test
+    void mapToNoteUpdate_shouldReturnOnlySetTitleAndContentAndPinned_whenRequestValidAndActingUserIdNull() {
+        // given
+        NoteUpdateRequest request = NoteDtoRequestUtils.createNoteUpdateRequestBuilder().build();
+        UUID actingUserId = null;
+        // when
+        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, actingUserId);
+        // then
+        assertNotNull(noteUpdate);
+        assertNull(noteUpdate.actingUserId());
+        assertEquals(request.getTitle(), noteUpdate.title());
+        assertEquals(request.getContent(), noteUpdate.content());
+        assertEquals(request.getPinned(), noteUpdate.pinned());
     }
 
     @Test
@@ -133,4 +166,5 @@ class NoteMapperTest {
         assertNotNull(createNote.title());
         assertNotNull(createNote.content());
     }
+
 }

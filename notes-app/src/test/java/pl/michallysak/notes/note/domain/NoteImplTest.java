@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class NoteImplTest {
     @Test
-    void create_shouldInitializeFieldsCorrectly() {
+    void constructor_shouldInitializeFieldsCorrectly() {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         // when

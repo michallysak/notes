@@ -16,10 +16,15 @@ public final class TestExtensions {
     }
 
     public static Stream<String> textsWithLength(int length) {
+        return textsWithLength(length, '*');
+    }
+
+    public static Stream<String> textsWithLength(int length, char repeated) {
         if (length <= 0) {
             return Stream.empty();
         }
-        return Stream.of("*".repeat(length));
+        var repeatedString = String.valueOf(repeated);
+        return Stream.of(repeatedString.repeat(length));
     }
 
     @SneakyThrows

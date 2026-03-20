@@ -134,8 +134,7 @@ class InMemoryNoteRepositoryTest {
     }
 
     private NoteRepository createNoteRepository(Note... notes) {
-        Map<UUID, Note> initialNotes = Arrays.stream(notes).collect(Collectors.toMap(Note::getId, n -> n));
-        return new InMemoryNoteRepository(initialNotes);
+        return new InMemoryNoteRepository(Arrays.asList(notes));
     }
 
     private Note createNote() {

@@ -1,0 +1,63 @@
+package pl.michallysak.notes.user.repository;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.user.UserTestUtils;
+import pl.michallysak.notes.user.domain.User;
+import pl.michallysak.notes.user.domain.UserImpl;
+import pl.michallysak.notes.user.validator.UserValidator;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
+class InMemoryUserRepositoryTest {
+
+    @Mock
+    private UserValidator userValidator;
+
+    @Test
+    void findById_shouldReturnEmpty_whenNoExists() {
+        // given
+        UserRepository userRepository = new InMemoryUserRepository();
+        UUID randomId = UUID.randomUUID();
+        // when
+        Optional<User> userOptional = userRepository.findById(randomId);
+        // then
+        assertTrue(userOptional.isEmpty());
+    }
+
+    @Test
+    void findById_shouldReturnIt_whenExists() {
+        // given
+        User user = new UserImpl(UserTestUtils.createCreateUserBuilder().build(), userValidator);
+        UserRepository userRepository = new InMemoryUserRepository(Collections.singletonList(user));
+        // when
+        Optional<User> userOptional = userRepository.findById(user.getId());
+        // then
+        assertTrue(userOptional.isPresent());
+        User userFromRepository = userOptional.get();
+        assertEquals(user.getId(), userFromRepository.getId());
+        assertEquals(user.getEmail(), userFromRepository.getEmail());
+    }
+
+    @Test
+    void save_shouldPersistUser() {
+        // given
+        UserRepository userRepository = new InMemoryUserRepository();
+        User user = new UserImpl(UserTestUtils.createCreateUserBuilder().build(), userValidator);
+        // when
+        userRepository.save(user);
+        // then
+        Optional<User> foundUser = userRepository.findById(user.getId());
+        assertTrue(foundUser.isPresent());
+        assertEquals(user.getId(), foundUser.get().getId());
+        assertEquals(user.getEmail(), foundUser.get().getEmail());
+    }
+}

@@ -41,7 +41,7 @@ public class NoteController {
     }
 
     public NoteResponse updateNote(UUID id, NoteUpdateRequest request) {
-        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request);
+        NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, authorId);
         NoteValue noteValue = noteService.updateNote(id, noteUpdate);
         return noteMapper.mapToNoteResponse(noteValue);
     }

@@ -1,8 +1,11 @@
 package pl.michallysak.notes.note.repository;
 
 import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.user.domain.User;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class InMemoryNoteRepository implements NoteRepository {
     private final Map<UUID, Note> notes;
@@ -11,8 +14,9 @@ public class InMemoryNoteRepository implements NoteRepository {
         notes = new HashMap<>();
     }
 
-    public InMemoryNoteRepository(Map<UUID, Note> initialNotes) {
-        this.notes = new HashMap<>(initialNotes);
+    public InMemoryNoteRepository(List<Note> initialNotes) {
+        this.notes = initialNotes.stream()
+                .collect(Collectors.toMap(Note::getId, Function.identity()));
     }
 
     @Override

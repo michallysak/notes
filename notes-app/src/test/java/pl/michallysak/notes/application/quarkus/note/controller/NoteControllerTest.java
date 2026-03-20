@@ -101,14 +101,14 @@ class NoteControllerTest {
         NoteUpdate noteUpdate = mock(NoteUpdate.class);
         NoteValue noteValue = mock(NoteValue.class);
         NoteResponse response = mock(NoteResponse.class);
-        when(noteMapper.mapToNoteUpdate(request)).thenReturn(noteUpdate);
+        when(noteMapper.mapToNoteUpdate(request, AUTHOR_ID)).thenReturn(noteUpdate);
         when(noteService.updateNote(id, noteUpdate)).thenReturn(noteValue);
         when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
         // when
         NoteResponse result = noteController.updateNote(id, request);
         // then
         assertEquals(response, result);
-        verify(noteMapper).mapToNoteUpdate(request);
+        verify(noteMapper).mapToNoteUpdate(request, AUTHOR_ID);
         verify(noteService).updateNote(id, noteUpdate);
         verify(noteMapper).mapToNoteResponse(noteValue);
     }

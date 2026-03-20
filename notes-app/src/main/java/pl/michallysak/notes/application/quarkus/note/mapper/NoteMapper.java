@@ -16,7 +16,7 @@ import java.util.UUID;
 public interface NoteMapper {
     CreateNote mapToCreateNote(CreateNoteRequest createNoteRequest, UUID authorId);
 
-    NoteUpdate mapToNoteUpdate(NoteUpdateRequest noteUpdateRequest);
+    NoteUpdate mapToNoteUpdate(NoteUpdateRequest noteUpdateRequest, UUID actingUserId);
 
     NoteResponse mapToNoteResponse(NoteValue noteValue);
 
