@@ -2,9 +2,7 @@ package pl.michallysak.notes.application.quarkus.note.domain;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -12,22 +10,20 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.user.service.CurrentUserProvider;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @ApplicationScoped
 @RequiredArgsConstructor
 public class NoteBeans {
-
-    private static final UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private final Logger logger;
 
     @Produces
-    @Dependent
-    @Named("authorId")
-    public UUID authorId() {
-        return AUTHOR_ID;
+    @ApplicationScoped
+    public CurrentUserProvider currentUserProvider() {
+        return new NoAuthCurrentUserProvider();
     }
 
     @Produces

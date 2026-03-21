@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public interface User {
     UUID getId();
+
     Email getEmail();
 }
 

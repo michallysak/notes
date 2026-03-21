@@ -15,9 +15,10 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.user.service.CurrentUserProvider;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,13 +36,11 @@ class NoteBeansTest {
     NoteBeans noteBeans;
 
     @Test
-    void authorId_shouldReturnExpectedUUID() {
-        // given
-        UUID expected = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    void currentUserProvider_shouldReturnInstanceOfNoAuthCurrentUserProvider() {
         // when
-        UUID authorId = noteBeans.authorId();
+        CurrentUserProvider currentUserProvider = noteBeans.currentUserProvider();
         // then
-        assertEquals(expected, authorId);
+        assertInstanceOf(NoAuthCurrentUserProvider.class, currentUserProvider);
     }
 
     @Test

@@ -14,6 +14,7 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.repository.NoteRepository;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,7 @@ class NoteServiceImplTest {
     @InjectMocks
     private NoteServiceImpl service;
 
-    private static final UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID AUTHOR_ID = new NoAuthCurrentUserProvider().getCurrentUserId();
 
     @Test
     void createNote_shouldValidateAndSave() {

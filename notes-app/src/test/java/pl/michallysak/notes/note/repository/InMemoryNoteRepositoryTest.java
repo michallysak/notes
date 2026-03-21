@@ -7,8 +7,10 @@ import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -120,8 +122,8 @@ class InMemoryNoteRepositoryTest {
     @Test
     void findAllWithAuthor_shouldReturnOnlyNotesWithGivenAuthor() {
         // given
-        UUID author1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        UUID author2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        UUID author1 = UUID.randomUUID();
+        UUID author2 = UUID.randomUUID();
         Note note1 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());
         Note note2 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author2).build());
         Note note3 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());

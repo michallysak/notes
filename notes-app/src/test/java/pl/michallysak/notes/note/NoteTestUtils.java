@@ -7,10 +7,11 @@ import pl.michallysak.notes.note.model.NoteValue;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 public class NoteTestUtils {
 
-    private final static UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private final static UUID AUTHOR_ID = new NoAuthCurrentUserProvider().getCurrentUserId();
 
     public static CreateNote.CreateNoteBuilder createCreateNoteBuilder() {
         return CreateNote.builder()

@@ -9,21 +9,20 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.user.service.CurrentUserProvider;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 public class NoteBeans {
-    private final static UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
     private final List<String> arguments;
     private final IO<String> io;
-
     private NoteService noteServiceInstance;
     private CliNotePresenter notePresenterInstance;
     private NoteRepository noteRepositoryInstance;
     private Presenter rootPresenterInstance;
+    private CurrentUserProvider currentUserProvider;
 
     public NoteBeans(String[] arguments) {
         this.arguments = Arrays.asList(arguments);
@@ -34,8 +33,11 @@ public class NoteBeans {
         return io;
     }
 
-    public UUID getAuthorId() {
-        return AUTHOR_ID;
+    public CurrentUserProvider currentUserProvider() {
+        if (currentUserProvider == null) {
+            currentUserProvider = new NoAuthCurrentUserProvider();
+        }
+        return currentUserProvider;
     }
 
     public Presenter rootPresenter() {
@@ -47,7 +49,7 @@ public class NoteBeans {
 
     public CliNotePresenter notePresenter() {
         if (notePresenterInstance == null) {
-            notePresenterInstance = new CliNotePresenter(io, noteService(), AUTHOR_ID);
+            notePresenterInstance = new CliNotePresenter(io, noteService(), currentUserProvider());
         }
         return notePresenterInstance;
     }

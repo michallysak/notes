@@ -2,7 +2,6 @@ package pl.michallysak.notes.application.cli.note.beans;
 
 import org.junit.jupiter.api.Test;
 import pl.michallysak.notes.application.cli.io.ConsoleIO;
-import pl.michallysak.notes.application.cli.io.IO;
 import pl.michallysak.notes.application.cli.note.presenter.CliNotePresenter;
 import pl.michallysak.notes.application.cli.presenter.Presenter;
 import pl.michallysak.notes.application.cli.presenter.RootPresenter;
@@ -10,8 +9,8 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
-
-import java.util.UUID;
+import pl.michallysak.notes.user.service.CurrentUserProvider;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -65,14 +64,41 @@ class NoteBeansTest {
 
     @Test
     void console_shouldReturnNonNullIO() {
+        // when
         NoteBeans noteBeans = new NoteBeans(new String[]{});
+        // then
         assertInstanceOf(ConsoleIO.class, noteBeans.console());
     }
 
     @Test
-    void getAuthorId_shouldReturnStaticUUID() {
+    void getCurrentUserProvider_shouldBeSingleton() {
+        // given
         NoteBeans noteBeans = new NoteBeans(new String[]{});
-        UUID expected = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        org.junit.jupiter.api.Assertions.assertEquals(expected, noteBeans.getAuthorId());
+        // when
+        CurrentUserProvider currentUserProvider1 = noteBeans.currentUserProvider();
+        CurrentUserProvider currentUserProvider2 = noteBeans.currentUserProvider();
+        // then
+        assertSame(currentUserProvider1, currentUserProvider2);
+        assertInstanceOf(NoAuthCurrentUserProvider.class, currentUserProvider1);
+    }
+
+    @Test
+    void noteRepository_shouldUseInMemory_whenPersistenceFlagProvided() {
+        // given
+        NoteBeans noteBeans = new NoteBeans(new String[]{"--persistence=in-memory"});
+        // when
+        NoteRepository noteRepository = noteBeans.noteRepository();
+        // then
+        assertInstanceOf(InMemoryNoteRepository.class, noteRepository);
+    }
+
+    @Test
+    void noteRepository_shouldUseInMemory_whenNoPersistenceFlagProvided() {
+        // given
+        NoteBeans noteBeans = new NoteBeans(new String[]{});
+        // when
+        NoteRepository noteRepository = noteBeans.noteRepository();
+        // then
+        assertInstanceOf(InMemoryNoteRepository.class, noteRepository);
     }
 }

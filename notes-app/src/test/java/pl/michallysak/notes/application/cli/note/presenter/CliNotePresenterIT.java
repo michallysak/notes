@@ -11,6 +11,7 @@ import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
 
 import java.util.UUID;
+import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CliNotePresenterIT {
 
-    private static final UUID AUTHOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID AUTHOR_ID = new NoAuthCurrentUserProvider().getCurrentUserId();
     private final InMemoryNoteRepository noteRepository = new InMemoryNoteRepository();
     private final NoteService noteService = new NoteServiceImpl(noteRepository);
 

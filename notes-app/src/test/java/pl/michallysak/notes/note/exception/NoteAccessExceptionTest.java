@@ -11,8 +11,8 @@ class NoteAccessExceptionTest {
     @Test
     void constructor_shouldSetMessage() {
         // given
-        UUID noteId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        UUID noteId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         // when
         NoteAccessException noteAccessException = new NoteAccessException(noteId, userId);
         // then

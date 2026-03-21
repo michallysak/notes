@@ -1,6 +1,5 @@
 package pl.michallysak.notes.application.cli.note.presenter;
 
-import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.cli.io.IO;
 import pl.michallysak.notes.application.cli.presenter.Presenter;
 import pl.michallysak.notes.common.validator.TextRange;
@@ -8,11 +7,11 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.service.NoteService;
+import pl.michallysak.notes.user.service.CurrentUserProvider;
 
 import java.util.List;
 import java.util.UUID;
 
-@RequiredArgsConstructor
 public class CliNotePresenter implements Presenter {
     private final static TextRange TITLE_LENGTH_RANGE = TextRange.of(3, 64);
     private final static TextRange CONTENT_LENGTH_RANGE = TextRange.of(0, 2048);
@@ -22,6 +21,12 @@ public class CliNotePresenter implements Presenter {
     private final IO<String> io;
     private final NoteService noteService;
     private final UUID authorId;
+
+    public CliNotePresenter(IO<String> io, NoteService noteService, CurrentUserProvider currentUserProvider) {
+        this.io = io;
+        this.noteService = noteService;
+        this.authorId = currentUserProvider.getCurrentUserId();
+    }
 
     @Override
     public void present() {

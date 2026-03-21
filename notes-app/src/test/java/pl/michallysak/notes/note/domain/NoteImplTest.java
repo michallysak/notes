@@ -162,7 +162,7 @@ class NoteImplTest {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = new NoteImpl(createNote);
-        UUID notAuthorId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        UUID notAuthorId = UUID.randomUUID();
         NoteUpdate noteUpdate = NoteUpdate.builder()
                 .title("newTitle")
                 .content("newContent")
@@ -180,7 +180,7 @@ class NoteImplTest {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = new NoteImpl(createNote);
-        UUID notAuthorId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        UUID notAuthorId = UUID.randomUUID();
         // when
         Executable executable = () -> note.delete(notAuthorId);
         // then
@@ -192,7 +192,7 @@ class NoteImplTest {
         // given
         CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
         Note note = new NoteImpl(createNote);
-        UUID notAuthorId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        UUID notAuthorId = UUID.randomUUID();
         // when
         Executable executable = () -> note.read(notAuthorId);
         // then
