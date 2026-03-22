@@ -10,8 +10,8 @@ The application is structured into four main layers:
    - **Validators** (e.g., `NoteValidator`): Ensure entities adhere to business rules (e.g., title must not be empty).
    - **Services** (e.g., `NoteService`): Orchestrate domain, persistence, and presentation layers.
 2. **Persistence Layer**: Implements data storage and retrieval (e.g., `NoteRepository`).
-3. **Controller Layer**: Handles incoming requests and coordinates between the presentation and domain layers. (TBD)
-4. **Presentation Layer**: User interface components. *(TBD)*
+3. **Controller Layer**: Handles incoming requests and coordinates between the presentation and domain layers. (e.g., `NoteController`).
+4. **Presentation Layer**: User interface components. *(e.g. `NotePresenter`, `NoteResource`)*
 
 ### Diagram
 
