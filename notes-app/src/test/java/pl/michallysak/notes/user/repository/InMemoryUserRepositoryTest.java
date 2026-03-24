@@ -10,11 +10,11 @@ import pl.michallysak.notes.user.domain.UserImpl;
 import pl.michallysak.notes.user.validator.UserValidator;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import pl.michallysak.notes.common.Email;
 
 @ExtendWith(MockitoExtension.class)
 class InMemoryUserRepositoryTest {
@@ -36,7 +36,7 @@ class InMemoryUserRepositoryTest {
     @Test
     void findById_shouldReturnIt_whenExists() {
         // given
-        User user = new UserImpl(UserTestUtils.createCreateUserBuilder().build(), userValidator);
+        User user = new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
         UserRepository userRepository = new InMemoryUserRepository(Collections.singletonList(user));
         // when
         Optional<User> userOptional = userRepository.findById(user.getId());
@@ -51,7 +51,7 @@ class InMemoryUserRepositoryTest {
     void save_shouldPersistUser() {
         // given
         UserRepository userRepository = new InMemoryUserRepository();
-        User user = new UserImpl(UserTestUtils.createCreateUserBuilder().build(), userValidator);
+        User user = new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
         // when
         userRepository.save(user);
         // then
@@ -59,5 +59,63 @@ class InMemoryUserRepositoryTest {
         assertTrue(foundUser.isPresent());
         assertEquals(user.getId(), foundUser.get().getId());
         assertEquals(user.getEmail(), foundUser.get().getEmail());
+    }
+
+    @Test
+    void findByEmail_shouldReturnUser_whenExists() {
+        // given
+        UserRepository userRepository = new InMemoryUserRepository();
+        User user = new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
+        // when
+        userRepository.save(user);
+        // then
+        assertTrue(userRepository.findByEmail(user.getEmail()).isPresent());
+    }
+
+    @Test
+    void findByEmail_shouldReturnEmpty_whenNotExists() {
+        // given
+        UserRepository userRepository = new InMemoryUserRepository();
+        // when
+        Optional<User> user = userRepository.findByEmail(Email.of("notfound@example.com"));
+        // then
+        assertTrue(user.isEmpty());
+    }
+
+    @Test
+    void existsByEmail_shouldReturnTrue_whenExists() {
+        // given
+        UserRepository userRepository = new InMemoryUserRepository();
+        User user = new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
+        // when
+        userRepository.save(user);
+        // then
+        assertTrue(userRepository.existsByEmail(user.getEmail()));
+    }
+
+    @Test
+    void existsByEmail_shouldReturnFalse_whenNotExists() {
+        // given
+        UserRepository userRepository = new InMemoryUserRepository();
+        // when
+        boolean condition = userRepository.existsByEmail(Email.of("notfound@example.com"));
+        // then
+        assertFalse(condition);
+    }
+
+    @Test
+    void save_shouldNotOverwriteExistingUser() {
+        // given
+        User user = new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
+        UserRepository userRepository = new InMemoryUserRepository();
+        userRepository.save(user);
+        User user2 = new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator) {
+            @Override public UUID getId() { return user.getId(); }
+        };
+        // when
+        userRepository.save(user2);
+        Optional<User> found = userRepository.findById(user.getId());
+        assertTrue(found.isPresent());
+        assertSame(user, found.get());
     }
 }

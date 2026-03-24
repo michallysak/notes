@@ -7,6 +7,8 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import pl.michallysak.notes.common.exception.ValidationException;
 
+import java.util.regex.Pattern;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class CommonValidatorTest {
@@ -61,6 +63,31 @@ class CommonValidatorTest {
         // then
         ValidationException validationException = assertThrows(ValidationException.class, executable);
         assertEquals(message, validationException.getMessage());
+    }
+
+    @Test
+    void throwOnNotMatch_shouldThrow_whenPatternDoesNotMatch() {
+        // given
+        String text = "abc";
+        Pattern pattern = Pattern.compile("\\d+");
+        String message = "Text must be digits";
+        // when
+        Executable executable = () -> commonValidator.throwOnNotMatch(text, pattern, message);
+        // then
+        ValidationException exception = assertThrows(ValidationException.class, executable);
+        assertEquals(message, exception.getMessage());
+    }
+
+    @Test
+    void throwOnNotMatch_shouldNotThrow_whenPatternMatches() {
+        // given
+        String text = "12345";
+        Pattern pattern = Pattern.compile("\\d+");
+        String message = "Text must be digits";
+        // when
+        Executable executable = () -> commonValidator.throwOnNotMatch(text, pattern, message);
+        // then
+        assertDoesNotThrow(executable);
     }
 
 }

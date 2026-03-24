@@ -8,9 +8,9 @@ class UserNotFoundExceptionTest {
     @Test
     void defaultMessage_shouldBeUserNotFound() {
         // when
-        UserNotFoundException ex = new UserNotFoundException();
+        UserNotFoundException exception = new UserNotFoundException();
         // then
-        assertEquals("User not found", ex.getMessage());
+        assertEquals("User not found", exception.getMessage());
     }
 }
 

@@ -1,5 +1,6 @@
 package pl.michallysak.notes.user.repository;
 
+import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.user.domain.User;
 
 import java.util.*;
@@ -20,12 +21,27 @@ public class InMemoryUserRepository implements UserRepository {
 
     @Override
     public void save(User user) {
-        users.put(user.getId(), user);
+        if (!users.containsKey(user.getId())) {
+            users.put(user.getId(), user);
+        }
     }
 
     @Override
     public Optional<User> findById(UUID id) {
         return Optional.ofNullable(users.get(id));
+    }
+
+    @Override
+    public boolean existsByEmail(Email email) {
+        return users.values().stream()
+                .anyMatch(user -> user.getEmail().equals(email));
+    }
+
+    @Override
+    public Optional<User> findByEmail(Email email) {
+        return users.values().stream()
+                .filter(user -> user.getEmail().equals(email))
+                .findFirst();
     }
 
 }

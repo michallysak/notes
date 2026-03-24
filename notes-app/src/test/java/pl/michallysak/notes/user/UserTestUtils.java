@@ -1,16 +1,17 @@
 package pl.michallysak.notes.user;
 
+import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
-import pl.michallysak.notes.user.model.CreateUser;
-import pl.michallysak.notes.user.model.UserValue;
+import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 
 public class UserTestUtils {
-    private static final String DEFAULT_EMAIL = "test@example.com";
-    private static final String PASSWORD = "password";
+    private static final Email DEFAULT_EMAIL = Email.of("test@example.com");
+    private static final Password PASSWORD = Password.of("Password123!");
 
-    public static CreateUser.CreateUserBuilder createCreateUserBuilder() {
-        return CreateUser.builder().email(Email.of(DEFAULT_EMAIL)).password(PASSWORD);
+    public static EmailPasswordCreateUser.EmailPasswordCreateUserBuilder createEmailPasswordCreateUserBuilder() {
+        return EmailPasswordCreateUser.builder()
+                .email(DEFAULT_EMAIL)
+                .password(PASSWORD);
     }
 
 }
-

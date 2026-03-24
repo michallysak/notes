@@ -1,9 +1,9 @@
 package pl.michallysak.notes.user.validator;
 
 import pl.michallysak.notes.common.exception.ValidationException;
-import pl.michallysak.notes.user.model.CreateUser;
+import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 
 public interface UserValidator {
-    void validateCreateUser(CreateUser createUser) throws ValidationException;
+    void validateCreateUser(EmailPasswordCreateUser createUser) throws ValidationException;
 }
 

@@ -9,9 +9,9 @@ class NoteNotFoundExceptionTest {
     @Test
     void constructor_shouldSetMessage() {
         // when
-        NoteNotFoundException ex = new NoteNotFoundException();
+        NoteNotFoundException exception = new NoteNotFoundException();
         // then
-        assertEquals("Note not found", ex.getMessage());
+        assertEquals("Note not found", exception.getMessage());
     }
 
 }

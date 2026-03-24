@@ -77,4 +77,20 @@ class TextRangeTest {
         assertEquals("[1, 5]", range.toString());
     }
 
+    @Test
+    void getMin_shouldReturnMin() {
+        // when
+        TextRange range = TextRange.of(2, 7);
+        // then
+        assertEquals(2, range.getMin());
+    }
+
+    @Test
+    void getMax_shouldReturnMax() {
+        // when
+        TextRange range = TextRange.of(2, 7);
+        // then
+        assertEquals(7, range.getMax());
+    }
+
 }

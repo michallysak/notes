@@ -20,8 +20,8 @@ class UserValueTest {
     @Test
     void from_shouldMapUserFieldsCorrectly() {
         // given
-        CreateUser createUser = UserTestUtils.createCreateUserBuilder().build();
-        User user = new UserImpl(createUser, userValidator);
+        EmailPasswordCreateUser emailPasswordCreateUser = UserTestUtils.createEmailPasswordCreateUserBuilder().build();
+        User user = new UserImpl(emailPasswordCreateUser, userValidator);
         // when
         UserValue value = UserValue.from(user);
         // then
