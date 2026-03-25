@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.application.quarkus.user.domain.UserBeans;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
@@ -35,13 +36,6 @@ class NoteBeansTest {
     @InjectMocks
     NoteBeans noteBeans;
 
-    @Test
-    void currentUserProvider_shouldReturnInstanceOfNoAuthCurrentUserProvider() {
-        // when
-        CurrentUserProvider currentUserProvider = noteBeans.currentUserProvider();
-        // then
-        assertInstanceOf(NoAuthCurrentUserProvider.class, currentUserProvider);
-    }
 
     @Test
     void noteRepository_shouldReturnInMemoryNoteRepository_whenGetPersistenceReturnEmptyString() {

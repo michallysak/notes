@@ -1,6 +1,8 @@
 package pl.michallysak.notes.user.exception;
 
-public class UserNotFoundException extends RuntimeException {
+import pl.michallysak.notes.common.exception.EntityNotFoundException;
+
+public class UserNotFoundException extends EntityNotFoundException {
     public UserNotFoundException() {
         super("User not found");
     }

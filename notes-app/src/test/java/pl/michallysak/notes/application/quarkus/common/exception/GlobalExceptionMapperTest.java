@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
+import pl.michallysak.notes.auth.exception.AuthException;
 import pl.michallysak.notes.common.exception.EntityNotFoundException;
 import pl.michallysak.notes.common.exception.ValidationException;
 
@@ -72,5 +73,21 @@ class GlobalExceptionMapperTest {
         assertInstanceOf(ErrorResponse.class, entity);
         ErrorResponse error = (ErrorResponse) entity;
         assertEquals("validation failed", error.getMessage());
+    }
+
+    @Test
+    @SuppressWarnings("resource")
+    void toResponse_shouldReturnValidErrorResponse_whenAuthException() {
+        // given
+        AuthException exception = new AuthException("unauthorized");
+        // when
+        Response response = globalExceptionMapper.toResponse(exception);
+        // then
+        assertEquals(Response.Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
+        Object entity = response.getEntity();
+        // and
+        assertInstanceOf(ErrorResponse.class, entity);
+        ErrorResponse error = (ErrorResponse) entity;
+        assertEquals("unauthorized", error.getMessage());
     }
 }

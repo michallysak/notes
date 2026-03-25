@@ -23,7 +23,7 @@ public final class TestExtensions {
         if (length <= 0) {
             return Stream.empty();
         }
-        var repeatedString = String.valueOf(repeated);
+        String repeatedString = String.valueOf(repeated);
         return Stream.of(repeatedString.repeat(length));
     }
 

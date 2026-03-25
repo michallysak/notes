@@ -10,8 +10,6 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
-import pl.michallysak.notes.user.service.CurrentUserProvider;
-import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 import java.util.Optional;
 
@@ -19,12 +17,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class NoteBeans {
     private final Logger logger;
-
-    @Produces
-    @ApplicationScoped
-    public CurrentUserProvider currentUserProvider() {
-        return new NoAuthCurrentUserProvider();
-    }
 
     @Produces
     @ApplicationScoped

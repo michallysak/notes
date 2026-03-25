@@ -1,3 +1,4 @@
 .idea
-
 /notes-app/target
+*.env
+*.pem

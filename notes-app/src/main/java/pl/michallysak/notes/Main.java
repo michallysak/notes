@@ -5,19 +5,25 @@ import pl.michallysak.notes.application.cli.CliNotesApp;
 import pl.michallysak.notes.application.quarkus.QuarkusNotesApp;
 
 public class Main {
-    public static void main(String[] args) {
-        createNoteApp(args).start();
+  public static void main(String[] args) {
+    try {
+      createNoteApp(args).start();
+    } catch (IllegalArgumentException e) {
+      System.out.println("Usage: java -jar notes-app.jar [--cli|--quarkus]");
+      System.exit(1);
     }
+  }
 
-    private static NotesApplication createNoteApp(String[] args) {
-        if (args.length > 0 && "--cli".equalsIgnoreCase(args[0])) {
-            return new CliNotesApp(args);
-        }
-        if (args.length > 0 && "--quarkus".equalsIgnoreCase(args[0])) {
-            return new QuarkusNotesApp();
-        }
-        System.out.println("Usage: java -jar notes-app.jar [--cli|--quarkus]");
-        System.exit(1);
-        throw new IllegalStateException();
+  static NotesApplication createNoteApp(String[] args) {
+    if (args.length == 0) {
+      throw new IllegalArgumentException("No arguments provided");
     }
+    if ("--cli".equalsIgnoreCase(args[0])) {
+      return new CliNotesApp(args);
+    }
+    if ("--quarkus".equalsIgnoreCase(args[0])) {
+      return new QuarkusNotesApp();
+    }
+    throw new IllegalArgumentException("Unknown argument: " + args[0]);
+  }
 }

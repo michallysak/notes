@@ -2,6 +2,7 @@ package pl.michallysak.notes.application.quarkus.note.controller;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
+import pl.michallysak.notes.application.quarkus.user.domain.NoAuth;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class NoteController {
     private final NoteService noteService;
     private final NoteMapper noteMapper;
+    @NoAuth
     private final CurrentUserProvider currentUserProvider;
 
     public NoteResponse createNote(CreateNoteRequest request) {

@@ -37,6 +37,8 @@ mvn clean package
 To run app you can use the following implementations README.md file:
 - **CLI Note App**
 A simple command-line interface for managing notes. [docs/cli/README.md](docs/cli/README.md)
+- **Quarkus Note App**
+A rest api interface for managing notes build with Quarkus. [docs/quarkus/README.md](docs/quarkus/README.md)
 
 
 ## License
