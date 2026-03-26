@@ -5,9 +5,9 @@ import pl.michallysak.notes.auth.model.Password;
 
 public interface PasswordPolicy {
 
-    boolean isUpToDate(PasswordCredential credential);
+  boolean isUpToDate(PasswordCredential credential);
 
-    PasswordCredential hash(Password password);
+  PasswordCredential hash(Password password);
 
-    boolean verifyPassword(Password password, PasswordCredential credential);
+  boolean verifyPassword(Password password, PasswordCredential credential);
 }

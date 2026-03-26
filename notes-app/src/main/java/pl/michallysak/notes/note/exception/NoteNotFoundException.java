@@ -4,7 +4,7 @@ import pl.michallysak.notes.common.exception.EntityNotFoundException;
 
 public class NoteNotFoundException extends EntityNotFoundException {
 
-    public NoteNotFoundException() {
-        super("Note not found");
-    }
+  public NoteNotFoundException() {
+    super("Note not found");
+  }
 }

@@ -5,17 +5,17 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface Note extends NoteActions {
-    UUID getId();
+  UUID getId();
 
-    String getTitle();
+  String getTitle();
 
-    String getContent();
+  String getContent();
 
-    OffsetDateTime getCreated();
+  OffsetDateTime getCreated();
 
-    Optional<OffsetDateTime> getUpdated();
+  Optional<OffsetDateTime> getUpdated();
 
-    boolean isPinned();
+  boolean isPinned();
 
-    UUID getAuthorId();
+  UUID getAuthorId();
 }

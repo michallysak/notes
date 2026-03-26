@@ -10,6 +10,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @AllArgsConstructor
 @Schema(description = "Response for error cases")
 public class ErrorResponse {
-    @Schema(description = "Status message", example = "An error occurred while processing the request")
-    private String message;
+  @Schema(
+      description = "Status message",
+      example = "An error occurred while processing the request")
+  private String message;
 }

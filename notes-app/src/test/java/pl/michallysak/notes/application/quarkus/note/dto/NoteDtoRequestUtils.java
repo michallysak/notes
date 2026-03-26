@@ -5,26 +5,21 @@ import java.util.UUID;
 
 public class NoteDtoRequestUtils {
 
-    public static NoteUpdateRequest.NoteUpdateRequestBuilder createNoteUpdateRequestBuilder() {
-        return NoteUpdateRequest.builder()
-                .title("title")
-                .content("content")
-                .pinned(false);
-    }
+  public static NoteUpdateRequest.NoteUpdateRequestBuilder createNoteUpdateRequestBuilder() {
+    return NoteUpdateRequest.builder().title("title").content("content").pinned(false);
+  }
 
-    public static NoteResponse.NoteResponseBuilder getNoteResponseBuilder() {
-        return NoteResponse.builder()
-                .id(UUID.randomUUID())
-                .title("title")
-                .content("content")
-                .created(OffsetDateTime.now())
-                .updated(null)
-                .pinned(false);
-    }
+  public static NoteResponse.NoteResponseBuilder getNoteResponseBuilder() {
+    return NoteResponse.builder()
+        .id(UUID.randomUUID())
+        .title("title")
+        .content("content")
+        .created(OffsetDateTime.now())
+        .updated(null)
+        .pinned(false);
+  }
 
-    public static CreateNoteRequest.CreateNoteRequestBuilder getCreateNoteRequestBuilder() {
-        return CreateNoteRequest.builder()
-                .title("title")
-                .content("content");
-    }
+  public static CreateNoteRequest.CreateNoteRequestBuilder getCreateNoteRequestBuilder() {
+    return CreateNoteRequest.builder().title("title").content("content");
+  }
 }

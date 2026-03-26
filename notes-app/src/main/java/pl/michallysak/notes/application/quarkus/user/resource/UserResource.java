@@ -25,8 +25,7 @@ import pl.michallysak.notes.application.quarkus.user.dto.UserResponse;
     type = SecuritySchemeType.HTTP,
     scheme = "bearer",
     bearerFormat = "JWT",
-    description = "Use /users/login to obtain token and include it in the Authorization"
-)
+    description = "Use /users/login to obtain token and include it in the Authorization")
 @Tag(name = "Users API", description = "Operations on users")
 @Path("/users")
 @Produces(MediaType.APPLICATION_JSON)
@@ -34,36 +33,69 @@ import pl.michallysak.notes.application.quarkus.user.dto.UserResponse;
 @ApplicationScoped
 @RequiredArgsConstructor
 public class UserResource {
-    private final UserController userController;
+  private final UserController userController;
 
-    @POST
-    @Path("/register")
-    @Operation(summary = "Register a new user", operationId = "registerUser", description = "Registers a new user with email and password")
-    @APIResponse(responseCode = "201", description = "User registered", content = @Content(schema = @Schema(implementation = AuthTokenResponse.class)))
-    @APIResponse(responseCode = "400", description = "Invalid request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public AuthTokenResponse register(RegisterUserRequest request) {
-        return userController.register(request);
-    }
+  @POST
+  @Path("/register")
+  @Operation(
+      summary = "Register a new user",
+      operationId = "registerUser",
+      description = "Registers a new user with email and password")
+  @APIResponse(
+      responseCode = "201",
+      description = "User registered",
+      content = @Content(schema = @Schema(implementation = AuthTokenResponse.class)))
+  @APIResponse(
+      responseCode = "400",
+      description = "Invalid request",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public AuthTokenResponse register(RegisterUserRequest request) {
+    return userController.register(request);
+  }
 
-    @POST
-    @Path("/login")
-    @Operation(summary = "Login user", operationId = "loginUser", description = "Logs in a user with email and password")
-    @APIResponse(responseCode = "201", description = "User logged in", content = @Content(schema = @Schema(implementation = AuthTokenResponse.class)))
-    @APIResponse(responseCode = "401", description = "Invalid credential", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @APIResponse(responseCode = "400", description = "Invalid request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public AuthTokenResponse login(LoginUserRequest request) {
-        return userController.login(request);
-    }
+  @POST
+  @Path("/login")
+  @Operation(
+      summary = "Login user",
+      operationId = "loginUser",
+      description = "Logs in a user with email and password")
+  @APIResponse(
+      responseCode = "201",
+      description = "User logged in",
+      content = @Content(schema = @Schema(implementation = AuthTokenResponse.class)))
+  @APIResponse(
+      responseCode = "401",
+      description = "Invalid credential",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "400",
+      description = "Invalid request",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public AuthTokenResponse login(LoginUserRequest request) {
+    return userController.login(request);
+  }
 
-    @GET
-    @Path("/me")
-    @Operation(summary = "Get current user info", operationId = "getCurrentUser", description = "Returns information about the current user")
-    @APIResponse(responseCode = "200", description = "Current user info", content = @Content(schema = @Schema(implementation = UserResponse.class)))
-    @APIResponse(responseCode = "401", description = "Not authorized", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @APIResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @Authenticated
-    @SecurityRequirement(name = "bearerAuth")
-    public UserResponse me() {
-        return userController.me();
-    }
+  @GET
+  @Path("/me")
+  @Operation(
+      summary = "Get current user info",
+      operationId = "getCurrentUser",
+      description = "Returns information about the current user")
+  @APIResponse(
+      responseCode = "200",
+      description = "Current user info",
+      content = @Content(schema = @Schema(implementation = UserResponse.class)))
+  @APIResponse(
+      responseCode = "401",
+      description = "Not authorized",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "404",
+      description = "User not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @Authenticated
+  @SecurityRequirement(name = "bearerAuth")
+  public UserResponse me() {
+    return userController.me();
+  }
 }

@@ -1,5 +1,7 @@
 package pl.michallysak.notes.application.cli.note.beans;
 
+import java.util.Arrays;
+import java.util.List;
 import pl.michallysak.notes.application.cli.io.ConsoleIO;
 import pl.michallysak.notes.application.cli.io.IO;
 import pl.michallysak.notes.application.cli.note.presenter.CliNotePresenter;
@@ -12,65 +14,62 @@ import pl.michallysak.notes.note.service.NoteServiceImpl;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
-import java.util.Arrays;
-import java.util.List;
-
 public class NoteBeans {
-    private final List<String> arguments;
-    private final IO<String> io;
-    private NoteService noteServiceInstance;
-    private CliNotePresenter notePresenterInstance;
-    private NoteRepository noteRepositoryInstance;
-    private Presenter rootPresenterInstance;
-    private CurrentUserProvider currentUserProvider;
+  private final List<String> arguments;
+  private final IO<String> io;
+  private NoteService noteServiceInstance;
+  private CliNotePresenter notePresenterInstance;
+  private NoteRepository noteRepositoryInstance;
+  private Presenter rootPresenterInstance;
+  private CurrentUserProvider currentUserProvider;
 
-    public NoteBeans(String[] arguments) {
-        this.arguments = Arrays.asList(arguments);
-        this.io = new ConsoleIO();
-    }
+  public NoteBeans(String[] arguments) {
+    this.arguments = Arrays.asList(arguments);
+    this.io = new ConsoleIO();
+  }
 
-    public IO<String> console() {
-        return io;
-    }
+  public IO<String> console() {
+    return io;
+  }
 
-    public CurrentUserProvider currentUserProvider() {
-        if (currentUserProvider == null) {
-            currentUserProvider = new NoAuthCurrentUserProvider();
-        }
-        return currentUserProvider;
+  public CurrentUserProvider currentUserProvider() {
+    if (currentUserProvider == null) {
+      currentUserProvider = new NoAuthCurrentUserProvider();
     }
+    return currentUserProvider;
+  }
 
-    public Presenter rootPresenter() {
-        if (rootPresenterInstance == null) {
-            rootPresenterInstance = new RootPresenter(this);
-        }
-        return rootPresenterInstance;
+  public Presenter rootPresenter() {
+    if (rootPresenterInstance == null) {
+      rootPresenterInstance = new RootPresenter(this);
     }
+    return rootPresenterInstance;
+  }
 
-    public CliNotePresenter notePresenter() {
-        if (notePresenterInstance == null) {
-            notePresenterInstance = new CliNotePresenter(io, noteService(), currentUserProvider());
-        }
-        return notePresenterInstance;
+  public CliNotePresenter notePresenter() {
+    if (notePresenterInstance == null) {
+      notePresenterInstance = new CliNotePresenter(io, noteService(), currentUserProvider());
     }
+    return notePresenterInstance;
+  }
 
-    public NoteService noteService() {
-        if (noteServiceInstance == null) {
-            noteServiceInstance = new NoteServiceImpl(noteRepository());
-        }
-        return noteServiceInstance;
+  public NoteService noteService() {
+    if (noteServiceInstance == null) {
+      noteServiceInstance = new NoteServiceImpl(noteRepository());
     }
+    return noteServiceInstance;
+  }
 
-    public NoteRepository noteRepository() {
-        if (noteRepositoryInstance == null) {
-            if (this.arguments.contains("--persistence=in-memory")) {
-                io.println("Using persistence type in-memory");
-                noteRepositoryInstance = new InMemoryNoteRepository();
-            } else {
-                io.println("Persistence type not provided, use in-memory");
-                noteRepositoryInstance = new InMemoryNoteRepository();
-            }
-        }
-        return noteRepositoryInstance;
+  public NoteRepository noteRepository() {
+    if (noteRepositoryInstance == null) {
+      if (this.arguments.contains("--persistence=in-memory")) {
+        io.println("Using persistence type in-memory");
+        noteRepositoryInstance = new InMemoryNoteRepository();
+      } else {
+        io.println("Persistence type not provided, use in-memory");
+        noteRepositoryInstance = new InMemoryNoteRepository();
+      }
     }
+    return noteRepositoryInstance;
+  }
 }

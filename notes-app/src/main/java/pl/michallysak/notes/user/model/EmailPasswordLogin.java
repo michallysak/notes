@@ -5,6 +5,4 @@ import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
 
 @Builder
-public record EmailPasswordLogin(Email email, Password password) {
-
-}
+public record EmailPasswordLogin(Email email, Password password) {}

@@ -5,19 +5,17 @@ import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.NotesApplication;
 import pl.michallysak.notes.application.cli.note.beans.NoteBeans;
 
-
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class CliNotesApp implements NotesApplication {
 
-    private final NoteBeans noteBeans;
+  private final NoteBeans noteBeans;
 
-    public CliNotesApp(String[] args) {
-        noteBeans = new NoteBeans(args);
-    }
+  public CliNotesApp(String[] args) {
+    noteBeans = new NoteBeans(args);
+  }
 
-    @Override
-    public void start() {
-        noteBeans.rootPresenter().present();
-    }
-
+  @Override
+  public void start() {
+    noteBeans.rootPresenter().present();
+  }
 }

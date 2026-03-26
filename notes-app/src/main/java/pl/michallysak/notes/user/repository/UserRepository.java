@@ -1,18 +1,16 @@
 package pl.michallysak.notes.user.repository;
 
+import java.util.Optional;
+import java.util.UUID;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.user.domain.User;
 
-import java.util.Optional;
-import java.util.UUID;
-
 public interface UserRepository {
-    void save(User user);
+  void save(User user);
 
-    Optional<User> findById(UUID id);
+  Optional<User> findById(UUID id);
 
-    boolean existsByEmail(Email email);
+  boolean existsByEmail(Email email);
 
-    Optional<User> findByEmail(Email email);
+  Optional<User> findByEmail(Email email);
 }
-

@@ -10,15 +10,16 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class StatusFilter implements ContainerResponseFilter {
 
-    @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-        if (responseContext.getStatus() != Response.Status.OK.getStatusCode()) {
-            return;
-        }
-        switch (requestContext.getMethod()) {
-            case HttpMethod.DELETE -> responseContext.setStatus(Response.Status.NO_CONTENT.getStatusCode());
-            case HttpMethod.POST -> responseContext.setStatus(Response.Status.CREATED.getStatusCode());
-        }
+  @Override
+  public void filter(
+      ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
+    if (responseContext.getStatus() != Response.Status.OK.getStatusCode()) {
+      return;
     }
-
+    switch (requestContext.getMethod()) {
+      case HttpMethod.DELETE -> responseContext.setStatus(
+          Response.Status.NO_CONTENT.getStatusCode());
+      case HttpMethod.POST -> responseContext.setStatus(Response.Status.CREATED.getStatusCode());
+    }
+  }
 }
