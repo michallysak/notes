@@ -8,7 +8,6 @@ import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
-import pl.michallysak.notes.application.quarkus.user.domain.NoAuth;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
@@ -20,7 +19,7 @@ import pl.michallysak.notes.user.service.CurrentUserProvider;
 public class NoteController {
   private final NoteService noteService;
   private final NoteMapper noteMapper;
-  @NoAuth private final CurrentUserProvider currentUserProvider;
+  private final CurrentUserProvider currentUserProvider;
 
   public NoteResponse createNote(CreateNoteRequest request) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();

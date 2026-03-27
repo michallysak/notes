@@ -16,8 +16,6 @@ import pl.michallysak.notes.auth.validator.PasswordStrengthValidatorImpl;
 import pl.michallysak.notes.user.model.UserValue;
 import pl.michallysak.notes.user.repository.InMemoryUserRepository;
 import pl.michallysak.notes.user.repository.UserRepository;
-import pl.michallysak.notes.user.service.CurrentUserProvider;
-import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 import pl.michallysak.notes.user.service.UserService;
 import pl.michallysak.notes.user.service.UserServiceImpl;
 import pl.michallysak.notes.user.validator.UserValidator;
@@ -29,14 +27,6 @@ class UserBeansTest {
   @Mock Logger logger;
 
   @InjectMocks UserBeans userBeans;
-
-  @Test
-  void currentUserProvider_shouldReturnNoAuthCurrentUserProvider() {
-    // when
-    CurrentUserProvider repo = userBeans.currentUserProvider();
-    // then
-    assertInstanceOf(NoAuthCurrentUserProvider.class, repo);
-  }
 
   @Test
   void userRepository_shouldReturnInMemoryUserRepository() {

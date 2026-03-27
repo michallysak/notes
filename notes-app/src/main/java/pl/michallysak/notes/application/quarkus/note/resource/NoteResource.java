@@ -1,5 +1,6 @@
 package pl.michallysak.notes.application.quarkus.note.resource;
 
+import io.quarkus.security.Authenticated;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -10,8 +11,10 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
+import pl.michallysak.notes.application.quarkus.common.openapi.OpenApiConfig;
 import pl.michallysak.notes.application.quarkus.note.controller.NoteController;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
@@ -23,6 +26,8 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 @Consumes(MediaType.APPLICATION_JSON)
 @ApplicationScoped
 @RequiredArgsConstructor
+@Authenticated
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class NoteResource {
   private final NoteController noteController;
 

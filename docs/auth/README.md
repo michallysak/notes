@@ -1,14 +1,14 @@
 # Authentication & User Business Logic: MoSCoW Plan (as of 2026-03-23)
 
 ## Must Have (core requirements for secure authentication)
-- [ ] User registration and login with unique email and strong password
-- [ ] Secure password verification and storage (e.g. PBKDF2, no legacy types)
-- [ ] Password policy always enforced (registration, security migration)
-- [ ] No user existence leak or sensitive info in login failure or logs
+- [x] User registration and login with unique email and strong password
+- [x] Secure password verification and storage (e.g. PBKDF2, no legacy types)
+- [x] Password policy always enforced (registration, security migration)
+- [x] No user existence leak or sensitive info in login failure or logs
 
 ## Should Have (improvements for security and user experience)
-- [ ] Basic security migration (increase iterations, rehash on login)
-- [ ] Session management (auth tokens, expiration)
+- [x] Basic security migration (increase iterations, rehash on login)
+- [x] Session management (auth tokens, expiration)
 - [ ] User credentials update (change password)
 - [ ] Role-based authorization
 

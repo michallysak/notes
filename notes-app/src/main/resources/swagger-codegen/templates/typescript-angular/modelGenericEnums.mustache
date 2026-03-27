@@ -1,0 +1,16 @@
+{{#hasEnums}}
+
+export namespace {{classname}} {
+{{#vars}}
+    {{#isEnum}}
+    export type {{enumName}} = {{#allowableValues}}{{#enumVars}}{{{value}}}{{#unless @last}} | {{/unless}}{{/enumVars}}{{/allowableValues}};
+    export const {{enumName}} = {
+    {{#allowableValues}}
+    {{#enumVars}}
+        {{name}}: {{{value}}} as {{enumName}}{{#unless @last}},{{/unless}}
+    {{/enumVars}}
+    {{/allowableValues}}
+    };
+    {{/isEnum}}
+{{/vars}}
+}{{/hasEnums}}

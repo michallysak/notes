@@ -6,26 +6,19 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
-import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
+import pl.michallysak.notes.application.quarkus.common.openapi.OpenApiConfig;
 import pl.michallysak.notes.application.quarkus.user.controller.UserController;
 import pl.michallysak.notes.application.quarkus.user.dto.AuthTokenResponse;
 import pl.michallysak.notes.application.quarkus.user.dto.LoginUserRequest;
 import pl.michallysak.notes.application.quarkus.user.dto.RegisterUserRequest;
 import pl.michallysak.notes.application.quarkus.user.dto.UserResponse;
 
-@SecurityScheme(
-    securitySchemeName = "bearerAuth",
-    type = SecuritySchemeType.HTTP,
-    scheme = "bearer",
-    bearerFormat = "JWT",
-    description = "Use /users/login to obtain token and include it in the Authorization")
 @Tag(name = "Users API", description = "Operations on users")
 @Path("/users")
 @Produces(MediaType.APPLICATION_JSON)
@@ -94,7 +87,7 @@ public class UserResource {
       description = "User not found",
       content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   @Authenticated
-  @SecurityRequirement(name = "bearerAuth")
+  @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
   public UserResponse me() {
     return userController.me();
   }

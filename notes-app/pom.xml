@@ -124,6 +124,18 @@
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+                <excludes>
+                    <exclude>**/*.jar</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -210,6 +222,97 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-custom-templates</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/swagger/templates/typescript-angular</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources/swagger-codegen/templates/typescript-angular</directory>
+                                    <includes>
+                                        <include>**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/swagger</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources/swagger</directory>
+                                    <includes>
+                                        <include>openapi.yaml</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.swagger.codegen.v3</groupId>
+                <artifactId>swagger-codegen-maven-plugin</artifactId>
+                <version>3.0.78</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.build.directory}/swagger/openapi.yaml</inputSpec>
+                            <language>typescript-angular</language>
+                            <output>${project.build.directory}/generated-sources/typescript</output>
+                            <templateDirectory>${project.build.directory}/swagger/templates/typescript-angular</templateDirectory>
+                            <!-- Modified, originally from https://github.com/swagger-api/swagger-codegen/tree/master/modules/swagger-codegen/src/main/resources/typescript-angular -->
+                            <typeMappings>
+                                <typeMapping>LocalDateTime=Date</typeMapping>
+                                <typeMapping>JSONObject=any</typeMapping>
+                            </typeMappings>
+                            <additionalProperties>
+                                <additionalProperty>_ngPackagerVersion=21.2.2</additionalProperty>
+                                <additionalProperty>_tsVersion=6.0.2</additionalProperty>
+                                <additionalProperty>_rxjsVersion=7.8.1</additionalProperty>
+                                <additionalProperty>_zonejsVersion=0.16.1</additionalProperty>
+                                <additionalProperty>_reflectMetadataVersion=0.2.2</additionalProperty>
+                            </additionalProperties>
+                            <configOptions>
+                                <sortParamsByRequiredFlag>true</sortParamsByRequiredFlag>
+                                <ensureUniqueParams>true</ensureUniqueParams>
+                                <allowUnicodeIdentifiers>false</allowUnicodeIdentifiers>
+                                <modelPropertyNaming>original</modelPropertyNaming>
+                                <supportsES6>true</supportsES6>
+                                <npmName>@notes/notes_service</npmName>
+                                <npmVersion>0.0.0+auto</npmVersion>
+                                <snapshot>false</snapshot>
+                                <withInterfaces>true</withInterfaces>
+                                <ngVersion>21.2.6</ngVersion>
+                                <providedInRoot>false</providedInRoot>
+                            </configOptions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

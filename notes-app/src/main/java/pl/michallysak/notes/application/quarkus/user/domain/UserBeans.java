@@ -24,13 +24,6 @@ public class UserBeans {
   private final Logger logger;
 
   @Produces
-  @NoAuth
-  @ApplicationScoped
-  public CurrentUserProvider currentUserProvider() {
-    return new NoAuthCurrentUserProvider();
-  }
-
-  @Produces
   @ApplicationScoped
   public UserRepository userRepository() {
     return new InMemoryUserRepository();
