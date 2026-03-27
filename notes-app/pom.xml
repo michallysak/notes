@@ -293,9 +293,9 @@
                                 <typeMapping>JSONObject=any</typeMapping>
                             </typeMappings>
                             <additionalProperties>
-                                <additionalProperty>_ngPackagerVersion=21.2.2</additionalProperty>
-                                <additionalProperty>_tsVersion=6.0.2</additionalProperty>
-                                <additionalProperty>_rxjsVersion=7.8.1</additionalProperty>
+                                <additionalProperty>_ngPackagrVersion=21.2.2</additionalProperty>
+                                <additionalProperty>_tsVersion=5.9.0</additionalProperty>
+                                <additionalProperty>_rxjsVersion=7.8.2</additionalProperty>
                                 <additionalProperty>_zonejsVersion=0.16.1</additionalProperty>
                                 <additionalProperty>_reflectMetadataVersion=0.2.2</additionalProperty>
                             </additionalProperties>
