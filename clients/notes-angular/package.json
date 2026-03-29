@@ -17,8 +17,11 @@
     "@angular/forms": "^21.2.6",
     "@angular/platform-browser": "^21.2.6",
     "@angular/router": "^21.2.6",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
     "@notes/notes_service": "file:notes-notes_service-0.0.0+auto.tgz",
     "@primeuix/themes": "^2.0.3",
+    "primeicons": "^7.0.0",
     "primeng": "^21.1.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

@@ -1,0 +1,41 @@
+<form
+  class="login"
+  [formGroup]="form"
+>
+  <h2>{{ 'AUTH.LOGIN_TITLE' | translate }}</h2>
+  <div>
+    <input
+      pInputText
+      formControlName="email"
+      placeholder="{{ 'AUTH.EMAIL_LABEL' | translate }}"
+    />
+  </div>
+  <div>
+    <input
+      pInputText
+      formControlName="password"
+      type="password"
+      placeholder="{{ 'AUTH.PASSWORD_LABEL' | translate }}"
+    />
+  </div>
+  @if (error()) {
+    <div class="error">{{'AUTH.INVALID_CREDENTIALS' | translate}}</div>
+  }
+  <div class="login-footer">
+    <p-button
+      type="button"
+      label="{{ 'AUTH.LOGIN_BUTTON' | translate }}"
+      (onClick)="login()"
+      [disabled]="form.invalid"
+    />
+    {{' '}}
+    <p-button
+      type="button"
+      styleClass="p-button-text"
+      (onClick)="toggleRegister()"
+      [label]="'AUTH.NO_ACCOUNT_REGISTER' | translate"
+    />
+  </div>
+
+</form>
+

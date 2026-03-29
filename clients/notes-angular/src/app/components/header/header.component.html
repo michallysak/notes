@@ -1,0 +1,14 @@
+<header class="app-header">
+  <div class="left">
+    <h1>{{ 'HEADER.TITLE' | translate }}</h1>
+  </div>
+  <div class="right">
+    @if (currentUser$ | async; as user) {
+      <div class="user-info">
+        <span>{{ user.email }}</span>
+        <p-button type="button" label="{{ 'ACTION.LOGOUT' | translate }}" (onClick)="logout()" />
+      </div>
+    }
+  </div>
+</header>
+

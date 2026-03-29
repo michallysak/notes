@@ -1,0 +1,19 @@
+{
+  "AUTH": {
+    "EMAIL_LABEL": "Email",
+    "PASSWORD_LABEL": "Password",
+    "LOGIN_TITLE": "Login",
+    "LOGIN_BUTTON": "Log in",
+    "NO_ACCOUNT_REGISTER": "No account? Register",
+    "INVALID_CREDENTIALS": "Invalid credentials"
+  },
+  "ACTION": {
+    "LOGOUT": "Log out"
+  },
+  "HEADER": {
+    "TITLE": "Notes"
+  },
+  "STATUS": {
+    "LOGGED": "Logged in"
+  }
+}
