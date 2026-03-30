@@ -15,5 +15,14 @@
   },
   "STATUS": {
     "LOGGED": "Logged in"
+  },
+  "NOTES": {
+    "CREATE_BUTTON": "Create note",
+    "SECTION_PINNED": "Pinned",
+    "SECTION_OTHER": "Other",
+    "DELETE": "Delete",
+    "PIN": "Unpin note",
+    "UNPIN": "Unpin note",
+    "MORE": "More"
   }
 }

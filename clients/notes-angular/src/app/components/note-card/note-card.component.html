@@ -1,0 +1,31 @@
+<p-card class="card-container" (click)="handleCardClick()">
+  <ng-template #header>
+    <div class="card-header">
+      <h3 class="text-trim">{{ note.title }}</h3>
+      <p-menu #menu [model]="items" popup="true" [appendTo]="'body'"></p-menu>
+      <div class="controls">
+        <p-button
+          variant="text"
+          severity="secondary"
+          pTooltip="{{ (note.pinned ? 'NOTES.UNPIN' : 'NOTES.PIN') | translate }}"
+          (onClick)="onPinClick($event)"
+        >
+          <i class="pi pi-thumbtack"></i>
+        </p-button>
+        <p-button
+          variant="text"
+          severity="secondary"
+          pTooltip="{{ 'NOTES.MORE' | translate }}"
+          (onClick)="onMenuClick($event, menu)"
+        >
+          <i class="pi pi-ellipsis-v"></i>
+        </p-button>
+      </div>
+    </div>
+    <app-note-change-datetime [note]="note"></app-note-change-datetime>
+
+  </ng-template>
+
+  <div class="text-trim">{{ note.content }}</div>
+</p-card>
+

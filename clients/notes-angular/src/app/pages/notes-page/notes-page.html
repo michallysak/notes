@@ -1,6 +1,6 @@
 <div class="notes-page">
   @if (logged) {
-    {{ 'STATUS.LOGGED' | translate }}
+    <app-notes-list />
   } @else {
     <app-auth-dialog [(visible)]="showLogin" />
   }

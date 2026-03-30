@@ -1,0 +1,27 @@
+<div class="create-btn">
+  <p-button (onClick)="openCreate()" label="{{ 'NOTES.CREATE' | translate }}"></p-button>
+</div>
+
+<div class="notes-list">
+  @if (pinnedNotes(); as notes) {
+    <div>
+      <h4>{{ 'NOTES.SECTION_PINNED' | translate }}</h4>
+      <div class="grid">
+        @for (note of notes; track note.id) {
+          <app-note-card [note]="note"></app-note-card>
+        }
+      </div>
+    </div>
+  }
+  @if (otherNotes(); as notes) {
+    <div>
+      <h4>{{ 'NOTES.SECTION_OTHER' | translate }}</h4>
+      <div class="grid">
+        @for (note of notes; track note.id) {
+          <app-note-card [note]="note"></app-note-card>
+        }
+      </div>
+    </div>
+  }
+</div>
+

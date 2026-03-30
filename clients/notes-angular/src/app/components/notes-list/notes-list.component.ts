@@ -1,0 +1,55 @@
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { NoteService } from '../../services/note.service';
+import { NoteCardComponent } from '../note-card/note-card.component';
+import { Observable, Subscription } from 'rxjs';
+import { NoteResponse } from '@notes/notes_service';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { TextareaModule } from 'primeng/textarea';
+import { InputTextModule } from 'primeng/inputtext';
+import { TranslatePipe } from '@ngx-translate/core';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+
+@Component({
+  selector: 'app-notes-list',
+  standalone: true,
+  imports: [
+    CommonModule,
+    NoteCardComponent,
+    ReactiveFormsModule,
+    ButtonModule,
+    DialogModule,
+    TextareaModule,
+    InputTextModule,
+    TranslatePipe,
+    ProgressSpinnerModule,
+  ],
+  styleUrls: ['./notes-list.component.scss'],
+  templateUrl: './notes-list.component.html',
+})
+export class NotesListComponent implements OnInit, OnDestroy {
+  private notes$: Observable<NoteResponse[]>;
+  private notesSubscription: Subscription | null = null;
+  pinnedNotes = signal<NoteResponse[]>([]);
+  otherNotes = signal<NoteResponse[]>([]);
+
+  constructor(private noteService: NoteService) {
+    this.notes$ = this.noteService.notes$;
+  }
+
+  ngOnInit(): void {
+    this.notesSubscription = this.notes$.subscribe((list) => {
+      this.pinnedNotes.set(list.filter((n) => !!n.pinned));
+      this.otherNotes.set(list.filter((n) => !n.pinned));
+    });
+  }
+  ngOnDestroy(): void {
+    this.notesSubscription?.unsubscribe();
+  }
+
+  openCreate() {
+    console.log('open create');
+  }
+}
