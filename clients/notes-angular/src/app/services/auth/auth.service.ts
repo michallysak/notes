@@ -3,15 +3,16 @@ import { BehaviorSubject, firstValueFrom, Observable, switchMap, tap } from 'rxj
 import {
   AuthTokenResponse,
   LoginUserRequest,
-  UserResponse,
   UsersAPIService,
 } from '@notes/notes_service';
-import { AuthTokenService } from './auth-token.service';
+import { AuthTokenService } from '../auth-token/auth-token.service';
+import { User } from '../../types/user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private currentUserSubject = new BehaviorSubject<UserResponse | null>(null);
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  public logged$ = this.currentUser$.pipe(switchMap((user) => [!!user]));
 
   constructor(
     private usersApi: UsersAPIService,
@@ -44,7 +45,7 @@ export class AuthService {
     this.currentUserSubject.next(null);
   }
 
-  login(loginUserRequest: LoginUserRequest): Observable<UserResponse> {
+  login(loginUserRequest: LoginUserRequest): Observable<User> {
     return this.usersApi.loginUser(loginUserRequest).pipe(
       tap(({ token }: AuthTokenResponse) => {
         this.tokenService.setItem(token);

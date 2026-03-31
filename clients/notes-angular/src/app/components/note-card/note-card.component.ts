@@ -5,7 +5,7 @@ import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { NoteMetaComponent } from '../note-change-datetime/note-meta.component';
+import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change-date-time.component';
 import { NoteResponse } from '@notes/notes_service';
 import { MenuItem } from 'primeng/api';
 
@@ -19,7 +19,7 @@ import { MenuItem } from 'primeng/api';
     TooltipModule,
     MenuModule,
     TranslatePipe,
-    NoteMetaComponent,
+    NoteChangeDateTimeComponent,
   ],
   styleUrls: ['./note-card.component.scss'],
   templateUrl: './note-card.component.html',

@@ -1,9 +1,8 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NoteService } from '../../services/note.service';
+import { NoteService } from '../../services/note/note.service';
 import { NoteCardComponent } from '../note-card/note-card.component';
 import { Observable, Subscription } from 'rxjs';
-import { NoteResponse } from '@notes/notes_service';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -11,6 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { InputTextModule } from 'primeng/inputtext';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { Note } from '../../types/note';
 
 @Component({
   selector: 'app-notes-list',
@@ -30,10 +30,10 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
   templateUrl: './notes-list.component.html',
 })
 export class NotesListComponent implements OnInit, OnDestroy {
-  private notes$: Observable<NoteResponse[]>;
+  private notes$: Observable<Note[]>;
   private notesSubscription: Subscription | null = null;
-  pinnedNotes = signal<NoteResponse[]>([]);
-  otherNotes = signal<NoteResponse[]>([]);
+  pinnedNotes = signal<Note[]>([]);
+  otherNotes = signal<Note[]>([]);
 
   constructor(private noteService: NoteService) {
     this.notes$ = this.noteService.notes$;

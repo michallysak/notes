@@ -1,7 +1,7 @@
-<div class="notes-page">
-  @if (logged) {
+<div>
+  @if (logged()) {
     <app-notes-list />
   } @else {
-    <app-auth-dialog [(visible)]="showLogin" />
+    <app-auth-dialog [visible]="true" />
   }
 </div>

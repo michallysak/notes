@@ -16,7 +16,7 @@ import { routes } from './app.routes';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ErrorInterceptor } from './interceptors/error.interceptor';
 import { MessageService } from 'primeng/api';
-import { AuthService } from './services/auth.service';
+import { AuthService } from './services/auth/auth.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [

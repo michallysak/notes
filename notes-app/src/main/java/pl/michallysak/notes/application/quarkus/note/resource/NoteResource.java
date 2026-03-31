@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -56,7 +57,7 @@ public class NoteResource {
   @APIResponse(
       responseCode = "200",
       description = "List of notes",
-      content = @Content(schema = @Schema(implementation = NoteResponse.class)))
+      content = @Content(schema = @Schema(implementation = NoteResponse.class, type = SchemaType.ARRAY)))
   public List<NoteResponse> getNotes() {
     return noteController.getNotes();
   }

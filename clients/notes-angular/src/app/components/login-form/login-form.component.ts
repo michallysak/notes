@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { LoginUserRequest } from '@notes/notes_service';
-import * as AuthModule from '../../services/auth.service';
+import * as AuthModule from '../../services/auth/auth.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { catchError, throwError } from 'rxjs';
 

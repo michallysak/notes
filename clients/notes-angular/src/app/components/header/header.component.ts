@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TranslatePipe } from '@ngx-translate/core';
-import * as AuthModule from '../../services/auth.service';
+import * as AuthModule from '../../services/auth/auth.service';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { UserResponse } from '@notes/notes_service';

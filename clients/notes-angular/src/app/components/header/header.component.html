@@ -1,8 +1,8 @@
 <header class="app-header">
-  <div class="left">
+  <div>
     <h1>{{ 'HEADER.TITLE' | translate }}</h1>
   </div>
-  <div class="right">
+  <div>
     @if (currentUser$ | async; as user) {
       <div class="user-info">
         <span>{{ user.email }}</span>

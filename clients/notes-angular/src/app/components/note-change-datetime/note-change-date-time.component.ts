@@ -27,7 +27,7 @@ import { NoteResponse } from '@notes/notes_service';
     `,
   ],
 })
-export class NoteMetaComponent {
+export class NoteChangeDateTimeComponent {
   @Input({required: true}) note!: NoteResponse;
 }
 

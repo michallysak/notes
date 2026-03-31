@@ -53,6 +53,12 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
+To run tests in CI mode with enforced coverage thresholds, use:
+
+```bash
+npm run test:ci
+```
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:
