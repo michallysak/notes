@@ -11,6 +11,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Note } from '../../types/note';
+import { NoteChangeDialogComponent } from '../note-change-dialog/note-change-dialog.component';
+
+type ChangeNoteDialogStatus = { visible: false } | ({ visible: true } & { note: Note | null });
 
 @Component({
   selector: 'app-notes-list',
@@ -25,6 +28,7 @@ import { Note } from '../../types/note';
     InputTextModule,
     TranslatePipe,
     ProgressSpinnerModule,
+    NoteChangeDialogComponent,
   ],
   styleUrls: ['./notes-list.component.scss'],
   templateUrl: './notes-list.component.html',
@@ -34,6 +38,7 @@ export class NotesListComponent implements OnInit, OnDestroy {
   private notesSubscription: Subscription | null = null;
   pinnedNotes = signal<Note[]>([]);
   otherNotes = signal<Note[]>([]);
+  clickNote = signal<ChangeNoteDialogStatus>({ visible: false});
 
   constructor(private noteService: NoteService) {
     this.notes$ = this.noteService.notes$;
@@ -51,5 +56,14 @@ export class NotesListComponent implements OnInit, OnDestroy {
 
   openCreate() {
     console.log('open create');
+    this.clickNote.set({ visible: true, note: null });
+  }
+
+  noteCardClick(note: Note) {
+    this.clickNote.set({ visible: true, note });
+  }
+
+  noteDialogClose() {
+    this.clickNote.set({ visible: false});
   }
 }

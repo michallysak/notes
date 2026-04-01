@@ -1,6 +1,7 @@
 package pl.michallysak.notes.application.quarkus.common;
 
 import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,10 @@ import org.jboss.logging.Logger;
 import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
+import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 import pl.michallysak.notes.user.model.EmailPasswordLogin;
 import pl.michallysak.notes.user.model.UserValue;
@@ -18,6 +23,7 @@ import pl.michallysak.notes.user.service.UserService;
 public class StartupBean {
   private final Logger logger;
   private final UserService userService;
+  private final NoteService noteService;
 
   void onStart(@Observes StartupEvent ev) {
     Email email = Email.of("admin@test.pl");
@@ -26,5 +32,19 @@ public class StartupBean {
     logger.info("Created default user: " + user);
     AuthToken login = userService.login(new EmailPasswordLogin(email, password));
     logger.info("Login Successful: " + login);
+
+    NoteValue first = noteService.createNote(getCreateNote(user, "first"));
+    logger.info("Created first note: " + first);
+    NoteValue second = noteService.createNote(getCreateNote(user, "second"));
+    logger.info("Created second note: " + second);
+    NoteUpdate noteUpdate = NoteUpdate.builder().pinned(true).actingUserId(user.id()).build();
+    NoteValue noteValue = noteService.updateNote(second.id(), noteUpdate);
+    logger.info("Updated second note: " + noteValue);
+  }
+
+  private CreateNote getCreateNote(UserValue user, String distinguishingText) {
+    String title = "Note %s".formatted(distinguishingText);
+    String content = "This is the content of the %s note".formatted(distinguishingText);
+    return new CreateNote(title, content, user.id());
   }
 }

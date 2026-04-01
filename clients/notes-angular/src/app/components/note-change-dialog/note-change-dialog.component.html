@@ -1,0 +1,71 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  (onHide)="onHide()"
+  [closable]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [header]="note ? 'Update Note' : 'Create Note'"
+  [style]="{ width: '520px' }"
+>
+  <div style="display: flex;">
+    @if (lastSavedNote(); as note) {
+      <app-note-change-datetime [note]="note"></app-note-change-datetime>
+    }
+    @if (saving()) {
+      <div class="flex justify-center">
+        <p-progress-spinner
+          strokeWidth="4"
+          style=" margin-left: 0.5em; width: 20px; height: 20px; align-self: flex-start"
+          ariaLabel="loading"
+        ></p-progress-spinner>
+      </div>
+    }
+  </div>
+  @if (form.dirty && lastSavedNote() && notSaved()) {
+    <p-message severity="error" size="small" variant="simple">{{
+        'NOT_SAVED' | translate
+      }}</p-message>
+  }
+
+  <form [formGroup]="form">
+    <p-floatlabel variant="on" style="margin-top: 1.5em">
+      <input
+        pInputText
+        id="title"
+        type="text"
+        [invalid]="form.controls.title.invalid"
+        formControlName="title"
+        autocomplete="off"
+        fluid
+      />
+      <label for="title">Title</label>
+    </p-floatlabel>
+    <div class="range-row">
+      <app-text-range
+        [min]="3"
+        [max]="64"
+        [current]="form.controls.title.value.length || 0"
+      ></app-text-range>
+    </div>
+    <p-floatlabel variant="on">
+          <textarea
+            id="content"
+            pTextarea
+            rows="5"
+            cols="30"
+            [autoResize]="true"
+            formControlName="content"
+            fluid
+          ></textarea>
+      <label for="content">Title</label>
+    </p-floatlabel>
+    <div class="range-row">
+      <app-text-range
+        [min]="0"
+        [max]="2048"
+        [current]="form.controls.content.value.length || 0"
+      ></app-text-range>
+    </div>
+  </form>
+</p-dialog>
