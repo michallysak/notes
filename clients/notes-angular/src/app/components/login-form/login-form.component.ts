@@ -7,7 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { LoginUserRequest } from '@notes/notes_service';
 import * as AuthModule from '../../services/auth/auth.service';
 import { TranslatePipe } from '@ngx-translate/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, EMPTY } from 'rxjs';
 
 type UserForm = {
   email: FormControl<string>;
@@ -51,7 +51,7 @@ export class LoginFormComponent {
       .pipe(
         catchError(() => {
           this.error.set(true);
-          return throwError(() => new Error('Login failed'));
+          return EMPTY;
         }),
       )
       .subscribe(() => this.router.navigate(['/']));

@@ -50,17 +50,19 @@ export class NoteChangeDialogComponent {
   @Input({ required: true }) visible = false;
   @Input({ required: true }) note: NoteResponse | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() noteSaved = new EventEmitter<NoteResponse>();
 
   form: FormGroup<NoteForm>;
 
   saving = signal(false);
   lastSavedNote = signal<NoteResponse | null>(null);
   notSaved = signal(false);
+  saved = signal(false);
 
   private saveDebounce = 1000;
 
   constructor(private notesApi: NotesAPIService) {
-    this.form = this.form = new FormGroup<NoteForm>({
+    this.form = new FormGroup<NoteForm>({
       title: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required, Validators.minLength(3), Validators.maxLength(64)],
@@ -72,10 +74,17 @@ export class NoteChangeDialogComponent {
     });
 
     this.form.valueChanges.pipe(debounceTime(this.saveDebounce)).subscribe(() => {
+      if (!this.form.dirty) {
+        return;
+      }
+      // User modified the form after any previous save -> hide saved indicator
+      this.saved.set(false);
+
       if (this.form.valid) {
         this.save();
       } else {
         this.notSaved.set(true);
+        this.saved.set(false);
       }
     });
   }
@@ -86,11 +95,35 @@ export class NoteChangeDialogComponent {
         this.form.patchValue({ title: this.note.title || '', content: this.note.content || '' });
         this.lastSavedNote.set({ ...this.note });
         this.form.markAsPristine();
+        this.form.markAsUntouched();
         this.notSaved.set(false);
+        this.saved.set(false);
       } else {
-        this.form.reset();
+        this.form.reset({ title: '', content: '' });
         this.lastSavedNote.set(null);
+        this.form.markAsPristine();
+        this.form.markAsUntouched();
         this.notSaved.set(true);
+        this.saved.set(false);
+      }
+    }
+
+    if (changes['visible']) {
+      const vis = changes['visible'].currentValue as boolean;
+      if (vis) {
+        if (this.note) {
+          this.form.patchValue({ title: this.note.title || '', content: this.note.content || '' });
+          this.lastSavedNote.set({ ...this.note });
+          this.notSaved.set(false);
+          this.saved.set(false);
+        } else {
+          this.form.reset({ title: '', content: '' });
+          this.lastSavedNote.set(null);
+          this.notSaved.set(true);
+          this.saved.set(false);
+        }
+        this.form.markAsPristine();
+        this.form.markAsUntouched();
       }
     }
   }
@@ -98,17 +131,20 @@ export class NoteChangeDialogComponent {
   onHide() {
     this.visible = false;
     this.visibleChange.emit(this.visible);
-    this.form.reset();
+    this.form.reset({ title: '', content: '' });
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+    this.saved.set(false);
   }
 
   private save() {
     this.notSaved.set(false);
+    this.saved.set(false);
     if (this.form.invalid || this.saving()) {
       return;
     }
 
     this.saving.set(true);
-    this.notSaved.set(false);
 
     if (this.note && this.note.id) {
       const body: NoteUpdateRequest = this.form.value;
@@ -144,10 +180,14 @@ export class NoteChangeDialogComponent {
     this.form.markAsPristine();
     this.note = res;
     this.notSaved.set(false);
+    // Only mark saved on successful server response
+    this.saved.set(true);
+    this.noteSaved.emit(res);
   }
 
   private onSaveError() {
     this.saving.set(false);
     this.notSaved.set(true);
+    this.saved.set(false);
   }
 }

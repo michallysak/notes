@@ -1,5 +1,6 @@
 <p-dialog
   [(visible)]="visible"
+  [focusOnShow]="false"
   [modal]="true"
   (onHide)="onHide()"
   [closable]="true"
@@ -16,17 +17,22 @@
       <div class="flex justify-center">
         <p-progress-spinner
           strokeWidth="4"
-          style=" margin-left: 0.5em; width: 20px; height: 20px; align-self: flex-start"
+          style=" margin-left: 0.5em; width: 16px; height: 16px; align-self: flex-start"
           ariaLabel="loading"
         ></p-progress-spinner>
       </div>
     }
+    @if (saved()) {
+      <p-message severity="success" size="small" variant="simple">{{
+          'SAVED' | translate
+        }}</p-message>
+    }
+    @if (form.dirty && lastSavedNote() && notSaved()) {
+      <p-message severity="error" size="small" variant="simple">{{
+          'NOT_SAVED' | translate
+        }}</p-message>
+    }
   </div>
-  @if (form.dirty && lastSavedNote() && notSaved()) {
-    <p-message severity="error" size="small" variant="simple">{{
-        'NOT_SAVED' | translate
-      }}</p-message>
-  }
 
   <form [formGroup]="form">
     <p-floatlabel variant="on" style="margin-top: 1.5em">
@@ -34,7 +40,7 @@
         pInputText
         id="title"
         type="text"
-        [invalid]="form.controls.title.invalid"
+        [invalid]="form.controls.title.invalid && (form.controls.title.touched || form.controls.title.dirty)"
         formControlName="title"
         autocomplete="off"
         fluid

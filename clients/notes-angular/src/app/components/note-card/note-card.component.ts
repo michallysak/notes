@@ -42,7 +42,7 @@ export class NoteCardComponent {
   }
 
   handleCardClick() {
-    console.log('open dialog', this.note?.id);
+    console.log('click', this.note?.id);
     this.onClick.emit(this.note);
   }
 

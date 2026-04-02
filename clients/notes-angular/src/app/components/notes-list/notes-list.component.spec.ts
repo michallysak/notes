@@ -85,6 +85,49 @@ describe('NotesListComponent', () => {
 
     expect(openCreateSpy).toHaveBeenCalled();
   });
+
+  it('should open dialog when noteCardClick is called', () => {
+    const note = createNote({ id: '5' });
+
+    component.noteCardClick(note);
+    fixture.detectChanges();
+
+    expect(component.clickNote().visible).toBe(true);
+    expect((component.clickNote() as any).note?.id).toBe('5');
+    // dialog should be present in template
+    expect(queryElement('app-note-change-dialog')).toBeTruthy();
+  });
+
+  it('should close dialog when visibleChange event is triggered on dialog', () => {
+    // open dialog first
+    component.clickNote.set({ visible: true, note: createNote() });
+    fixture.detectChanges();
+
+    const dialogDe = queryElement('app-note-change-dialog');
+    expect(dialogDe).toBeTruthy();
+
+    // trigger the visibleChange output
+    dialogDe.triggerEventHandler('visibleChange', false);
+    fixture.detectChanges();
+
+    expect(component.clickNote().visible).toBe(false);
+  });
+
+  it('template @if blocks render when signals are set before first change detection', () => {
+    // set signals on the existing component and trigger change detection
+    component.clickNote.set({ visible: true, note: createNote({ id: '10' }) });
+    component.pinnedNotes.set([createNote({ id: '1', pinned: true })]);
+    component.otherNotes.set([createNote({ id: '2', pinned: false })]);
+
+    fixture.detectChanges();
+
+    // dialog should be rendered by the @if (clickNote()) block
+    expect(fixture.debugElement.query(By.css('app-note-change-dialog'))).toBeTruthy();
+
+    // both pinned and other notes should render app-note-card items
+    const cards = fixture.debugElement.queryAll(By.css('app-note-card'));
+    expect(cards.length).toBe(2);
+  });
 });
 
 

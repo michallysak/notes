@@ -5,6 +5,7 @@
 @if (clickNote(); as clickNote) {
   <app-note-change-dialog [visible]="clickNote.visible"
                           (visibleChange)="noteDialogClose()"
+                          (noteSaved)="onNoteSaved($event)"
                           [note]="clickNote.visible ? clickNote.note : null">
   </app-note-change-dialog>
 }
