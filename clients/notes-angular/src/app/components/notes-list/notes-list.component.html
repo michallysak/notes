@@ -11,25 +11,37 @@
 }
 
 <div class="notes-list">
-  @if (pinnedNotes(); as notes) {
+
+  @if ({ pinned: pinnedNotes(), other: otherNotes() }; as notes) {
+
     <div>
-      <h4>{{ 'NOTES.SECTION_PINNED' | translate }}</h4>
+      @if (notes.pinned.length != 0) {
+        <h4>{{ 'NOTES.SECTION_PINNED' | translate }}</h4>
+      }
       <div class="grid">
-        @for (note of notes; track note.id) {
-          <app-note-card [note]="note" (onClick)="noteCardClick($event)"></app-note-card>
+        @for (note of notes.pinned; track note.id) {
+          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
+                         (pinClick)="onPinClickPropagation($event)"></app-note-card>
         }
       </div>
     </div>
-  }
-  @if (otherNotes(); as notes) {
+
     <div>
-      <h4>{{ 'NOTES.SECTION_OTHER' | translate }}</h4>
+      @if (notes.other.length != 0 && notes.pinned.length != 0) {
+        <h4>{{ 'NOTES.SECTION_OTHER' | translate }}</h4>
+      }
       <div class="grid">
-        @for (note of notes; track note.id) {
-          <app-note-card [note]="note" (onClick)="noteCardClick($event)"></app-note-card>
+        @for (note of notes.other; track note.id) {
+          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
+                         (pinClick)="onPinClickPropagation($event)"></app-note-card>
         }
       </div>
     </div>
+
+
+    @if (notes.other.length == 0 && notes.pinned.length == 0) {
+      <h4>{{ 'NOTES.NO_NOTES' | translate }}</h4>
+    }
   }
 </div>
 

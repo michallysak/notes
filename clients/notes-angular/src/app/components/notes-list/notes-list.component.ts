@@ -12,6 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Note } from '../../types/note';
 import { NoteChangeDialogComponent } from '../note-change-dialog/note-change-dialog.component';
+import { NoteUpdateRequest } from '@notes/notes_service';
 
 type ChangeNoteDialogStatus = { visible: false } | ({ visible: true } & { note: Note | null });
 
@@ -42,6 +43,15 @@ export class NotesListComponent implements OnInit, OnDestroy {
 
   constructor(private noteService: NoteService) {
     this.notes$ = this.noteService.notes$;
+  }
+
+  onPinClickPropagation(note: Note) {
+    if (!note || !note.id) return;
+    const body: NoteUpdateRequest = { pinned: !note.pinned };
+    this.noteService.updateNote(note.id, body).subscribe({
+      next: () => console.log('updated pinned state'),
+      error: (err: any) => console.error('Failed to update pinned state', err),
+    });
   }
 
   ngOnInit(): void {

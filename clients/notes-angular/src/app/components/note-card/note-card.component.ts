@@ -27,6 +27,7 @@ import { Note } from '../../types/note';
 export class NoteCardComponent {
   @Input({ required: true }) note!: Note;
   @Output() onClick = new EventEmitter<Note>();
+  @Output() pinClick = new EventEmitter<Note>();
   items: MenuItem[] = [];
 
   constructor(private translate: TranslateService) {}
@@ -48,7 +49,7 @@ export class NoteCardComponent {
 
   onPinClick(evt: Event) {
     evt.stopPropagation();
-    console.log('pin', this.note?.id);
+    this.pinClick.emit(this.note);
   }
 
   onMenuClick(evt: Event, menu: any) {
