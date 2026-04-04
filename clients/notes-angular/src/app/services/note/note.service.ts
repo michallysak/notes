@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { NotesAPIService, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
+import { NotesAPIService, NoteUpdateRequest, CreateNoteRequest } from '@notes/notes_service';
 import { Note } from '../../types/note';
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +27,15 @@ export class NoteService {
           next = current.map((n) => (n.id === res.id ? (res) : n));
         }
         this.notesSubject.next(next);
+      })
+    );
+  }
+
+  createNote(body: CreateNoteRequest) {
+    return this.notesApi.createNote(body).pipe(
+      tap((res: Note) => {
+        const current = this.notesSubject.value;
+        this.notesSubject.next([res, ...current]);
       })
     );
   }

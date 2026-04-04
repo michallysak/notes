@@ -7,12 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { debounceTime, delay } from 'rxjs/operators';
-import {
-  CreateNoteRequest,
-  NoteResponse,
-  NotesAPIService,
-  NoteUpdateRequest,
-} from '@notes/notes_service';
+import { CreateNoteRequest, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
+import { NoteService } from '../../services/note/note.service';
 import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change-date-time.component';
 import { TextRangeComponent } from '../text-range/text-range.component';
 import { FloatLabelModule } from 'primeng/floatlabel';
@@ -50,7 +46,6 @@ export class NoteChangeDialogComponent {
   @Input({ required: true }) visible = false;
   @Input({ required: true }) note: NoteResponse | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
-  @Output() noteSaved = new EventEmitter<NoteResponse>();
 
   form: FormGroup<NoteForm>;
 
@@ -61,7 +56,7 @@ export class NoteChangeDialogComponent {
 
   private saveDebounce = 1000;
 
-  constructor(private notesApi: NotesAPIService) {
+  constructor(private noteService: NoteService) {
     this.form = new FormGroup<NoteForm>({
       title: new FormControl('', {
         nonNullable: true,
@@ -146,32 +141,32 @@ export class NoteChangeDialogComponent {
 
     this.saving.set(true);
 
-    if (this.note && this.note.id) {
-      const body: NoteUpdateRequest = this.form.value;
-      this.notesApi
-        .updateNote(this.note.id, body)
-        .pipe(delay(1000)) // simulate network delay
-        .subscribe({
-          next: (res) => this.onSaveSuccess(res),
-          error: () => this.onSaveError(),
-        });
-    } else {
-      const value = this.form.value;
-      if (value.title === undefined || value.content === undefined) {
-        return;
+      if (this.note && this.note.id) {
+        const body: NoteUpdateRequest = this.form.value;
+        this.noteService
+          .updateNote(this.note.id, body)
+          .pipe(delay(1000)) // simulate network delay
+          .subscribe({
+            next: (res) => this.onSaveSuccess(res),
+            error: () => this.onSaveError(),
+          });
+      } else {
+        const value = this.form.value;
+        if (value.title === undefined || value.content === undefined) {
+          return;
+        }
+        const body: CreateNoteRequest = {
+          title: value.title,
+          content: value.content,
+        };
+        this.noteService
+          .createNote(body)
+          .pipe(delay(1000)) // simulate network delay
+          .subscribe({
+            next: (res) => this.onSaveSuccess(res),
+            error: () => this.onSaveError(),
+          });
       }
-      const body: CreateNoteRequest = {
-        title: value.title,
-        content: value.content,
-      };
-      this.notesApi
-        .createNote(body)
-        .pipe(delay(1000)) // simulate network delay
-        .subscribe({
-          next: (res) => this.onSaveSuccess(res),
-          error: () => this.onSaveError(),
-        });
-    }
   }
 
   private onSaveSuccess(res: NoteResponse) {
@@ -182,7 +177,6 @@ export class NoteChangeDialogComponent {
     this.notSaved.set(false);
     // Only mark saved on successful server response
     this.saved.set(true);
-    this.noteSaved.emit(res);
   }
 
   private onSaveError() {

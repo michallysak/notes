@@ -76,19 +76,4 @@ export class NotesListComponent implements OnInit, OnDestroy {
   noteDialogClose() {
     this.clickNote.set({ visible: false });
   }
-
-  onNoteSaved(note: Note) {
-    const updated = { ...note } as Note;
-
-    if (note.pinned) {
-      this.pinnedNotes.set(this.pinnedNotes().map((n) => (n.id === note.id ? updated : n)));
-    } else {
-      const find = this.otherNotes().findIndex((n) => n.id === note.id);
-      if (find === -1) {
-        this.otherNotes.set([updated, ...this.otherNotes()]);
-      } else {
-        this.otherNotes.set(this.otherNotes().map((n) => (n.id === note.id ? updated : n)));
-      }
-    }
-  }
 }

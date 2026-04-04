@@ -2,13 +2,12 @@
   <p-button (onClick)="openCreate()" label="{{ 'NOTES.CREATE_BUTTON' | translate }}"></p-button>
 </div>
 
-@if (clickNote(); as clickNote) {
-  <app-note-change-dialog [visible]="clickNote.visible"
-                          (visibleChange)="noteDialogClose()"
-                          (noteSaved)="onNoteSaved($event)"
-                          [note]="clickNote.visible ? clickNote.note : null">
-  </app-note-change-dialog>
-}
+  @if (clickNote(); as clickNote) {
+    <app-note-change-dialog [visible]="clickNote.visible"
+                            (visibleChange)="noteDialogClose()"
+                            [note]="clickNote.visible ? clickNote.note : null">
+    </app-note-change-dialog>
+  }
 
 <div class="notes-list">
 
