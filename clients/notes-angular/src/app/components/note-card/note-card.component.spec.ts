@@ -80,12 +80,9 @@ describe('NoteCardComponent', () => {
 
   it('should stop event propagation on pin click', () => {
     const stopPropagation = vi.fn();
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-
     component.onPinClick({ stopPropagation } as unknown as Event);
 
     expect(stopPropagation).toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalledWith('pin', '5');
   });
 
   it('should toggle menu and stop propagation on menu click', () => {

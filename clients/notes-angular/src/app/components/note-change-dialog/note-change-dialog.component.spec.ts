@@ -12,6 +12,7 @@ describe('NoteChangeDialogComponent', () => {
   const mockApi = {
     createNote: vi.fn(),
     updateNote: vi.fn(),
+    getNotes: vi.fn().mockReturnValue(of([])),
   };
 
   const sampleNote: NoteResponse = {
@@ -128,6 +129,41 @@ describe('NoteChangeDialogComponent', () => {
 
     expect(component.notSaved()).toBe(true);
     vi.useRealTimers();
+  });
+
+  it('should set notSaved and saved=false when form is invalid after debounce', () => {
+    vi.useFakeTimers();
+
+    component.form.setValue({ title: 'A', content: 'Y' });
+    // ensure form is considered dirty so valueChanges handler proceeds
+    component.form.markAsDirty();
+    // advance debounce
+    vi.advanceTimersByTime(1000);
+
+    expect(component.notSaved()).toBe(true);
+    expect(component.saved()).toBe(false);
+
+    vi.useRealTimers();
+  });
+
+  it('should render saved message when saved is true and visible', () => {
+    component.visible = true;
+    component.saved.set(true);
+
+    fixture.detectChanges();
+
+    const msg = fixture.debugElement.query(By.css('p-message'));
+    expect(msg).toBeTruthy();
+  });
+
+  it('should set notSaved true and saved false when visible becomes true and note is null', () => {
+    component.note = null;
+
+    component.ngOnChanges({ visible: { currentValue: true, firstChange: false, previousValue: false, isFirstChange: () => false } as any });
+
+    expect(component.notSaved()).toBe(true);
+    expect(component.saved()).toBe(false);
+    expect(component.lastSavedNote()).toBeNull();
   });
 });
 

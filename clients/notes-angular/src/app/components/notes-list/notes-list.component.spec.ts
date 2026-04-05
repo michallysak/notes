@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { provideTranslateService } from '@ngx-translate/core';
 import { NotesListComponent } from './notes-list.component';
 import { NoteService } from '../../services/note/note.service';
@@ -24,6 +24,11 @@ describe('NotesListComponent', () => {
   const noteService = {
     notes$: new BehaviorSubject<Note[]>([]),
   };
+
+  beforeEach(() => {
+    // ensure updateNote mock exists for tests that call onPinClickPropagation
+    (noteService as any).updateNote = vi.fn();
+  });
 
   beforeEach(async () => {
     notesSubject = new BehaviorSubject<Note[]>([]);
@@ -127,6 +132,44 @@ describe('NotesListComponent', () => {
     // both pinned and other notes should render app-note-card items
     const cards = fixture.debugElement.queryAll(By.css('app-note-card'));
     expect(cards.length).toBe(2);
+  });
+
+  it('should not call updateNote when note is falsy or missing id', () => {
+    const updateSpy = vi.spyOn(noteService as any, 'updateNote');
+
+    // call with null and with note missing id
+    (component as any).onPinClickPropagation(null as any);
+    (component as any).onPinClickPropagation({} as any);
+
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should call updateNote and log on success and log error on failure', () => {
+    const successNote: Note = createNote({ id: '7', pinned: false });
+    const updateMock = vi.fn();
+    // success case
+    (noteService as any).updateNote = vi.fn().mockReturnValue(of({}));
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    component.onPinClickPropagation(successNote);
+    expect((noteService as any).updateNote).toHaveBeenCalledWith('7', { pinned: true });
+    expect(logSpy).toHaveBeenCalledWith('updated pinned state');
+
+    // error case
+    (noteService as any).updateNote = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    component.onPinClickPropagation(successNote);
+
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        expect(errSpy).toHaveBeenCalled();
+        // restore spies
+        logSpy.mockRestore();
+        errSpy.mockRestore();
+        resolve();
+      }, 0);
+    });
   });
 });
 
