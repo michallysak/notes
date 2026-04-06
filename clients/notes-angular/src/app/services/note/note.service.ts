@@ -39,4 +39,13 @@ export class NoteService {
       })
     );
   }
+
+  deleteNote(id: string) {
+    return this.notesApi.deleteNote(id).pipe(
+      tap(() => {
+        const current = this.notesSubject.value;
+        this.notesSubject.next(current.filter((n) => n.id !== id));
+      })
+    );
+  }
 }

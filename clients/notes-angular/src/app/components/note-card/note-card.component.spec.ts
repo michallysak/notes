@@ -96,12 +96,13 @@ describe('NoteCardComponent', () => {
     expect(menu.toggle).toHaveBeenCalledWith(event);
   });
 
-  it('should log delete action from menu item command', () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  it('should call noteService.deleteNote from menu item command', () => {
+    const mockNoteService = { deleteNote: vi.fn().mockReturnValue({ subscribe: vi.fn() }) } as any;
+    (component as any).noteService = mockNoteService;
 
     component.items[0].command?.({} as any);
 
-    expect(logSpy).toHaveBeenCalledWith('delete', '5');
+    expect(mockNoteService.deleteNote).toHaveBeenCalledWith('5');
   });
 
   it('should log click action in handleCardClick', () => {

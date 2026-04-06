@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,6 +8,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change-date-time.component';
 import { MenuItem } from 'primeng/api';
 import { Note } from '../../types/note';
+import { NoteService } from '../../services/note/note.service';
 
 @Component({
   selector: 'app-note-card',
@@ -30,14 +31,20 @@ export class NoteCardComponent {
   @Output() pinClick = new EventEmitter<Note>();
   items: MenuItem[] = [];
 
-  constructor(private translate: TranslateService) {}
+  constructor(private translate: TranslateService, private noteService: NoteService) {}
 
   ngOnInit() {
     this.items = [
       {
         label: this.translate.instant('NOTES.DELETE'),
         icon: 'pi pi-trash',
-        command: () => console.log('delete', this.note?.id),
+        command: () => {
+          if (!this.note?.id) return;
+          this.noteService.deleteNote(this.note.id).subscribe({
+            next: () => console.log('deleted', this.note?.id),
+            error: (err) => console.error('delete failed', err),
+          });
+        },
       },
     ];
   }
