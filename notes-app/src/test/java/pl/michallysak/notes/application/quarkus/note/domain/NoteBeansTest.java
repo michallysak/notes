@@ -16,6 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.note.domain.event.DomainEvent;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
@@ -87,8 +89,13 @@ class NoteBeansTest {
   void noteService_shouldReturnNoteServiceImpl() {
     // given
     NoteRepository noteRepository = mock(NoteRepository.class);
+    DomainEventPublisher eventPublisher =
+        new DomainEventPublisher() {
+          @Override
+          public void publish(java.util.List<DomainEvent> events) {}
+        };
     // when
-    NoteService noteService = noteBeans.noteService(noteRepository);
+    NoteService noteService = noteBeans.noteService(noteRepository, eventPublisher);
     // then
     assertNotNull(noteService);
     assertInstanceOf(NoteServiceImpl.class, noteService);

@@ -7,6 +7,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
@@ -39,7 +40,15 @@ public class NoteBeans {
 
   @Produces
   @ApplicationScoped
-  public NoteService noteService(NoteRepository noteRepository) {
-    return new NoteServiceImpl(noteRepository);
+  public NoteService noteService(
+      NoteRepository noteRepository, DomainEventPublisher eventPublisher) {
+    return new NoteServiceImpl(noteRepository, eventPublisher);
+  }
+
+  @Produces
+  @ApplicationScoped
+  public DomainEventPublisher domainEventPublisher() {
+    // No-op publisher; replace with real implementation if needed
+    return events -> {};
   }
 }

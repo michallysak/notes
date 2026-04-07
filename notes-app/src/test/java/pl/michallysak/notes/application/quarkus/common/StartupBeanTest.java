@@ -3,6 +3,7 @@ package pl.michallysak.notes.application.quarkus.common;
 import static org.mockito.Mockito.*;
 
 import io.quarkus.runtime.StartupEvent;
+import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,8 +19,6 @@ import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 import pl.michallysak.notes.user.model.EmailPasswordLogin;
 import pl.michallysak.notes.user.model.UserValue;
 import pl.michallysak.notes.user.service.UserService;
-
-import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class StartupBeanTest {
@@ -43,8 +42,22 @@ class StartupBeanTest {
     NoteValue updatedNote = mock(NoteValue.class);
     UUID secondNoteId = UUID.randomUUID();
     when(secondNote.id()).thenReturn(secondNoteId);
-    when(noteService.createNote(argThat(note -> note != null && note.title().contains("first") && note.content().contains("first") && note.authorId().equals(user.id())))).thenReturn(firstNote);
-    when(noteService.createNote(argThat(note -> note != null && note.title().contains("second") && note.content().contains("second") && note.authorId().equals(user.id())))).thenReturn(secondNote);
+    when(noteService.createNote(
+            argThat(
+                note ->
+                    note != null
+                        && note.title().contains("first")
+                        && note.content().contains("first")
+                        && note.authorId().equals(user.id()))))
+        .thenReturn(firstNote);
+    when(noteService.createNote(
+            argThat(
+                note ->
+                    note != null
+                        && note.title().contains("second")
+                        && note.content().contains("second")
+                        && note.authorId().equals(user.id()))))
+        .thenReturn(secondNote);
     when(noteService.updateNote(any(), any())).thenReturn(updatedNote);
 
     // when
@@ -55,9 +68,22 @@ class StartupBeanTest {
         .createUser(argThat(arg -> arg.email().equals(email) && arg.password().equals(password)));
     verify(userService)
         .login(argThat(arg -> arg.email().equals(email) && arg.password().equals(password)));
-    verify(noteService).createNote(argThat(note -> note.title().equals("Note first") && note.content().contains("first") && note.authorId().equals(user.id())));
-    verify(noteService).createNote(argThat(note -> note.title().equals("Note second") && note.content().contains("second") && note.authorId().equals(user.id())));
-    verify(noteService).updateNote(eq(secondNoteId), argThat(update -> Boolean.TRUE.equals(update.pinned())));
+    verify(noteService)
+        .createNote(
+            argThat(
+                note ->
+                    note.title().equals("Note first")
+                        && note.content().contains("first")
+                        && note.authorId().equals(user.id())));
+    verify(noteService)
+        .createNote(
+            argThat(
+                note ->
+                    note.title().equals("Note second")
+                        && note.content().contains("second")
+                        && note.authorId().equals(user.id())));
+    verify(noteService)
+        .updateNote(eq(secondNoteId), argThat(update -> Boolean.TRUE.equals(update.pinned())));
     verify(logger).info(contains("Created default user:"));
     verify(logger).info(contains("Login Successful:"));
     verify(logger).info(contains("Created first note:"));

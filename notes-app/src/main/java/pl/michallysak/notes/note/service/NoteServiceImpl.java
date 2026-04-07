@@ -5,6 +5,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
+import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
@@ -15,11 +17,13 @@ import pl.michallysak.notes.note.repository.NoteRepository;
 public class NoteServiceImpl implements NoteService {
 
   private final NoteRepository noteRepository;
+  private final DomainEventPublisher eventPublisher;
 
   @Override
   public NoteValue createNote(CreateNote createNote) {
     Note note = new NoteImpl(createNote);
     noteRepository.save(note);
+    eventPublisher.publish(List.of(new NoteCreatedEvent(note.getId(), note.getContent())));
     return NoteValue.from(note);
   }
 

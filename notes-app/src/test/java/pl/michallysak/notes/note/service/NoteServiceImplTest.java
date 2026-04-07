@@ -2,6 +2,7 @@ package pl.michallysak.notes.note.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -16,6 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
+import pl.michallysak.notes.note.domain.event.DomainEvent;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
+import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
@@ -28,19 +32,29 @@ class NoteServiceImplTest {
 
   @Mock private NoteRepository repository;
 
+  @Mock
+  private DomainEventPublisher eventPublisher =
+      new DomainEventPublisher() {
+        @Override
+        public void publish(List<DomainEvent> events) {
+          // do nothing
+        }
+      };
+
   @InjectMocks private NoteServiceImpl service;
 
   private static final UUID AUTHOR_ID = new NoAuthCurrentUserProvider().getCurrentUserId();
 
   @Test
-  void createNote_shouldValidateAndSave() {
+  void createNote_shouldValidateSaveLogAndPublishEvent() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     // when
     NoteValue noteValue = service.createNote(createNote);
     // then
     verify(repository).save(any());
-
+    verify(eventPublisher)
+        .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteCreatedEvent)));
     assertEquals(createNote.title(), noteValue.title());
     assertEquals(createNote.content(), noteValue.content());
   }

@@ -7,6 +7,8 @@ import pl.michallysak.notes.application.cli.io.IO;
 import pl.michallysak.notes.application.cli.note.presenter.CliNotePresenter;
 import pl.michallysak.notes.application.cli.presenter.Presenter;
 import pl.michallysak.notes.application.cli.presenter.RootPresenter;
+import pl.michallysak.notes.note.domain.event.DomainEvent;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
@@ -55,7 +57,15 @@ public class NoteBeans {
 
   public NoteService noteService() {
     if (noteServiceInstance == null) {
-      noteServiceInstance = new NoteServiceImpl(noteRepository());
+      noteServiceInstance =
+          new NoteServiceImpl(
+              noteRepository(),
+              new DomainEventPublisher() {
+                @Override
+                public void publish(List<DomainEvent> events) {
+                  // no-op for CLI
+                }
+              });
     }
     return noteServiceInstance;
   }

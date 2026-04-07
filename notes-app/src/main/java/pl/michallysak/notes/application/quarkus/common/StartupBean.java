@@ -1,7 +1,6 @@
 package pl.michallysak.notes.application.quarkus.common;
 
 import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import lombok.RequiredArgsConstructor;

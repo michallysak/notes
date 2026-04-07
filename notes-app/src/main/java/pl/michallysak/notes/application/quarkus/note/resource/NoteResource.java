@@ -57,7 +57,8 @@ public class NoteResource {
   @APIResponse(
       responseCode = "200",
       description = "List of notes",
-      content = @Content(schema = @Schema(implementation = NoteResponse.class, type = SchemaType.ARRAY)))
+      content =
+          @Content(schema = @Schema(implementation = NoteResponse.class, type = SchemaType.ARRAY)))
   public List<NoteResponse> getNotes() {
     return noteController.getNotes();
   }

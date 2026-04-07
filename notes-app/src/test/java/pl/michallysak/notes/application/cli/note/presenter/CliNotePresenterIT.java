@@ -20,7 +20,7 @@ class CliNotePresenterIT {
 
   private static final UUID AUTHOR_ID = new NoAuthCurrentUserProvider().getCurrentUserId();
   private final InMemoryNoteRepository noteRepository = new InMemoryNoteRepository();
-  private final NoteService noteService = new NoteServiceImpl(noteRepository);
+  private final NoteService noteService = new NoteServiceImpl(noteRepository, events -> {});
 
   @BeforeEach
   void setUp() {
