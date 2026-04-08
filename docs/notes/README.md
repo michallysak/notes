@@ -4,7 +4,7 @@
 - [x] Create, read, update, and delete notes (CRUD)
 - [x] Each note is associated with a user (ownership enforced)
 - [x] Notes have title, content, and timestamps (created/modified)
-- [ ] Only authenticated users can access their own notes
+- [x] Only authenticated users can access their own notes
 - [ ] Note sharing with other users (view or edit permissions)
 - [ ] Attachments (images, files)
 
