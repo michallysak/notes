@@ -1,7 +1,7 @@
 package pl.michallysak.notes.application.quarkus.user.service;
 
+import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.inject.Default;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +9,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import pl.michallysak.notes.auth.exception.AuthException;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 
-@Default
+@DefaultBean
 @RequestScoped
 @RequiredArgsConstructor
 public class JwtAuthCurrentUserProvider implements CurrentUserProvider {

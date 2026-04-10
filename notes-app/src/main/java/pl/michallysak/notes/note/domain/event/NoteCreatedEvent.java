@@ -1,13 +1,29 @@
 package pl.michallysak.notes.note.domain.event;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import pl.michallysak.notes.note.domain.Note;
 
-public class NoteCreatedEvent implements DomainEvent {
-  public final UUID id;
-  public final String content;
+@Getter
+@RequiredArgsConstructor
+public class NoteCreatedEvent implements DomainEvent<NoteCreatedEvent.Payload> {
+  private final UUID id;
+  private final Payload payload;
+  private final List<UUID> recipients;
 
-  public NoteCreatedEvent(UUID id, String content) {
-    this.id = id;
-    this.content = content;
+  @Getter
+  @RequiredArgsConstructor
+  public static class Payload {
+    private final String title;
+    private final String content;
+  }
+
+  public static NoteCreatedEvent from(Note note) {
+    Payload payload = new Payload(note.getTitle(), note.getContent());
+    UUID authorId = note.getAuthorId();
+    return new NoteCreatedEvent(note.getId(), payload, Collections.singletonList(authorId));
   }
 }

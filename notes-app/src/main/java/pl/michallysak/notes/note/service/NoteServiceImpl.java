@@ -1,5 +1,6 @@
 package pl.michallysak.notes.note.service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,8 @@ public class NoteServiceImpl implements NoteService {
   public NoteValue createNote(CreateNote createNote) {
     Note note = new NoteImpl(createNote);
     noteRepository.save(note);
-    eventPublisher.publish(List.of(new NoteCreatedEvent(note.getId(), note.getContent())));
+    NoteCreatedEvent noteCreatedEvent = NoteCreatedEvent.from(note);
+    eventPublisher.publish(Collections.singletonList(noteCreatedEvent));
     return NoteValue.from(note);
   }
 

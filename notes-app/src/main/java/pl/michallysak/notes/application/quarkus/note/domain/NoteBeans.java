@@ -44,11 +44,4 @@ public class NoteBeans {
       NoteRepository noteRepository, DomainEventPublisher eventPublisher) {
     return new NoteServiceImpl(noteRepository, eventPublisher);
   }
-
-  @Produces
-  @ApplicationScoped
-  public DomainEventPublisher domainEventPublisher() {
-    // No-op publisher; replace with real implementation if needed
-    return events -> {};
-  }
 }

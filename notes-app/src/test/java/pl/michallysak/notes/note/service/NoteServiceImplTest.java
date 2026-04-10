@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
-import pl.michallysak.notes.note.domain.event.DomainEvent;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
@@ -32,14 +31,7 @@ class NoteServiceImplTest {
 
   @Mock private NoteRepository repository;
 
-  @Mock
-  private DomainEventPublisher eventPublisher =
-      new DomainEventPublisher() {
-        @Override
-        public void publish(List<DomainEvent> events) {
-          // do nothing
-        }
-      };
+  @Mock private DomainEventPublisher eventPublisher = events -> {};
 
   @InjectMocks private NoteServiceImpl service;
 
