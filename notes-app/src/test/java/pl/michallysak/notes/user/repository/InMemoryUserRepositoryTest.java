@@ -125,4 +125,23 @@ class InMemoryUserRepositoryTest {
     assertTrue(found.isPresent());
     assertSame(user, found.get());
   }
+
+  @Test
+  void deleteAll_shouldRemoveAllUsers() {
+    // given
+    UserRepository userRepository = new InMemoryUserRepository();
+    User user1 =
+        new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
+    User user2 =
+        new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
+    userRepository.save(user1);
+    userRepository.save(user2);
+    // when
+    userRepository.deleteAll();
+    // then
+    assertTrue(userRepository.findById(user1.getId()).isEmpty());
+    assertTrue(userRepository.findById(user2.getId()).isEmpty());
+    assertFalse(userRepository.existsByEmail(user1.getEmail()));
+    assertFalse(userRepository.existsByEmail(user2.getEmail()));
+  }
 }

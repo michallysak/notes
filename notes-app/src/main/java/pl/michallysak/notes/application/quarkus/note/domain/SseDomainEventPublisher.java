@@ -6,10 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.jboss.logging.Logger;
@@ -57,12 +54,8 @@ public class SseDomainEventPublisher implements DomainEventPublisher {
         continue;
       }
 
-      List<UUID> recipients = event.getRecipients();
-      if (recipients == null) {
-        sinks.forEach((userId, sink) -> send(userId, sseEvent));
-      } else {
-        recipients.forEach(userId -> send(userId, sseEvent));
-      }
+      Set<UUID> uuids = Optional.ofNullable(event.getRecipients()).orElse(sinks.keySet());
+      uuids.forEach(recipient -> send(recipient, sseEvent));
     }
   }
 
@@ -80,6 +73,9 @@ public class SseDomainEventPublisher implements DomainEventPublisher {
 
     try {
       sink.send(event);
+      logger.debug(
+          "Sent event %s to user %s, payload %s"
+              .formatted(event.getName(), userId, event.getData()));
     } catch (Exception e) {
       logger.debug("Failed to send event to user %s".formatted(userId), e);
     }

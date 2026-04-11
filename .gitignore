@@ -2,3 +2,4 @@
 /notes-app/target
 *.env
 *.pem
+target/

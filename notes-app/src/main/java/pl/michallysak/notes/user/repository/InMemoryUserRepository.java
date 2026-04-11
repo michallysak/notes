@@ -38,4 +38,9 @@ public class InMemoryUserRepository implements UserRepository {
   public Optional<User> findByEmail(Email email) {
     return users.values().stream().filter(user -> user.getEmail().equals(email)).findFirst();
   }
+
+  @Override
+  public void deleteAll() {
+    users.clear();
+  }
 }

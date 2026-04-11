@@ -7,6 +7,7 @@ import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
@@ -76,7 +77,7 @@ public class SseDomainEventPublisherTest {
     publisher.register(eventSink, sse);
     when(eventSink.send(any())).thenReturn(mock(CompletionStage.class));
     UUID eventId = UUID.randomUUID();
-    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", List.of(userId));
+    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", Set.of(userId));
     when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     OutboundSseEvent.Builder builder = mock(OutboundSseEvent.Builder.class, RETURNS_SELF);
     when(builder.build()).thenReturn(mock(OutboundSseEvent.class));
@@ -94,7 +95,7 @@ public class SseDomainEventPublisherTest {
     publisher.register(eventSink, sse);
     when(eventSink.isClosed()).thenReturn(true);
     UUID eventId = UUID.randomUUID();
-    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", List.of(userId));
+    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", Set.of(userId));
     when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     OutboundSseEvent.Builder builder = mock(OutboundSseEvent.Builder.class, RETURNS_SELF);
     when(builder.build()).thenReturn(mock(OutboundSseEvent.class));
@@ -142,7 +143,7 @@ public class SseDomainEventPublisherTest {
     publisher.register(eventSink, sse);
     // Now publish to a userId that is not present
     UUID eventId = UUID.randomUUID();
-    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", List.of(UUID.randomUUID()));
+    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", Set.of(UUID.randomUUID()));
     when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     OutboundSseEvent.Builder builder = mock(OutboundSseEvent.Builder.class, RETURNS_SELF);
     when(builder.build()).thenReturn(mock(OutboundSseEvent.class));
@@ -160,7 +161,7 @@ public class SseDomainEventPublisherTest {
     publisher.register(eventSink, sse);
     when(eventSink.isClosed()).thenReturn(false);
     UUID eventId = UUID.randomUUID();
-    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", List.of(userId));
+    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", Set.of(userId));
     when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     OutboundSseEvent.Builder builder = mock(OutboundSseEvent.Builder.class, RETURNS_SELF);
     when(builder.build()).thenReturn(mock(OutboundSseEvent.class));
@@ -180,7 +181,7 @@ public class SseDomainEventPublisherTest {
     publisher.register(eventSink, sse);
     doThrow(new RuntimeException("close fail")).when(eventSink).close();
     UUID eventId = UUID.randomUUID();
-    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", List.of(userId));
+    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", Set.of(userId));
     when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     OutboundSseEvent.Builder builder = mock(OutboundSseEvent.Builder.class, RETURNS_SELF);
     when(builder.build()).thenReturn(mock(OutboundSseEvent.class));
@@ -198,7 +199,7 @@ public class SseDomainEventPublisherTest {
     when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
     publisher.register(eventSink, sse);
     UUID eventId = UUID.randomUUID();
-    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", List.of(userId));
+    DomainEvent<?> event = new TestDomainEvent<>(eventId, "payload", Set.of(userId));
     when(objectMapper.writeValueAsString(any()))
         .thenThrow(new RuntimeException("serialization fail"));
     // when

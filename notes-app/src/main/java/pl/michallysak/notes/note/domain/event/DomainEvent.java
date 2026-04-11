@@ -1,6 +1,6 @@
 package pl.michallysak.notes.note.domain.event;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface DomainEvent<T> {
@@ -8,5 +8,5 @@ public interface DomainEvent<T> {
 
   T getPayload();
 
-  List<UUID> getRecipients();
+  Set<UUID> getRecipients();
 }

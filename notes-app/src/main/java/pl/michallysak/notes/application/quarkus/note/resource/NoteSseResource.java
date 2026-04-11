@@ -1,6 +1,7 @@
 package pl.michallysak.notes.application.quarkus.note.resource;
 
 import io.quarkus.security.Authenticated;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -20,6 +21,7 @@ import pl.michallysak.notes.application.quarkus.note.domain.SseDomainEventPublis
 public class NoteSseResource {
   private final SseDomainEventPublisher sseDomainEventPublisher;
 
+  @Blocking
   @GET
   @Produces(MediaType.SERVER_SENT_EVENTS)
   @Operation(
