@@ -40,4 +40,9 @@ public class InMemoryNoteRepository implements NoteRepository {
   public boolean deleteById(UUID id) {
     return notes.remove(id) != null;
   }
+
+  @Override
+  public void deleteAll() {
+    notes.clear();
+  }
 }

@@ -124,6 +124,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -141,6 +146,17 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*IT.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -242,11 +258,13 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/swagger/templates/typescript-angular</outputDirectory>
+                            <outputDirectory>${project.build.directory}/swagger/templates/typescript-angular
+                            </outputDirectory>
                             <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>src/main/resources/swagger-codegen/templates/typescript-angular</directory>
+                                    <directory>src/main/resources/swagger-codegen/templates/typescript-angular
+                                    </directory>
                                     <includes>
                                         <include>**/*</include>
                                     </includes>
@@ -290,7 +308,8 @@
                             <inputSpec>${project.build.directory}/swagger/openapi.yaml</inputSpec>
                             <language>typescript-angular</language>
                             <output>${project.build.directory}/generated-sources/typescript</output>
-                            <templateDirectory>${project.build.directory}/swagger/templates/typescript-angular</templateDirectory>
+                            <templateDirectory>${project.build.directory}/swagger/templates/typescript-angular
+                            </templateDirectory>
                             <!-- Modified, originally from https://github.com/swagger-api/swagger-codegen/tree/master/modules/swagger-codegen/src/main/resources/typescript-angular -->
                             <typeMappings>
                                 <typeMapping>LocalDateTime=Date</typeMapping>

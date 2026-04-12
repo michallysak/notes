@@ -16,4 +16,6 @@ public interface NoteRepository {
   Optional<Note> findById(UUID id);
 
   boolean deleteById(UUID id);
+
+  void deleteAll();
 }

@@ -135,6 +135,19 @@ class InMemoryNoteRepositoryTest {
     assertTrue(notes.stream().allMatch(n -> n.getAuthorId().equals(author1)));
   }
 
+  @Test
+  void deleteAll_shouldRemoveAllNotes() {
+    // given
+    Note note1 = createNote();
+    Note note2 = createNote();
+    NoteRepository noteRepository = createNoteRepository(note1, note2);
+    assertEquals(2, noteRepository.findAll().size());
+    // when
+    noteRepository.deleteAll();
+    // then
+    assertTrue(noteRepository.findAll().isEmpty());
+  }
+
   private NoteRepository createNoteRepository(Note... notes) {
     return new InMemoryNoteRepository(Arrays.asList(notes));
   }
