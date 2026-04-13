@@ -3,7 +3,6 @@ package pl.michallysak.notes.application.quarkus.helpers;
 import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
@@ -27,7 +26,6 @@ public class BaseIT {
       UserResourceRestTestClient.noAuth();
 
   @BeforeEach
-  @TestSecurity(authorizationEnabled = false)
   void setUp() {
     noteRepository.deleteAll();
     userRepository.deleteAll();

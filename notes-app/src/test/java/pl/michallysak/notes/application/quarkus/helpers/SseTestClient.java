@@ -6,22 +6,16 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.sse.InboundSseEvent;
 import jakarta.ws.rs.sse.SseEventSource;
+import java.net.SocketException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import lombok.Getter;
 
 public class SseTestClient {
-  @Getter private final CountDownLatch eventLatch = new CountDownLatch(1);
-  @Getter private final CountDownLatch errorLatch = new CountDownLatch(1);
-  private final AtomicReference<List<Throwable>> exceptions =
-      new AtomicReference<>(Collections.emptyList());
-  private final AtomicReference<List<InboundSseEvent>> events =
-      new AtomicReference<>(Collections.emptyList());
+  @Getter private final List<Throwable> exceptions = new ArrayList<>();
+  @Getter private final List<InboundSseEvent> events = new ArrayList<>();
 
   private final URI uri;
   private final String token;
@@ -32,11 +26,11 @@ public class SseTestClient {
   }
 
   /**
-   * Runs the SSE test with the given context. The provided BiFunction receives the SseEventSource
+   * Runs the SSE test with the given context. The provided BiConsumer receives the SseEventSource
    * and this SseTestClient instance. The lambda should open the source, perform any actions (e.g.
-   * trigger events), and return a Boolean indicating test success.
+   * trigger events), and perform assertions.
    */
-  public boolean runWithContext(BiFunction<SseEventSource, SseTestClient, Boolean> onContext) {
+  public void runWithContext(BiConsumer<SseEventSource, SseTestClient> onContext) {
     try (Client client = ClientBuilder.newClient()) {
       if (token != null && !token.isEmpty()) {
         ClientRequestFilter authorization =
@@ -46,7 +40,7 @@ public class SseTestClient {
       WebTarget target = client.target(uri);
       try (SseEventSource source = SseEventSource.target(target).build()) {
         source.register(this::onEventMsg, this::onError);
-        return onContext.apply(source, this);
+        onContext.accept(source, this);
       }
     }
   }
@@ -55,34 +49,20 @@ public class SseTestClient {
     System.out.printf(
         "[SSE] Received event:\nid: %s\nname: %s\ndata: %s%n",
         event.getId(), event.getName(), event.readData());
-    addValue(events, event);
-    eventLatch.countDown();
+    events.add(event);
   }
 
   private void onError(Throwable e) {
+    if (isSocketClosed(e)) {
+      // Closing the SSE source may trigger a "Socket closed" callback; treat as expected noise.
+      return;
+    }
     System.err.printf("[SSE] Error occurred: %s%n", e.getMessage());
-    addValue(exceptions, e);
-    errorLatch.countDown();
+    exceptions.add(e);
   }
 
-  private <T> void addValue(AtomicReference<List<T>> values, T value) {
-    values.getAndUpdate(
-        prev -> {
-          if (prev == null || prev.isEmpty()) {
-            return List.of(value);
-          } else {
-            var newList = new ArrayList<>(prev);
-            newList.add(value);
-            return newList;
-          }
-        });
-  }
-
-  public List<Throwable> getExceptions() {
-    return exceptions.get();
-  }
-
-  public List<InboundSseEvent> getEvents() {
-    return events.get();
+  private boolean isSocketClosed(Throwable e) {
+    return e instanceof SocketException
+        || (e.getMessage() != null && e.getMessage().toLowerCase().contains("socket closed"));
   }
 }

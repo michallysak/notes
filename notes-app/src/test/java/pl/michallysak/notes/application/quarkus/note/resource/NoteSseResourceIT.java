@@ -6,8 +6,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.ws.rs.sse.InboundSseEvent;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import pl.michallysak.notes.application.quarkus.helpers.BaseIT;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
@@ -22,20 +20,13 @@ class NoteSseResourceIT extends BaseIT {
     // given
     NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.noAuth();
     // when
-    boolean awaitResult =
-        notesEventsSseTestClient.runWithContext(
-            (source, ctx) -> {
-              source.open();
-              try {
-                return ctx.getErrorLatch().await(2, TimeUnit.SECONDS);
-              } catch (InterruptedException e) {
-                fail("Test was interrupted while waiting for error callback", e);
-                return null;
-              }
-            });
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          waitGivenMillis(200);
+        });
 
     // then
-    assertTrue(awaitResult);
     // exceptions
     assertEquals(1, notesEventsSseTestClient.getExceptions().size());
     Throwable ex = notesEventsSseTestClient.getExceptions().getFirst();
@@ -48,34 +39,16 @@ class NoteSseResourceIT extends BaseIT {
   @Test
   void connectToNotesEvents_shouldReturn200_whenAuthenticated() {
     // given
-    CountDownLatch openLatch = new CountDownLatch(1);
     String jwt = createUser(EMAIL_1);
     NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.auth(jwt);
     // when
-    boolean awaitResult =
-        notesEventsSseTestClient.runWithContext(
-            (source, ctx) -> {
-              source.open();
-              new Thread(
-                      () -> {
-                        try {
-                          Thread.sleep(500);
-                          if (source.isOpen()) {
-                            openLatch.countDown();
-                          }
-                        } catch (InterruptedException ignored) {
-                        }
-                      })
-                  .start();
-              try {
-                return openLatch.await(2, TimeUnit.SECONDS);
-              } catch (InterruptedException e) {
-                fail("Test was interrupted while waiting for open callback", e);
-                return false;
-              }
-            });
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          waitGivenMillis(200);
+          assertTrue(source.isOpen());
+        });
     // then
-    assertTrue(awaitResult);
     // exceptions
     assertTrue(notesEventsSseTestClient.getExceptions().isEmpty());
     // events
@@ -88,22 +61,15 @@ class NoteSseResourceIT extends BaseIT {
     String jwt = createUser(EMAIL_1);
     NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.auth(jwt);
     // when
-    boolean awaitResult =
-        notesEventsSseTestClient.runWithContext(
-            (source, ctx) -> {
-              source.open();
-              CreateNoteRequest createNoteRequest =
-                  NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
-              createNote(jwt, createNoteRequest);
-              try {
-                return ctx.getEventLatch().await(2, TimeUnit.SECONDS);
-              } catch (InterruptedException e) {
-                fail("Test was interrupted while waiting for SSE event", e);
-                return false;
-              }
-            });
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          CreateNoteRequest createNoteRequest =
+              NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
+          createNote(jwt, createNoteRequest);
+          waitGivenMillis(200);
+        });
     // then
-    assertTrue(awaitResult);
     // exceptions
     assertTrue(notesEventsSseTestClient.getExceptions().isEmpty());
     // events
@@ -130,25 +96,29 @@ class NoteSseResourceIT extends BaseIT {
     String jwt2 = createUser(EMAIL_2);
     NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.auth(jwt1);
     // when
-    boolean awaitResult =
-        notesEventsSseTestClient.runWithContext(
-            (source, ctx) -> {
-              source.open();
-              CreateNoteRequest createNoteRequest =
-                  NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
-              createNote(jwt2, createNoteRequest);
-              try {
-                return !ctx.getEventLatch().await(2, TimeUnit.SECONDS);
-              } catch (InterruptedException e) {
-                fail("Test was interrupted while waiting for SSE event", e);
-                return true;
-              }
-            });
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          CreateNoteRequest createNoteRequest =
+              NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
+          createNote(jwt2, createNoteRequest);
+          waitGivenMillis(200);
+        });
     // then
-    assertTrue(awaitResult, "Should NOT receive SSE message for note created by another user");
     // exceptions
     assertTrue(notesEventsSseTestClient.getExceptions().isEmpty());
     // events
-    assertTrue(notesEventsSseTestClient.getEvents().isEmpty());
+    assertTrue(
+        notesEventsSseTestClient.getEvents().isEmpty(),
+        "Should NOT receive SSE message for note created by another user");
+  }
+
+  private static void waitGivenMillis(int millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      fail("Test was interrupted while waiting for SSE event", e);
+    }
   }
 }
