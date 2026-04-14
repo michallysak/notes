@@ -40,8 +40,12 @@ public class SseDomainEventPublisher implements DomainEventPublisher {
 
   @Override
   public void publish(List<DomainEvent<?>> events) {
-    if (events == null || events.isEmpty() || sinks.isEmpty()) {
+    if (events == null || events.isEmpty() ) {
       logger.info("No domain events received");
+      return;
+    }
+    if (sinks.isEmpty()) {
+      logger.info("No connected clients to receive events");
       return;
     }
 

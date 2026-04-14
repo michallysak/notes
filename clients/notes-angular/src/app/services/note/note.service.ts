@@ -16,7 +16,7 @@ export class NoteService {
   }
 
   updateNote(id: string, body: NoteUpdateRequest) {
-    return this.notesApi.updateNote(id, body).pipe(
+    return this.notesApi.updateNote(body, id).pipe(
       tap((res: Note) => {
         const current = this.notesSubject.value;
         const idx = current.findIndex((n) => n.id === res.id);
