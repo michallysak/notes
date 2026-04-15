@@ -1,5 +1,7 @@
 package pl.michallysak.notes.helpers;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -29,5 +31,14 @@ public final class TestExtensions {
   @SneakyThrows
   public static String toJsonString(Object object) {
     return objectMapper.writeValueAsString(object);
+  }
+
+  public static void waitGivenMillis(int millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      fail("Test was interrupted while waiting for SSE event", e);
+    }
   }
 }

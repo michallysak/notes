@@ -6,18 +6,15 @@ import pl.michallysak.notes.application.quarkus.helpers.SseTestClient;
 
 public class NotesEventsSseTestClient extends SseTestClient {
 
-  private static final URI URI =
-      UriBuilder.fromUri("http://localhost:8081").path("/notes/events").build();
+  private static final String BASE_URI = "http://localhost:8081";
+  private static final String PATH = "/notes/events";
 
-  private NotesEventsSseTestClient(String token) {
-    super(URI, token);
+  private NotesEventsSseTestClient(URI uri) {
+    super(uri);
   }
 
-  public static NotesEventsSseTestClient noAuth() {
-    return new NotesEventsSseTestClient(null);
-  }
-
-  public static NotesEventsSseTestClient auth(String token) {
-    return new NotesEventsSseTestClient(token);
+  public static NotesEventsSseTestClient withKey(String key) {
+    URI uri = UriBuilder.fromUri(BASE_URI).path(PATH).queryParam("key", key).build();
+    return new NotesEventsSseTestClient(uri);
   }
 }

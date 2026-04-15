@@ -1,10 +1,16 @@
 package pl.michallysak.notes.application.quarkus.note.resource;
 
+import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
+import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
+import static pl.michallysak.notes.helpers.TestExtensions.waitGivenMillis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.Response;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.InboundSseEvent;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import pl.michallysak.notes.application.quarkus.helpers.BaseIT;
@@ -15,32 +21,47 @@ import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 @QuarkusTest
 class NoteSseResourceIT extends BaseIT {
 
-  @Test
-  void connectToNotesEvents_shouldReturn401_whenNotAuthenticated() {
-    // given
-    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.noAuth();
-    // when
-    notesEventsSseTestClient.runWithContext(
-        (source, ctx) -> {
-          source.open();
-          waitGivenMillis(200);
-        });
+  private static final Set<String> NOTE_EVENTS = Set.of("NOTE_CREATED_EVENT");
 
+  @Test
+  void createStreamKey_shouldReturn401_whenNotAuthenticated() {
+    // given
+    String jwt = null;
+    Set<String> noteEvents = NOTE_EVENTS;
+    // when
+    Response authorization = createStreamKeyResponse(jwt, noteEvents);
     // then
-    // exceptions
-    assertEquals(1, notesEventsSseTestClient.getExceptions().size());
-    Throwable ex = notesEventsSseTestClient.getExceptions().getFirst();
-    String msg = ex.getMessage();
-    assertTrue(msg.contains("401"));
-    // events
-    assertTrue(notesEventsSseTestClient.getEvents().isEmpty());
+    authorization.then().statusCode(401);
   }
 
   @Test
-  void connectToNotesEvents_shouldReturn200_whenAuthenticated() {
+  void createStreamKey_shouldReturn400_whenEventsEmpty() {
     // given
     String jwt = createUser(EMAIL_1);
-    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.auth(jwt);
+    Set<String> noteEvents = Set.of();
+    // when
+    Response authorization = createStreamKeyResponse(jwt, noteEvents);
+    // then
+    authorization.then().statusCode(400);
+  }
+
+  @Test
+  void createStreamKey_shouldReturn201_whenAuthenticatedWithEvents() {
+    // given
+    String jwt = createUser(EMAIL_1);
+    // when
+    String key = createStreamKey(jwt, NOTE_EVENTS);
+    // then
+    assertNotNull(key);
+    assertFalse(key.isEmpty());
+  }
+
+  @Test
+  void connectToNotesEvents_shouldConnect_whenValidKey() {
+    // given
+    String jwt = createUser(EMAIL_1);
+    String key = createStreamKey(jwt, NOTE_EVENTS);
+    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.withKey(key);
     // when
     notesEventsSseTestClient.runWithContext(
         (source, ctx) -> {
@@ -49,9 +70,7 @@ class NoteSseResourceIT extends BaseIT {
           assertTrue(source.isOpen());
         });
     // then
-    // exceptions
     assertTrue(notesEventsSseTestClient.getExceptions().isEmpty());
-    // events
     assertTrue(notesEventsSseTestClient.getEvents().isEmpty());
   }
 
@@ -59,7 +78,8 @@ class NoteSseResourceIT extends BaseIT {
   void connectToNotesEvents_shouldReceiveSseMessage_whenNoteCreatedByAuthenticatedUser() {
     // given
     String jwt = createUser(EMAIL_1);
-    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.auth(jwt);
+    String key = createStreamKey(jwt, NOTE_EVENTS);
+    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.withKey(key);
     // when
     notesEventsSseTestClient.runWithContext(
         (source, ctx) -> {
@@ -94,7 +114,8 @@ class NoteSseResourceIT extends BaseIT {
     // given
     String jwt1 = createUser(EMAIL_1);
     String jwt2 = createUser(EMAIL_2);
-    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.auth(jwt1);
+    String key = createStreamKey(jwt1, NOTE_EVENTS);
+    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.withKey(key);
     // when
     notesEventsSseTestClient.runWithContext(
         (source, ctx) -> {
@@ -113,12 +134,31 @@ class NoteSseResourceIT extends BaseIT {
         "Should NOT receive SSE message for note created by another user");
   }
 
-  private static void waitGivenMillis(int millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      fail("Test was interrupted while waiting for SSE event", e);
-    }
+  @Test
+  void connectToNotesEvents_shouldFail_whenInvalidKey() {
+    // given
+    NotesEventsSseTestClient notesEventsSseTestClient =
+        NotesEventsSseTestClient.withKey("invalid-key");
+    // when
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          waitGivenMillis(200);
+        });
+    // then
+    assertFalse(notesEventsSseTestClient.getExceptions().isEmpty());
+  }
+
+  private String createStreamKey(String jwt, Set<String> events) {
+    return createStreamKeyResponse(jwt, events).then().statusCode(201).extract().path("key");
+  }
+
+  private Response createStreamKeyResponse(String jwt, Set<String> events) {
+    return given()
+        .header("Authorization", "Bearer " + jwt)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(toJsonString(events))
+        .when()
+        .post("/notes/events");
   }
 }

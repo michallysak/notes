@@ -2,7 +2,6 @@ package pl.michallysak.notes.application.quarkus.helpers;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.sse.InboundSseEvent;
 import jakarta.ws.rs.sse.SseEventSource;
@@ -12,18 +11,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class SseTestClient {
   @Getter private final List<Throwable> exceptions = new ArrayList<>();
   @Getter private final List<InboundSseEvent> events = new ArrayList<>();
 
   private final URI uri;
-  private final String token;
-
-  public SseTestClient(URI uri, String token) {
-    this.uri = uri;
-    this.token = token;
-  }
 
   /**
    * Runs the SSE test with the given context. The provided BiConsumer receives the SseEventSource
@@ -32,11 +27,6 @@ public class SseTestClient {
    */
   public void runWithContext(BiConsumer<SseEventSource, SseTestClient> onContext) {
     try (Client client = ClientBuilder.newClient()) {
-      if (token != null && !token.isEmpty()) {
-        ClientRequestFilter authorization =
-            (requestContext) -> requestContext.getHeaders().add("Authorization", "Bearer " + token);
-        client.register(authorization);
-      }
       WebTarget target = client.target(uri);
       try (SseEventSource source = SseEventSource.target(target).build()) {
         source.register(this::onEventMsg, this::onError);

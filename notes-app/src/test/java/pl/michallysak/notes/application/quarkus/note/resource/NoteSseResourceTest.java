@@ -1,9 +1,12 @@
 package pl.michallysak.notes.application.quarkus.note.resource;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
+import java.time.Instant;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,10 +23,24 @@ class NoteSseResourceTest {
   @InjectMocks NoteSseResource noteSseResource;
 
   @Test
-  void stream_shouldRegisterEventSink() {
+  void stream_shouldDelegateToPublisher() {
     // when
-    noteSseResource.stream(eventSink, sse);
+    String key = "some-key";
+    noteSseResource.stream(eventSink, sse, key);
     // then
-    verify(sseDomainEventPublisher).register(eventSink, sse);
+    verify(sseDomainEventPublisher).stream(eventSink, sse, key);
+  }
+
+  @Test
+  void createStreamKey_shouldDelegateToPublisher() {
+    // given
+    Set<String> events = Set.of("NOTE_CREATED_EVENT");
+    KeyResponse expectedResponse = new KeyResponse("key-123", Instant.now().plusSeconds(60));
+    when(sseDomainEventPublisher.createStreamKey(events)).thenReturn(expectedResponse);
+    // when
+    KeyResponse result = noteSseResource.createStreamKey(events);
+    // then
+    assertEquals(expectedResponse, result);
+    verify(sseDomainEventPublisher).createStreamKey(events);
   }
 }
