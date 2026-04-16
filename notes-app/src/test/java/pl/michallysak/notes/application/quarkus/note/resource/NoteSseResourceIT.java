@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import pl.michallysak.notes.application.quarkus.helpers.BaseIT;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils;
-import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
+import pl.michallysak.notes.note.model.NoteValue;
 
 @QuarkusTest
 class NoteSseResourceIT extends BaseIT {
@@ -99,11 +99,15 @@ class NoteSseResourceIT extends BaseIT {
     assertEquals("NOTE_CREATED_EVENT", sseEvent.getName());
     String msg = sseEvent.readData();
     try {
-      NoteCreatedEvent.Payload payload =
-          OBJECT_MAPPER.readValue(msg, NoteCreatedEvent.Payload.class);
+      NoteValue payload = OBJECT_MAPPER.readValue(msg, NoteValue.class);
       assertNotNull(payload);
-      assertNotNull(payload.getTitle());
-      assertNotNull(payload.getContent());
+      assertNotNull(payload.id());
+      assertNotNull(payload.title());
+      assertNotNull(payload.content());
+      assertNotNull(payload.created());
+      assertNull(payload.updated());
+      assertNotNull(payload.authorId());
+      assertFalse(payload.pinned());
     } catch (JsonProcessingException e) {
       fail("JSON parsing failed. Payload: " + msg, e);
     }

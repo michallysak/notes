@@ -1,146 +1,111 @@
 import { inject, Injectable, NgZone } from '@angular/core';
-import { Observable } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
+import { Observable, Subject } from 'rxjs';
 
-export interface SseEvent<T> {
-  id: string;
-  name: string;
-  data: T;
+export interface SharedEventStream {
+  get: <E extends { type: string }>(t: E | E['type']) => Observable<E>;
+  close: () => void;
+}
+
+export interface SharedEventStreamSettings {
+  baseUrl: string;
+  path: string;
+  key: string;
+  onOpen?: (event: Event) => void;
+  onError?: (event: Event) => void;
 }
 
 @Injectable({ providedIn: 'root' })
 export class SseService {
   private ngZone = inject(NgZone);
-  private authService = inject(AuthService);
 
-  connect(basePath: string, path: string): Observable<Partial<SseEvent<unknown>>> {
-    const token = this.authService.getToken();
-    const base = basePath || '';
+  openSharedEventStream(settings: SharedEventStreamSettings): SharedEventStream {
+    const { baseUrl, path, key, onOpen, onError } = settings;
+    const base = baseUrl || '';
     const sep = base.endsWith('/') || path.startsWith('/') ? '' : '/';
-    const url = `${base}${sep}${path}`;
+    const urlBase = `${base}${sep}${path}`;
+    const url = key
+      ? `${urlBase}${urlBase.includes('?') ? '&' : '?'}key=${encodeURIComponent(key)}`
+      : urlBase;
 
-    return new Observable<Partial<SseEvent<unknown>>>((observer) => {
-      const controller = new AbortController();
-      const signal = controller.signal;
+    const es = new EventSource(url, { withCredentials: true });
+    console.log('[openSharedEventStream] opening EventSource', url);
 
-      const errFun = (err: unknown) => {
-        console.error('err', err);
-        // If the fetch was aborted treat it as a normal completion instead of an error
-        const name = (err as any)?.name;
-        if (name === 'AbortError') {
-          this.ngZone.run(() => observer.complete());
-          return;
-        }
-        this.ngZone.run(() => observer.error(err));
-      };
+    const subjects: Record<string, Subject<any>> = {};
+    const listeners: Record<string, EventListener> = {};
 
-      fetch(url, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: 'include',
-        signal,
-      })
-        .then((response) => {
-          console.log('response', response);
-          if (!response.ok) {
-            throw new Error(`SSE request failed: ${response.status} ${response.statusText}`);
-          }
-          if (!response.body) {
-            throw new Error('SSE response has no body');
-          }
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-
-          const read = () => {
-            reader
-              .read()
-              .then(({ done, value }) => {
-                if (done) {
-                  this.ngZone.run(() => observer.complete());
-                  console.log('SSE stream completed');
-                  return;
-                }
-
-                buffer += decoder.decode(value, { stream: true });
-
-                const events = buffer.split('\n\n');
-                // the last element is either a partial event or empty fragment - keep in buffer
-                buffer = events.pop()!;
-
-                for (const ev of events) {
-                  // ignore empty fragments or heartbeat/newline-only messages
-                  if (!ev || !ev.trim()) {
-                    continue;
-                  }
-                  try {
-                    const parsed = this.parseSseEvent(ev);
-                    this.ngZone.run(() => observer.next(parsed));
-                  } catch (err) {
-                    errFun(err);
-                  }
-                }
-
-                read();
-              })
-              .catch((err) => errFun(err));
-          };
-
-          read();
-        })
-        .catch((err) => errFun(err));
-
-      return () => {
+    const makeListener = (name: string) => {
+      const fn: EventListener = (ev: Event) => {
         try {
-          controller.abort();
-        } catch (e) {
-          console.error(e);
+          const mev = ev as MessageEvent;
+          let parsed: any;
+          try {
+            parsed = mev.data ? JSON.parse(mev.data) : undefined;
+          } catch (e) {
+            parsed = mev.data;
+          }
+
+          const subj = subjects[name];
+          if (subj) {
+            const emitted = name === 'message' ? parsed : { type: name, payload: parsed };
+            this.ngZone.run(() => subj.next(emitted));
+          }
+        } catch (err) {
+          const subj = subjects[name];
+          if (subj) {
+            this.ngZone.run(() => subj.error(err as any));
+          }
         }
       };
-    });
-  }
+      return fn;
+    };
 
-  private parseSseEvent(raw: string): Partial<SseEvent<unknown>> {
-    // Be defensive: ignore empty/whitespace-only fragments
-    if (!raw || !raw.trim()) {
-      return {};
+    if (onOpen) {
+      es.onopen = (e) => {
+        this.ngZone.run(() => onOpen(e));
+      };
+    }
+    if (onError) {
+      es.onerror = (e) => {
+        this.ngZone.run(() => onError(e));
+      };
     }
 
-    const lines = raw.split(/\r?\n/);
-    let id: string | undefined;
-    let name: string | undefined;
-    const dataLines: string[] = [];
-    for (const line of lines) {
-      // ignore comment lines (start with ':')
-      if (!line) {
-        continue;
+    const get = <E extends { type: string }>(t: E | E['type']): Observable<E> => {
+      const name = typeof t === 'string' ? t : t.type;
+      if (!subjects[name]) {
+        subjects[name] = new Subject<any>();
+        const fn = makeListener(name);
+        listeners[name] = fn;
+        try {
+          es.addEventListener(name, fn as EventListener);
+        } catch (err) {
+          console.warn('Shared SSE: could not add listener for', name, err);
+        }
       }
-      if (line.startsWith(':')) {
-        continue;
-      }
-      if (line.startsWith('id:')) {
-        id = line.slice(3).trim();
-      } else if (line.startsWith('event:')) {
-        name = line.slice(6).trim();
-      } else if (line.startsWith('data:')) {
-        dataLines.push(line.slice(5));
-      }
-    }
 
-    const dataText = dataLines.map((l) => l.replace(/^\s+|\s+$/g, '')).join('\n');
-    if (!dataText) {
-      return { id, name, data: undefined };
-    }
+      return subjects[name].asObservable() as Observable<E>;
+    };
 
-    try {
-      const data = JSON.parse(dataText);
-      return { id, name, data };
-    } catch (err) {
-      // If payload is not valid JSON, return as raw string to avoid crashing the stream
-      console.warn('Failed to parse SSE data as JSON, returning raw string', dataText, err);
-      return { id, name, data: dataText };
-    }
+    const close = () => {
+      try {
+        for (const name of Object.keys(listeners)) {
+          try {
+            es.removeEventListener(name, listeners[name]);
+          } catch (_) {}
+        }
+        try {
+          es.close();
+        } catch (_) {}
+        for (const k of Object.keys(subjects)) {
+          try {
+            subjects[k].complete();
+          } catch (_) {}
+        }
+      } catch (e) {
+        console.error('Error tearing down shared SSE', e);
+      }
+    };
+
+    return { get, close };
   }
 }

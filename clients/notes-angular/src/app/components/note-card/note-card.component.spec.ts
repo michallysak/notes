@@ -1,12 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideTranslateService } from '@ngx-translate/core';
+import { EMPTY, of, throwError } from 'rxjs';
 import { NoteCardComponent } from './note-card.component';
+import { NoteEventsService } from '../../services/note/note-events.service';
+import { NoteService } from '../../services/note/note.service';
 import { Note } from '../../types/note';
 
 describe('NoteCardComponent', () => {
   let component: NoteCardComponent;
   let fixture: ComponentFixture<NoteCardComponent>;
+  const noteService = {
+    deleteNote: vi.fn().mockReturnValue(of(undefined)),
+  };
 
   const createNote = (overrides: Partial<Note> = {}): Note =>
     ({
@@ -20,13 +26,15 @@ describe('NoteCardComponent', () => {
     });
 
   beforeEach(async () => {
+    noteService.deleteNote.mockReset();
+    noteService.deleteNote.mockReturnValue(of(undefined));
+
     await TestBed.configureTestingModule({
       imports: [NoteCardComponent],
       providers: [
-        provideTranslateService({
-          lang: 'en',
-          fallbackLang: 'en',
-        }),
+        provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
+        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
+        { provide: NoteService, useValue: noteService },
       ],
     }).compileComponents();
 
@@ -97,12 +105,39 @@ describe('NoteCardComponent', () => {
   });
 
   it('should call noteService.deleteNote from menu item command', () => {
-    const mockNoteService = { deleteNote: vi.fn().mockReturnValue({ subscribe: vi.fn() }) } as any;
-    (component as any).noteService = mockNoteService;
+    noteService.deleteNote.mockReturnValue({ subscribe: vi.fn() } as any);
 
     component.items[0].command?.({} as any);
 
-    expect(mockNoteService.deleteNote).toHaveBeenCalledWith('5');
+    expect(noteService.deleteNote).toHaveBeenCalledWith('5');
+  });
+
+  it('logs successful note deletion from menu command', () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    component.items[0].command?.({} as any);
+
+    expect(logSpy).toHaveBeenCalledWith('deleted', '5');
+    logSpy.mockRestore();
+  });
+
+  it('logs delete errors from menu command', () => {
+    noteService.deleteNote.mockReturnValue(throwError(() => new Error('fail')));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    component.items[0].command?.({} as any);
+
+    expect(errorSpy).toHaveBeenCalledWith('delete failed', expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
+  it('does not call deleteNote when the note has no id', () => {
+    fixture.componentRef.setInput('note', createNote({ id: '' }));
+    fixture.detectChanges();
+
+    component.items[0].command?.({} as any);
+
+    expect(noteService.deleteNote).not.toHaveBeenCalled();
   });
 
   it('should log click action in handleCardClick', () => {

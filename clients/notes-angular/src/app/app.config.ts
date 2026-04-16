@@ -17,7 +17,6 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ErrorInterceptor } from './interceptors/error.interceptor';
 import { MessageService } from 'primeng/api';
 import { AuthService } from './services/auth/auth.service';
-import { NoteEventsService } from './services/note/note-events.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -43,12 +42,6 @@ export const appConfig: ApplicationConfig = {
     MessageService,
     provideAppInitializer(() => {
       const auth = inject(AuthService);
-      const noteEventsService = inject(NoteEventsService);
-      noteEventsService.noteEvents$.subscribe({
-        next: (value) => console.log('Note event', value.type),
-        error: (error) => console.log('Error', error),
-        complete: () => console.log('Complete'),
-      });
       auth.init();
     }),
   ],

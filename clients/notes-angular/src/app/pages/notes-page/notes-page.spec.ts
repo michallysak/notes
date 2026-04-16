@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, EMPTY } from 'rxjs';
 import { NotesPage } from './notes-page';
 import { AuthService } from '../../services/auth/auth.service';
 import { NotesAPIService } from '@notes/notes_service';
 import { of } from 'rxjs';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideRouter } from '@angular/router';
+import { NoteEventsService } from '../../services/note/note-events.service';
 
 describe('NotesPage', () => {
   let component: NotesPage;
@@ -36,6 +37,7 @@ describe('NotesPage', () => {
         }),
         { provide: AuthService, useValue: authService },
         { provide: NotesAPIService, useValue: notesApiService },
+        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
       ],
     }).compileComponents();
 

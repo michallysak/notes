@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { of, throwError } from 'rxjs';
+import { EMPTY, of, throwError } from 'rxjs';
 import { provideTranslateService } from '@ngx-translate/core';
 import { NoteChangeDialogComponent } from './note-change-dialog.component';
 import { NotesAPIService, NoteResponse } from '@notes/notes_service';
+import { NoteEventsService } from '../../services/note/note-events.service';
 
 describe('NoteChangeDialogComponent', () => {
   let component: NoteChangeDialogComponent;
@@ -33,6 +34,7 @@ describe('NoteChangeDialogComponent', () => {
       providers: [
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
         { provide: NotesAPIService, useValue: mockApi },
+        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
       ],
     }).compileComponents();
 
@@ -112,7 +114,7 @@ describe('NoteChangeDialogComponent', () => {
     (component as any).save();
     vi.advanceTimersByTime(1000);
 
-    expect(mockApi.updateNote).toHaveBeenCalledWith('10', { title: 'Title', content: 'C1' });
+    expect(mockApi.updateNote).toHaveBeenCalledWith({ title: 'Title', content: 'C1' }, '10');
     vi.useRealTimers();
   });
 
@@ -143,6 +145,54 @@ describe('NoteChangeDialogComponent', () => {
     expect(component.notSaved()).toBe(true);
     expect(component.saved()).toBe(false);
 
+    vi.useRealTimers();
+  });
+
+  it('calls save after debounce when the dirty form is valid', () => {
+    vi.useFakeTimers();
+    const saveSpy = vi.spyOn(component as any, 'save').mockImplementation(() => undefined);
+
+    component.form.setValue({ title: 'Valid title', content: 'Body' });
+    component.form.markAsDirty();
+    vi.advanceTimersByTime(1000);
+
+    expect(saveSpy).toHaveBeenCalledOnce();
+    saveSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('does not save when a request is already in progress', () => {
+    component.saving.set(true);
+    component.form.setValue({ title: 'Valid title', content: 'Body' });
+
+    (component as any).save();
+
+    expect(mockApi.createNote).not.toHaveBeenCalled();
+    expect(mockApi.updateNote).not.toHaveBeenCalled();
+  });
+
+  it('does not create a note when form values are undefined', () => {
+    component.note = null;
+    Object.defineProperty(component.form, 'value', {
+      configurable: true,
+      get: () => ({ title: undefined, content: undefined }),
+    });
+
+    (component as any).save();
+
+    expect(mockApi.createNote).not.toHaveBeenCalled();
+  });
+
+  it('sets notSaved on update error', () => {
+    vi.useFakeTimers();
+    mockApi.updateNote.mockReturnValue(throwError(() => new Error('update fail')));
+    component.note = sampleNote as any;
+    component.form.setValue({ title: 'Title', content: 'C1' });
+
+    (component as any).save();
+    vi.advanceTimersByTime(1000);
+
+    expect(component.notSaved()).toBe(true);
     vi.useRealTimers();
   });
 

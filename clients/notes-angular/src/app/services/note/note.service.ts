@@ -1,18 +1,48 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { NotesAPIService, NoteUpdateRequest, CreateNoteRequest } from '@notes/notes_service';
+import {
+  NotesAPIService,
+  NoteUpdateRequest,
+  CreateNoteRequest,
+  NoteCreatedEventDTO,
+} from '@notes/notes_service';
 import { Note } from '../../types/note';
+import { NoteEventsService } from './note-events.service';
 
 @Injectable({ providedIn: 'root' })
 export class NoteService {
   private notesSubject = new BehaviorSubject<Note[]>([]);
   public notes$ = this.notesSubject.asObservable();
 
-  constructor(private notesApi: NotesAPIService) {
+  constructor(
+    private notesApi: NotesAPIService,
+    noteEventsService: NoteEventsService,
+  ) {
     this.notesApi.getNotes().subscribe((noteResponse) => {
       this.notesSubject.next(noteResponse);
     });
+
+    noteEventsService.noteEvents$.subscribe((value: NoteCreatedEventDTO) => {
+      if (!value?.payload) {
+        return;
+      }
+      const note: Note = { ...value.payload };
+      this.upsertNoteInSubject(note);
+    });
+  }
+
+  private upsertNoteInSubject(value: Note) {
+    const current = this.notesSubject.value;
+    const idx = current.findIndex(({ id }) => id === value.id);
+    if (idx === -1) {
+      this.notesSubject.next([value, ...current]);
+      return;
+    }
+
+    const next = [...current];
+    next[idx] = value;
+    this.notesSubject.next(next);
   }
 
   updateNote(id: string, body: NoteUpdateRequest) {
@@ -24,20 +54,15 @@ export class NoteService {
         if (idx === -1) {
           next = [res, ...current];
         } else {
-          next = current.map((n) => (n.id === res.id ? (res) : n));
+          next = current.map((n) => (n.id === res.id ? res : n));
         }
         this.notesSubject.next(next);
-      })
+      }),
     );
   }
 
   createNote(body: CreateNoteRequest) {
-    return this.notesApi.createNote(body).pipe(
-      tap((res: Note) => {
-        const current = this.notesSubject.value;
-        this.notesSubject.next([res, ...current]);
-      })
-    );
+    return this.notesApi.createNote(body).pipe(tap((note: Note) => this.upsertNoteInSubject(note)));
   }
 
   deleteNote(id: string) {
@@ -45,7 +70,7 @@ export class NoteService {
       tap(() => {
         const current = this.notesSubject.value;
         this.notesSubject.next(current.filter((n) => n.id !== id));
-      })
+      }),
     );
   }
 }

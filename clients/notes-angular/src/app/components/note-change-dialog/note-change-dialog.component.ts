@@ -141,39 +141,39 @@ export class NoteChangeDialogComponent {
 
     this.saving.set(true);
 
-      if (this.note && this.note.id) {
-        const body: NoteUpdateRequest = this.form.value;
-        this.noteService
-          .updateNote(this.note.id, body)
-          .pipe(delay(1000)) // simulate network delay
-          .subscribe({
-            next: (res) => this.onSaveSuccess(res),
-            error: () => this.onSaveError(),
-          });
-      } else {
-        const value = this.form.value;
-        if (value.title === undefined || value.content === undefined) {
-          return;
-        }
-        const body: CreateNoteRequest = {
-          title: value.title,
-          content: value.content,
-        };
-        this.noteService
-          .createNote(body)
-          .pipe(delay(1000)) // simulate network delay
-          .subscribe({
-            next: (res) => this.onSaveSuccess(res),
-            error: () => this.onSaveError(),
-          });
+    const currentNote = this.lastSavedNote() ?? this.note;
+    if (currentNote && currentNote.id) {
+      const body: NoteUpdateRequest = this.form.value;
+      this.noteService
+        .updateNote(currentNote.id, body)
+        .pipe(delay(1000)) // simulate network delay
+        .subscribe({
+          next: (res) => this.onSaveSuccess(res),
+          error: () => this.onSaveError(),
+        });
+    } else {
+      const value = this.form.value;
+      if (value.title === undefined || value.content === undefined) {
+        return;
       }
+      const body: CreateNoteRequest = {
+        title: value.title,
+        content: value.content,
+      };
+      this.noteService
+        .createNote(body)
+        .pipe(delay(1000)) // simulate network delay
+        .subscribe({
+          next: (res) => this.onSaveSuccess(res),
+          error: () => this.onSaveError(),
+        });
+    }
   }
 
   private onSaveSuccess(res: NoteResponse) {
     this.saving.set(false);
     this.lastSavedNote.set(res);
     this.form.markAsPristine();
-    this.note = res;
     this.notSaved.set(false);
     // Only mark saved on successful server response
     this.saved.set(true);

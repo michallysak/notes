@@ -3,6 +3,7 @@ package pl.michallysak.notes.application.quarkus.helpers;
 import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
@@ -18,6 +19,10 @@ public class BaseIT {
   protected static final String EMAIL_1 = "user1@test.pl";
   protected static final String EMAIL_2 = "user2@test.pl";
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  static {
+    OBJECT_MAPPER.registerModule(new JavaTimeModule());
+  }
 
   @Inject UserRepository userRepository;
   @Inject NoteRepository noteRepository;

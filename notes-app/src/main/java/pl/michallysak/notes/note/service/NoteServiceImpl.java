@@ -24,9 +24,10 @@ public class NoteServiceImpl implements NoteService {
   public NoteValue createNote(CreateNote createNote) {
     Note note = new NoteImpl(createNote);
     noteRepository.save(note);
-    NoteCreatedEvent noteCreatedEvent = NoteCreatedEvent.from(note);
+    NoteValue noteValue = NoteValue.from(note);
+    NoteCreatedEvent noteCreatedEvent = NoteCreatedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteCreatedEvent));
-    return NoteValue.from(note);
+    return noteValue;
   }
 
   @Override

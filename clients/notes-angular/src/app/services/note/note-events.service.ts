@@ -1,35 +1,22 @@
-import { inject, Injectable, NgZone, OnDestroy } from '@angular/core';
-import { Subject, Subscription } from 'rxjs';
+import { inject, Injectable, OnDestroy } from '@angular/core';
+import { Subject, Observable, Subscription } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
-import { SseEvent, SseService } from '../sse/sse.service';
-import { BASE_PATH } from '@notes/notes_service';
-
-interface DomainEvent<T> {
-  type: string;
-  payload: T;
-}
-
-export interface NoteCreatedEvent extends DomainEvent<{
-  title: string;
-  content: string;
-}> {
-  type: 'NOTE_CREATED_EVENT';
-}
-
-type NoteEvent = NoteCreatedEvent;
+import { SharedEventStream, SseService } from '../sse/sse.service';
+import { BASE_PATH, NoteCreatedEventDTO, NoteSseResourceService } from '@notes/notes_service';
 
 @Injectable({ providedIn: 'root' })
 export class NoteEventsService implements OnDestroy {
-  private connectSub?: Subscription;
+  private connectSub = new Subscription();
   private authSub: Subscription;
-  private noteEventsSubject = new Subject<NoteEvent>();
+  private noteEventsSubject = new Subject<NoteCreatedEventDTO>();
   public noteEvents$ = this.noteEventsSubject.asObservable();
   private basePath = inject(BASE_PATH);
+  private stream?: SharedEventStream;
 
   constructor(
     private sse: SseService,
     private auth: AuthService,
-    private ngZone: NgZone,
+    private noteSse: NoteSseResourceService,
   ) {
     this.authSub = this.auth.logged$.subscribe((logged) => {
       if (logged) {
@@ -41,37 +28,27 @@ export class NoteEventsService implements OnDestroy {
   }
 
   private connect() {
-    this.connectSub = this.sse.connect(this.basePath, '/notes/events').subscribe({
-      next: (ev) => {
-        if (ev.name === 'NOTE_CREATED_EVENT') {
-          this.ngZone.run(() => {
-            const data = ev.data as NoteCreatedEvent['payload'];
-            const event: NoteEvent = {
-              type: 'NOTE_CREATED_EVENT',
-              payload: {
-                title: data.title,
-                content: data.content,
-              },
-            };
-            this.noteEventsSubject.next(event);
-          });
-        }
-      },
-      error: (err) => {
-        this.ngZone.run(() => {
-          try {
-            this.noteEventsSubject.error(err);
-          } catch (_) {}
+    let noteCreatedEventType = NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT;
+    const requestedEvents = [noteCreatedEventType];
+
+    const keySub = this.noteSse.createStreamKey(requestedEvents).subscribe(({ key }) => {
+      if (key) {
+        this.stream = this.sse.openSharedEventStream({
+          baseUrl: this.basePath,
+          path: '/notes/events',
+          key: key,
+          onError: (event) => console.error('SSE error', event),
+          onOpen: (event) => console.error('SSE open', event),
         });
-      },
-      complete: () => {
-        this.ngZone.run(() => {
-          try {
-            this.noteEventsSubject.complete();
-          } catch (_) {}
-        });
-      },
+
+        const created$ = this.stream.get<NoteCreatedEventDTO>(noteCreatedEventType);
+        this.forwardToSubject(created$, this.noteEventsSubject, this.connectSub);
+
+        return;
+      }
     });
+
+    this.connectSub.add(keySub);
   }
 
   private disconnect() {
@@ -81,7 +58,28 @@ export class NoteEventsService implements OnDestroy {
     try {
       this.connectSub.unsubscribe();
     } catch (_) {}
-    this.connectSub = undefined;
+    try {
+      this.stream?.close();
+    } catch (_) {}
+    this.stream = undefined;
+  }
+
+  private forwardToSubject<E>(obs: Observable<E>, subj: Subject<E>, parent: Subscription) {
+    const sub = obs.subscribe({
+      next: (v) => subj.next(v),
+      error: (e) => {
+        try {
+          subj.error(e);
+        } catch (_) {}
+      },
+      complete: () => {
+        try {
+          subj.complete();
+        } catch (_) {}
+      },
+    });
+    parent.add(sub);
+    return sub;
   }
 
   ngOnDestroy(): void {
@@ -91,6 +89,9 @@ export class NoteEventsService implements OnDestroy {
       } catch (_) {}
     }
     this.authSub?.unsubscribe();
-    this.noteEventsSubject.complete();
+    try {
+      this.stream?.close();
+    } catch (_) {}
+    this.stream = undefined;
   }
 }
