@@ -28,7 +28,6 @@ export class SseService {
       : urlBase;
 
     const es = new EventSource(url, { withCredentials: true });
-    console.log('[openSharedEventStream] opening EventSource', url);
 
     const subjects: Record<string, Subject<any>> = {};
     const listeners: Record<string, EventListener> = {};

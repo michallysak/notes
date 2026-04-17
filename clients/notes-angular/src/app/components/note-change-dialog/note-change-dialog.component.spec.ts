@@ -34,7 +34,7 @@ describe('NoteChangeDialogComponent', () => {
       providers: [
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
         { provide: NotesAPIService, useValue: mockApi },
-        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
+        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } },
       ],
     }).compileComponents();
 

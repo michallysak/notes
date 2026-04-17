@@ -13,9 +13,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Schema(description = "Response containing authentication token and its expiration")
 public class AuthTokenResponse {
-  @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+  @Schema(description = "JWT token", examples = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
   private String token;
 
-  @Schema(description = "Token expiration time", example = "2026-03-25T12:00:00Z")
+  @Schema(description = "Token expiration time", examples = "2026-03-25T12:00:00Z")
   private OffsetDateTime expiresAt;
 }

@@ -4,7 +4,13 @@ import { Subject, of } from 'rxjs';
 import { NoteEventsService } from './note-events.service';
 import { AuthService } from '../auth/auth.service';
 import { SseService } from '../sse/sse.service';
-import { BASE_PATH, NoteCreatedEventDTO, NoteSseResourceService } from '@notes/notes_service';
+import {
+  BASE_PATH,
+  NoteCreatedEventDTO,
+  NoteUpdatedEventDTO,
+  NoteSseResourceService,
+  NoteDeletedEventDTO,
+} from '@notes/notes_service';
 
 const makeStream = () => ({
   get: vi.fn().mockReturnValue(new Subject().asObservable()),
@@ -53,6 +59,7 @@ describe('NoteEventsService', () => {
 
   it('passes correct settings to openSharedEventStream', () => {
     const { mockSse, authSubj } = configureTest({ key: 'my-key' });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     authSubj.next(true);
     vi.runAllTimers();
@@ -62,16 +69,20 @@ describe('NoteEventsService', () => {
     expect(call.baseUrl).toBe('http://localhost:8080');
     call.onOpen?.(new Event('open'));
     call.onError?.(new Event('error'));
-    expect(errorSpy).toHaveBeenCalledWith('SSE open', expect.any(Event));
+    expect(logSpy).toHaveBeenCalledWith('SSE open');
     expect(errorSpy).toHaveBeenCalledWith('SSE error', expect.any(Event));
     errorSpy.mockRestore();
   });
 
-  it('calls createStreamKey with the NOTE_CREATED event type', () => {
+  it('calls createStreamKey with all note event types', () => {
     const { mockNoteSse, authSubj } = configureTest();
     authSubj.next(true);
     vi.runAllTimers();
-    expect(mockNoteSse.createStreamKey).toHaveBeenCalledWith([NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT]);
+    expect(mockNoteSse.createStreamKey).toHaveBeenCalledWith([
+      NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT,
+      NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT,
+      NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT,
+    ]);
   });
 
   it('forwards events from stream.get() to noteEvents$', () => {
@@ -99,6 +110,40 @@ describe('NoteEventsService', () => {
       payload: { id: '1', title: 'T', content: 'C', pinned: false } as any,
     };
     eventSubj.next(event);
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual(event);
+  });
+
+  it('forwards deleted events from stream.get() to noteDeletedEvents$', () => {
+    const deletedSubj = new Subject<any>();
+    const authSubj = new Subject<boolean>();
+    const stream = {
+      get: vi.fn((eventType: string) => {
+        if (eventType === NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT) {
+          return deletedSubj.asObservable();
+        }
+        return new Subject().asObservable();
+      }),
+      close: vi.fn(),
+    };
+    const mockSse = { openSharedEventStream: vi.fn().mockReturnValue(stream) } as unknown as SseService;
+    const mockAuth = { logged$: authSubj.asObservable() } as unknown as AuthService;
+    const mockNoteSse = { createStreamKey: vi.fn().mockReturnValue(of({ key: 'k' })) } as unknown as NoteSseResourceService;
+
+    TestBed.configureTestingModule({ providers: [{ provide: BASE_PATH, useValue: 'http://localhost:8080' }] });
+
+    let svc!: NoteEventsService;
+    TestBed.runInInjectionContext(() => { svc = new NoteEventsService(mockSse, mockAuth, mockNoteSse); });
+
+    const received: unknown[] = [];
+    svc.noteDeletedEvents$.subscribe((v) => received.push(v));
+
+    authSubj.next(true);
+    vi.runAllTimers();
+
+    const event = { id: 'id', type: NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT, payload: { id: '1' } };
+    deletedSubj.next(event);
 
     expect(received).toHaveLength(1);
     expect(received[0]).toEqual(event);

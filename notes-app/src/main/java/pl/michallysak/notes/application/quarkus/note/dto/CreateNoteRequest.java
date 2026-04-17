@@ -12,9 +12,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Schema(description = "Request to create a note")
 public class CreateNoteRequest {
-  @Schema(description = "Title of the note", example = "Shopping List", required = true)
+  @Schema(description = "Title of the note", examples = "Shopping List", required = true)
   private String title;
 
-  @Schema(description = "Content of the note", example = "Milk, Bread, Eggs", required = true)
+  @Schema(description = "Content of the note", examples = "Milk, Bread, Eggs", required = true)
   private String content;
 }

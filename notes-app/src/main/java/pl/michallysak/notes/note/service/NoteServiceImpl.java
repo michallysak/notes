@@ -8,6 +8,8 @@ import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
+import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
+import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
@@ -50,7 +52,10 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
     note.update(noteUpdate);
     noteRepository.save(note);
-    return NoteValue.from(note);
+    NoteValue noteValue = NoteValue.from(note);
+    NoteUpdatedEvent noteUpdatedEvent = NoteUpdatedEvent.from(noteValue);
+    eventPublisher.publish(Collections.singletonList(noteUpdatedEvent));
+    return noteValue;
   }
 
   @Override
@@ -58,5 +63,8 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
     note.delete(actingUserId);
     noteRepository.deleteById(noteId);
+    NoteValue noteValue = NoteValue.from(note);
+    NoteDeletedEvent noteDeletedEvent = NoteDeletedEvent.from(noteValue);
+    eventPublisher.publish(Collections.singletonList(noteDeletedEvent));
   }
 }

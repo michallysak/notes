@@ -2,10 +2,12 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import {
-  NotesAPIService,
-  NoteUpdateRequest,
   CreateNoteRequest,
   NoteCreatedEventDTO,
+  NoteDeletedEventDTO,
+  NotesAPIService,
+  NoteUpdatedEventDTO,
+  NoteUpdateRequest,
 } from '@notes/notes_service';
 import { Note } from '../../types/note';
 import { NoteEventsService } from './note-events.service';
@@ -30,6 +32,22 @@ export class NoteService {
       const note: Note = { ...value.payload };
       this.upsertNoteInSubject(note);
     });
+
+    noteEventsService.noteUpdatedEvents$.subscribe((value: NoteUpdatedEventDTO) => {
+      if (!value?.payload) {
+        return;
+      }
+      const note: Note = { ...value.payload };
+      this.upsertNoteInSubject(note);
+    });
+
+    noteEventsService.noteDeletedEvents$.subscribe((value: NoteDeletedEventDTO) => {
+      const id = value?.payload?.id;
+      if (!id) {
+        return;
+      }
+      this.removeNoteFromSubject(id);
+    });
   }
 
   private upsertNoteInSubject(value: Note) {
@@ -43,6 +61,11 @@ export class NoteService {
     const next = [...current];
     next[idx] = value;
     this.notesSubject.next(next);
+  }
+
+  private removeNoteFromSubject(id: string) {
+    const current = this.notesSubject.value;
+    this.notesSubject.next(current.filter((n) => n.id !== id));
   }
 
   updateNote(id: string, body: NoteUpdateRequest) {
@@ -68,8 +91,7 @@ export class NoteService {
   deleteNote(id: string) {
     return this.notesApi.deleteNote(id).pipe(
       tap(() => {
-        const current = this.notesSubject.value;
-        this.notesSubject.next(current.filter((n) => n.id !== id));
+        this.removeNoteFromSubject(id);
       }),
     );
   }

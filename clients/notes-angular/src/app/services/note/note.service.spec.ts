@@ -1,4 +1,4 @@
-import { BehaviorSubject, Subject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of, EMPTY } from 'rxjs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NoteService } from './note.service';
 import { Note } from '../../types/note';
@@ -8,12 +8,16 @@ describe('NoteService', () => {
     getNotes: vi.fn(),
   };
   let noteEvents$: Subject<any>;
-  let noteEventsService: { noteEvents$: Subject<any> };
+  let noteUpdatedEvents$: Subject<any>;
+  let noteDeletedEvents$: Subject<any>;
+  let noteEventsService: { noteEvents$: Subject<any>; noteUpdatedEvents$: Subject<any>; noteDeletedEvents$: Subject<any> };
 
   beforeEach(() => {
     notesApi.getNotes.mockReset();
     noteEvents$ = new Subject<any>();
-    noteEventsService = { noteEvents$ };
+    noteUpdatedEvents$ = new Subject<any>();
+    noteDeletedEvents$ = new Subject<any>();
+    noteEventsService = { noteEvents$, noteUpdatedEvents$, noteDeletedEvents$ };
   });
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
@@ -96,7 +100,7 @@ describe('NoteService', () => {
         getNotes: vi.fn().mockReturnValue(of([])),
         createNote: vi.fn(),
       } as any,
-      { noteEvents$: events } as any,
+      { noteEvents$: events, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } as any,
     );
 
     const created = createNote({ id: 'sse-1', title: 'SSE' });
@@ -123,7 +127,7 @@ describe('NoteService', () => {
         ...notesApi,
         getNotes: vi.fn().mockReturnValue(of(initial)),
       } as any,
-      { noteEvents$: events } as any,
+      { noteEvents$: events, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } as any,
     );
 
     let latest: Note[] = [];
@@ -174,6 +178,35 @@ describe('NoteService', () => {
         resolve();
       });
     });
+  });
+
+  it('removes note when delete SSE event arrives', () => {
+    const first = createNote({ id: '1' });
+    const second = createNote({ id: '2' });
+    notesApi.getNotes.mockReturnValue(new BehaviorSubject<Note[]>([first, second]));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    let latest: Note[] = [];
+    service.notes$.subscribe((n) => (latest = n));
+
+    noteDeletedEvents$.next({ payload: { id: '1' } });
+
+    expect(latest).toEqual([second]);
+  });
+
+  it('ignores delete SSE events without payload id', () => {
+    const initial = [createNote({ id: '1' }), createNote({ id: '2' })];
+    notesApi.getNotes.mockReturnValue(new BehaviorSubject<Note[]>(initial));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    let latest: Note[] = [];
+    service.notes$.subscribe((n) => (latest = n));
+
+    noteDeletedEvents$.next({});
+    noteDeletedEvents$.next({ payload: {} });
+    noteDeletedEvents$.next(null);
+
+    expect(latest).toEqual(initial);
   });
 });
 

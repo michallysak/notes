@@ -19,6 +19,8 @@ import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
+import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
+import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
@@ -104,6 +106,8 @@ class NoteServiceImplTest {
     NoteValue noteValue = service.updateNote(id, update);
     // then
     verify(repository).save(note);
+    verify(eventPublisher)
+        .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteUpdatedEvent)));
     assertEquals(NoteValue.from(note), noteValue);
   }
 
@@ -118,6 +122,8 @@ class NoteServiceImplTest {
     service.deleteNote(id, AUTHOR_ID);
     // then
     verify(repository).deleteById(id);
+    verify(eventPublisher)
+        .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteDeletedEvent)));
   }
 
   @Test

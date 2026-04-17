@@ -13,9 +13,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Schema(description = "Response with user details")
 public class UserResponse {
-  @Schema(description = "User id", example = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
+  @Schema(description = "User id", examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
   private UUID id;
 
-  @Schema(description = "User email", example = "user@example.com")
+  @Schema(description = "User email", examples = "user@example.com")
   private String email;
 }

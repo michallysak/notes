@@ -12,12 +12,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Schema(description = "Request to update a note")
 public class NoteUpdateRequest {
-  @Schema(description = "Title of the note", example = "Updated Title")
+  @Schema(description = "Title of the note", examples = "Updated Title")
   private String title;
 
-  @Schema(description = "Content of the note", example = "Updated Content")
+  @Schema(description = "Content of the note", examples = "Updated Content")
   private String content;
 
-  @Schema(description = "Indicates if the note is pinned", example = "true")
+  @Schema(description = "Indicates if the note is pinned", examples = "true")
   private Boolean pinned;
 }

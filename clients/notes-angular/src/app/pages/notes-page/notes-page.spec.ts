@@ -37,7 +37,7 @@ describe('NotesPage', () => {
         }),
         { provide: AuthService, useValue: authService },
         { provide: NotesAPIService, useValue: notesApiService },
-        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
+        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } },
       ],
     }).compileComponents();
 
@@ -68,4 +68,3 @@ describe('NotesPage', () => {
     expect(queryElement('app-auth-dialog')).toBeFalsy();
   });
 });
-

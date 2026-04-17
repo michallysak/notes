@@ -11,7 +11,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Response for error cases")
 public class ErrorResponse {
   @Schema(
+      required = true,
       description = "Status message",
-      example = "An error occurred while processing the request")
+      examples = "An error occurred while processing the request")
   private String message;
 }

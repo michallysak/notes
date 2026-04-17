@@ -1,17 +1,17 @@
 package pl.michallysak.notes.application.quarkus.note.dto;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-class NoteCreatedEventDTOTest {
+class NoteDeletedEventDTOTest {
 
   @Test
-  void getType_shouldReturnNoteCreatedEvent() {
+  void getType_shouldReturnNoteDeletedEvent() {
     // given
-    NoteCreatedEventDTO dto =
-        new NoteCreatedEventDTO() {
+    NoteDeletedEventDTO dto =
+        new NoteDeletedEventDTO() {
           @Override
           public UUID getId() {
             return null;
@@ -25,6 +25,6 @@ class NoteCreatedEventDTOTest {
     // when
     String type = dto.getType();
     // then
-    assertEquals("NOTE_CREATED_EVENT", type);
+    assertEquals("NOTE_DELETED_EVENT", type);
   }
 }

@@ -2,7 +2,14 @@ import { inject, Injectable, OnDestroy } from '@angular/core';
 import { Subject, Observable, Subscription } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { SharedEventStream, SseService } from '../sse/sse.service';
-import { BASE_PATH, NoteCreatedEventDTO, NoteSseResourceService } from '@notes/notes_service';
+import {
+  BASE_PATH,
+  NoteCreatedEventDTO,
+  NoteUpdatedEventDTO,
+  NoteSseResourceService,
+  NoteDeletedEventDTO,
+} from '@notes/notes_service';
+
 
 @Injectable({ providedIn: 'root' })
 export class NoteEventsService implements OnDestroy {
@@ -10,6 +17,10 @@ export class NoteEventsService implements OnDestroy {
   private authSub: Subscription;
   private noteEventsSubject = new Subject<NoteCreatedEventDTO>();
   public noteEvents$ = this.noteEventsSubject.asObservable();
+  private noteUpdatedEventsSubject = new Subject<NoteUpdatedEventDTO>();
+  public noteUpdatedEvents$ = this.noteUpdatedEventsSubject.asObservable();
+  private noteDeletedEventsSubject = new Subject<NoteDeletedEventDTO>();
+  public noteDeletedEvents$ = this.noteDeletedEventsSubject.asObservable();
   private basePath = inject(BASE_PATH);
   private stream?: SharedEventStream;
 
@@ -29,7 +40,9 @@ export class NoteEventsService implements OnDestroy {
 
   private connect() {
     let noteCreatedEventType = NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT;
-    const requestedEvents = [noteCreatedEventType];
+    let noteUpdatedEventType = NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT;
+    let noteDeletedEventType = NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT;
+    const requestedEvents = [noteCreatedEventType, noteUpdatedEventType, noteDeletedEventType];
 
     const keySub = this.noteSse.createStreamKey(requestedEvents).subscribe(({ key }) => {
       if (key) {
@@ -38,11 +51,17 @@ export class NoteEventsService implements OnDestroy {
           path: '/notes/events',
           key: key,
           onError: (event) => console.error('SSE error', event),
-          onOpen: (event) => console.error('SSE open', event),
+          onOpen: (event) => console.log('SSE open'),
         });
 
         const created$ = this.stream.get<NoteCreatedEventDTO>(noteCreatedEventType);
         this.forwardToSubject(created$, this.noteEventsSubject, this.connectSub);
+
+        const updated$ = this.stream.get<NoteUpdatedEventDTO>(noteUpdatedEventType);
+        this.forwardToSubject(updated$, this.noteUpdatedEventsSubject, this.connectSub);
+
+        const deleted$ = this.stream.get<NoteDeletedEventDTO>(noteDeletedEventType);
+        this.forwardToSubject(deleted$, this.noteDeletedEventsSubject, this.connectSub);
 
         return;
       }

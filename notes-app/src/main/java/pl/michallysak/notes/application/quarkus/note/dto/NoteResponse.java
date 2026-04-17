@@ -14,21 +14,27 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Schema(description = "Response with note details")
 public class NoteResponse {
-  @Schema(description = "Note id", example = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
+  @Schema(
+      required = true,
+      description = "Note id",
+      examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
   private UUID id;
 
-  @Schema(description = "Title of the note", example = "Shopping List")
+  @Schema(required = true, description = "Title of the note", examples = "Shopping List")
   private String title;
 
-  @Schema(description = "Content of the note", example = "Milk, Bread, Eggs")
+  @Schema(required = true, description = "Content of the note", examples = "Milk, Bread, Eggs")
   private String content;
 
-  @Schema(description = "Creation timestamp of the note", example = "2024-06-01T12:00:00Z")
+  @Schema(
+      required = true,
+      description = "Creation timestamp of the note",
+      examples = "2024-06-01T12:00:00Z")
   private OffsetDateTime created;
 
-  @Schema(description = "Last update timestamp of the note", example = "2024-06-02T15:30:00Z")
+  @Schema(description = "Last update timestamp of the note", examples = "2024-06-02T15:30:00Z")
   private OffsetDateTime updated;
 
-  @Schema(description = "Indicates if the note is pinned", example = "true")
+  @Schema(required = true, description = "Indicates if the note is pinned", examples = "true")
   private boolean pinned;
 }
