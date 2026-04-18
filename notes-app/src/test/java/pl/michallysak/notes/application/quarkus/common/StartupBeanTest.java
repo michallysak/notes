@@ -3,6 +3,8 @@ package pl.michallysak.notes.application.quarkus.common;
 import static org.mockito.Mockito.*;
 
 import io.quarkus.runtime.StartupEvent;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
@@ -18,11 +20,13 @@ import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 import pl.michallysak.notes.user.model.EmailPasswordLogin;
 import pl.michallysak.notes.user.model.UserValue;
+import pl.michallysak.notes.user.repository.UserRepository;
 import pl.michallysak.notes.user.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
 class StartupBeanTest {
   @Mock Logger logger;
+  @Mock UserRepository userRepository;
   @Mock UserService userService;
   @Mock NoteService noteService;
   @InjectMocks StartupBean startupBean;
@@ -34,8 +38,10 @@ class StartupBeanTest {
     Password password = Password.of("Admin123!");
     UserValue user = mock(UserValue.class);
     when(user.id()).thenReturn(UUID.randomUUID());
+    when(userRepository.findByEmail(any(Email.class))).thenReturn(Optional.empty());
     when(userService.createUser(any(EmailPasswordCreateUser.class))).thenReturn(user);
     when(userService.login(any(EmailPasswordLogin.class))).thenReturn(mock(AuthToken.class));
+    when(noteService.getCreatedNotes(any(UUID.class))).thenReturn(List.of());
     // and
     NoteValue firstNote = mock(NoteValue.class);
     NoteValue secondNote = mock(NoteValue.class);
@@ -89,5 +95,23 @@ class StartupBeanTest {
     verify(logger).info(contains("Created first note:"));
     verify(logger).info(contains("Created second note:"));
     verify(logger).info(contains("Updated second note:"));
+  }
+
+  @Test
+  void onStart_shouldSkipNoteCreation_whenNotesAlreadyExist() {
+    // given
+    UserValue user = mock(UserValue.class);
+    when(user.id()).thenReturn(UUID.randomUUID());
+    when(userRepository.findByEmail(any(Email.class))).thenReturn(Optional.empty());
+    when(userService.createUser(any(EmailPasswordCreateUser.class))).thenReturn(user);
+    when(userService.login(any(EmailPasswordLogin.class))).thenReturn(mock(AuthToken.class));
+    when(noteService.getCreatedNotes(any(UUID.class))).thenReturn(List.of(mock(NoteValue.class)));
+
+    // when
+    startupBean.onStart(mock(StartupEvent.class));
+
+    // then
+    verify(noteService, never()).createNote(any());
+    verify(noteService, never()).updateNote(any(), any());
   }
 }

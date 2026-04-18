@@ -8,6 +8,7 @@ import lombok.ToString;
 import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.validator.NoteValidator;
 import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 
@@ -33,6 +34,16 @@ public class NoteImpl implements Note {
     this.created = OffsetDateTime.now();
     this.updated = null;
     this.isPinned = false;
+  }
+
+  public NoteImpl(NoteValue noteValue) {
+    this.id = noteValue.id();
+    this.authorId = noteValue.authorId();
+    this.title = noteValue.title();
+    this.content = noteValue.content();
+    this.created = noteValue.created();
+    this.updated = noteValue.updated().orElse(null);
+    this.isPinned = noteValue.pinned();
   }
 
   @Override

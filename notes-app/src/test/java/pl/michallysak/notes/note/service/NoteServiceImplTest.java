@@ -46,7 +46,7 @@ class NoteServiceImplTest {
     // when
     NoteValue noteValue = service.createNote(createNote);
     // then
-    verify(repository).save(any());
+    verify(repository).saveNote(any());
     verify(eventPublisher)
         .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteCreatedEvent)));
     assertEquals(createNote.title(), noteValue.title());
@@ -58,7 +58,7 @@ class NoteServiceImplTest {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote);
-    when(repository.findAllWithAuthor(eq(AUTHOR_ID))).thenReturn(List.of(note));
+    when(repository.findNotesWithAuthor(eq(AUTHOR_ID))).thenReturn(List.of(note));
     // when
     List<NoteValue> noteValues = service.getCreatedNotes(AUTHOR_ID);
     // then
@@ -72,7 +72,7 @@ class NoteServiceImplTest {
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote);
     UUID id = note.getId();
-    when(repository.findById(id)).thenReturn(Optional.of(note));
+    when(repository.findNoteWithId(id)).thenReturn(Optional.of(note));
     // when
     NoteValue noteValue = service.getCreatedNote(id, AUTHOR_ID);
     // then
@@ -83,7 +83,7 @@ class NoteServiceImplTest {
   void getCreatedNote_shouldThrow_whenNotExists() {
     // given
     UUID id = UUID.randomUUID();
-    when(repository.findById(id)).thenReturn(Optional.empty());
+    when(repository.findNoteWithId(id)).thenReturn(Optional.empty());
     // when
     Executable executable = () -> service.getCreatedNote(id, AUTHOR_ID);
     // then
@@ -101,11 +101,11 @@ class NoteServiceImplTest {
             .actingUserId(createNote.authorId())
             .pinned(null)
             .build();
-    when(repository.findById(id)).thenReturn(Optional.of(note));
+    when(repository.findNoteWithId(id)).thenReturn(Optional.of(note));
     // when
     NoteValue noteValue = service.updateNote(id, update);
     // then
-    verify(repository).save(note);
+    verify(repository).saveNote(note);
     verify(eventPublisher)
         .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteUpdatedEvent)));
     assertEquals(NoteValue.from(note), noteValue);
@@ -116,12 +116,12 @@ class NoteServiceImplTest {
     // given
     UUID id = UUID.randomUUID();
     Note note = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().build());
-    when(repository.findById(id)).thenReturn(Optional.of(note));
-    when(repository.deleteById(id)).thenReturn(true);
+    when(repository.findNoteWithId(id)).thenReturn(Optional.of(note));
+    when(repository.deleteNoteWithId(id)).thenReturn(true);
     // when
     service.deleteNote(id, AUTHOR_ID);
     // then
-    verify(repository).deleteById(id);
+    verify(repository).deleteNoteWithId(id);
     verify(eventPublisher)
         .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteDeletedEvent)));
   }
@@ -130,7 +130,7 @@ class NoteServiceImplTest {
   void deleteNote_shouldThrow_whenNotExists() {
     // given
     UUID id = UUID.randomUUID();
-    when(repository.findById(id)).thenReturn(Optional.empty());
+    when(repository.findNoteWithId(id)).thenReturn(Optional.empty());
     // when
     Executable executable = () -> service.deleteNote(id, AUTHOR_ID);
     // then

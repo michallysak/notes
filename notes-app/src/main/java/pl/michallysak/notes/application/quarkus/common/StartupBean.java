@@ -15,22 +15,28 @@ import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 import pl.michallysak.notes.user.model.EmailPasswordLogin;
 import pl.michallysak.notes.user.model.UserValue;
+import pl.michallysak.notes.user.repository.UserRepository;
 import pl.michallysak.notes.user.service.UserService;
 
 @ApplicationScoped
 @RequiredArgsConstructor
 public class StartupBean {
   private final Logger logger;
+  private final UserRepository userRepository;
   private final UserService userService;
   private final NoteService noteService;
 
   void onStart(@Observes StartupEvent ev) {
     Email email = Email.of("admin@test.pl");
     Password password = Password.of("Admin123!");
-    UserValue user = userService.createUser(new EmailPasswordCreateUser(email, password));
-    logger.info("Created default user: " + user);
+    UserValue user = getUserValue(email, password);
+
     AuthToken login = userService.login(new EmailPasswordLogin(email, password));
     logger.info("Login Successful: " + login);
+
+    if (!noteService.getCreatedNotes(user.id()).isEmpty()) {
+      return;
+    }
 
     NoteValue first = noteService.createNote(getCreateNote(user, "first"));
     logger.info("Created first note: " + first);
@@ -39,6 +45,19 @@ public class StartupBean {
     NoteUpdate noteUpdate = NoteUpdate.builder().pinned(true).actingUserId(user.id()).build();
     NoteValue noteValue = noteService.updateNote(second.id(), noteUpdate);
     logger.info("Updated second note: " + noteValue);
+  }
+
+  private UserValue getUserValue(Email email, Password password) {
+    return userRepository
+        .findByEmail(email)
+        .map(UserValue::from)
+        .orElseGet(
+            () -> {
+              EmailPasswordCreateUser createUser = new EmailPasswordCreateUser(email, password);
+              UserValue user = userService.createUser(createUser);
+              logger.info("Created default user: " + user);
+              return user;
+            });
   }
 
   private CreateNote getCreateNote(UserValue user, String distinguishingText) {

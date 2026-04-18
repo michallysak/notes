@@ -32,7 +32,7 @@ public class BaseIT {
 
   @BeforeEach
   void setUp() {
-    noteRepository.deleteAll();
+    noteRepository.deleteNotes();
     userRepository.deleteAll();
   }
 

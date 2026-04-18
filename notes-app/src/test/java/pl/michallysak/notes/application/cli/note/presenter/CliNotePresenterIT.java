@@ -26,7 +26,7 @@ class CliNotePresenterIT {
   void setUp() {
     noteService.getCreatedNotes(AUTHOR_ID).stream()
         .map(NoteValue::id)
-        .forEach(noteRepository::deleteById);
+        .forEach(noteRepository::deleteNoteWithId);
     assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
   }
 

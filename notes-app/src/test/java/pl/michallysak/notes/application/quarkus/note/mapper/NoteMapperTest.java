@@ -15,9 +15,12 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.note.NoteTestUtils;
+import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.repository.NoteEntity;
 
 class NoteMapperTest {
 
@@ -161,5 +164,70 @@ class NoteMapperTest {
     assertNull(createNote.authorId());
     assertNotNull(createNote.title());
     assertNotNull(createNote.content());
+  }
+
+  @Test
+  void mapToEntity_shouldMapDomainNoteToEntity() {
+    // given
+    Note note = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().build());
+    // when
+    NoteEntity noteEntity = noteMapper.mapToEntity(note);
+    // then
+    assertNotNull(noteEntity);
+    assertEquals(note.getId(), noteEntity.getId());
+    assertEquals(note.getAuthorId(), noteEntity.getAuthorId());
+    assertEquals(note.getTitle(), noteEntity.getTitle());
+    assertEquals(note.getContent(), noteEntity.getContent());
+    assertEquals(note.getCreated(), noteEntity.getCreated());
+    assertEquals(note.getUpdated().orElse(null), noteEntity.getUpdated());
+    assertEquals(note.isPinned(), noteEntity.isPinned());
+  }
+
+  @Test
+  void mapToEntity_shouldReturnNull_whenNoteNull() {
+    // given
+    Note note = null;
+    // when
+    NoteEntity noteEntity = noteMapper.mapToEntity(note);
+    // then
+    assertNull(noteEntity);
+  }
+
+  @Test
+  void mapToDomain_shouldMapEntityToDomainNote() {
+    // given
+    UUID id = UUID.randomUUID();
+    UUID authorId = UUID.randomUUID();
+    OffsetDateTime created = OffsetDateTime.now().minusDays(1);
+    OffsetDateTime updated = OffsetDateTime.now();
+    NoteEntity noteEntity = new NoteEntity();
+    noteEntity.setId(id);
+    noteEntity.setAuthorId(authorId);
+    noteEntity.setTitle("note-title");
+    noteEntity.setContent("note-content");
+    noteEntity.setCreated(created);
+    noteEntity.setUpdated(updated);
+    noteEntity.setPinned(true);
+    // when
+    Note note = noteMapper.mapToDomain(noteEntity);
+    // then
+    assertNotNull(note);
+    assertEquals(id, note.getId());
+    assertEquals(authorId, note.getAuthorId());
+    assertEquals("note-title", note.getTitle());
+    assertEquals("note-content", note.getContent());
+    assertEquals(created, note.getCreated());
+    assertEquals(Optional.of(updated), note.getUpdated());
+    assertTrue(note.isPinned());
+  }
+
+  @Test
+  void mapToNoteValue_shouldReturnNull_whenNoteEntityNull() {
+    // given
+    NoteEntity noteEntity = null;
+    // when
+    NoteValue noteValue = noteMapper.mapToNoteValue(noteEntity);
+    // then
+    assertNull(noteValue);
   }
 }

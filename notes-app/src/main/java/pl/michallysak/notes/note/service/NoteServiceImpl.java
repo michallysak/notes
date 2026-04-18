@@ -25,7 +25,7 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public NoteValue createNote(CreateNote createNote) {
     Note note = new NoteImpl(createNote);
-    noteRepository.save(note);
+    noteRepository.saveNote(note);
     NoteValue noteValue = NoteValue.from(note);
     NoteCreatedEvent noteCreatedEvent = NoteCreatedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteCreatedEvent));
@@ -34,7 +34,7 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public List<NoteValue> getCreatedNotes(UUID authorId) {
-    return noteRepository.findAllWithAuthor(authorId).stream()
+    return noteRepository.findNotesWithAuthor(authorId).stream()
         .peek(note -> note.read(authorId))
         .map(NoteValue::from)
         .toList();
@@ -42,16 +42,16 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public NoteValue getCreatedNote(UUID noteId, UUID authorId) throws NoteNotFoundException {
-    Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.read(authorId);
     return NoteValue.from(note);
   }
 
   @Override
   public NoteValue updateNote(UUID noteId, NoteUpdate noteUpdate) throws NoteNotFoundException {
-    Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.update(noteUpdate);
-    noteRepository.save(note);
+    noteRepository.saveNote(note);
     NoteValue noteValue = NoteValue.from(note);
     NoteUpdatedEvent noteUpdatedEvent = NoteUpdatedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteUpdatedEvent));
@@ -60,9 +60,9 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public void deleteNote(UUID noteId, UUID actingUserId) throws NoteNotFoundException {
-    Note note = noteRepository.findById(noteId).orElseThrow(NoteNotFoundException::new);
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.delete(actingUserId);
-    noteRepository.deleteById(noteId);
+    noteRepository.deleteNoteWithId(noteId);
     NoteValue noteValue = NoteValue.from(note);
     NoteDeletedEvent noteDeletedEvent = NoteDeletedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteDeletedEvent));

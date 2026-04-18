@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
+import jakarta.enterprise.inject.Instance;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.eclipse.microprofile.config.Config;
@@ -29,15 +30,19 @@ class NoteBeansTest {
 
   @Mock Logger logger;
 
+  @Mock PanacheNoteRepository panacheNoteRepository;
+  @Mock Instance<PanacheNoteRepository> panacheNoteRepositoryInstance;
+
   @InjectMocks NoteBeans noteBeans;
 
   @Test
   void noteRepository_shouldReturnInMemoryNoteRepository_whenGetPersistenceReturnEmptyString() {
     // when
-    NoteRepository noteRepository = noteBeans.noteRepository();
+    NoteRepository noteRepository = noteBeans.noteRepository(panacheNoteRepositoryInstance);
     // then
     assertNotNull(noteRepository);
     assertInstanceOf(InMemoryNoteRepository.class, noteRepository);
+    verifyNoInteractions(panacheNoteRepositoryInstance);
   }
 
   @Test
@@ -47,10 +52,11 @@ class NoteBeansTest {
           // given
           mockPersistenceConfig(config, "in-memory");
           // when
-          NoteRepository noteRepository = noteBeans.noteRepository();
+          NoteRepository noteRepository = noteBeans.noteRepository(panacheNoteRepositoryInstance);
           // then
           assertNotNull(noteRepository);
           assertInstanceOf(InMemoryNoteRepository.class, noteRepository);
+          verifyNoInteractions(panacheNoteRepositoryInstance);
         });
   }
 
@@ -61,10 +67,11 @@ class NoteBeansTest {
           // given
           mockPersistenceConfig(config);
           // when
-          NoteRepository noteRepository = noteBeans.noteRepository();
+          NoteRepository noteRepository = noteBeans.noteRepository(panacheNoteRepositoryInstance);
           // then
           assertNotNull(noteRepository);
           assertInstanceOf(InMemoryNoteRepository.class, noteRepository);
+          verifyNoInteractions(panacheNoteRepositoryInstance);
         });
   }
 
@@ -76,11 +83,12 @@ class NoteBeansTest {
           String value = "xyz";
           mockPersistenceConfig(config, value);
           // when
-          Executable executable = () -> noteBeans.noteRepository();
+          Executable executable = () -> noteBeans.noteRepository(panacheNoteRepositoryInstance);
           // then
           ConfigurationException exception = assertThrows(ConfigurationException.class, executable);
           assertEquals(
               "Unsupported persistence type: \"%s\"".formatted(value), exception.getMessage());
+          verifyNoInteractions(panacheNoteRepositoryInstance);
         });
   }
 
@@ -94,6 +102,22 @@ class NoteBeansTest {
     // then
     assertNotNull(noteService);
     assertInstanceOf(NoteServiceImpl.class, noteService);
+  }
+
+  @Test
+  void noteRepository_shouldReturnPanacheNoteRepository_whenConfigPanache() {
+    withMockedConfigProvider(
+        (config) -> {
+          // given
+          mockPersistenceConfig(config, "sql");
+          when(panacheNoteRepositoryInstance.get()).thenReturn(panacheNoteRepository);
+          // when
+          NoteRepository noteRepository = noteBeans.noteRepository(panacheNoteRepositoryInstance);
+          // then
+          assertNotNull(noteRepository);
+          assertSame(panacheNoteRepository, noteRepository);
+          verify(panacheNoteRepositoryInstance).get();
+        });
   }
 
   private static void mockPersistenceConfig(Config config, String value) {

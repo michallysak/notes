@@ -7,15 +7,15 @@ import pl.michallysak.notes.note.domain.Note;
 
 public interface NoteRepository {
 
-  void save(Note note);
+  void saveNote(Note note);
 
-  List<Note> findAll();
+  List<Note> findNotes();
 
-  List<Note> findAllWithAuthor(UUID authorId);
+  List<Note> findNotesWithAuthor(UUID authorId);
 
-  Optional<Note> findById(UUID id);
+  Optional<Note> findNoteWithId(UUID id);
 
-  boolean deleteById(UUID id);
+  boolean deleteNoteWithId(UUID id);
 
-  void deleteAll();
+  void deleteNotes();
 }

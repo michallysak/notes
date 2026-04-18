@@ -2,6 +2,7 @@ package pl.michallysak.notes.application.quarkus.note.domain;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,8 @@ public class NoteBeans {
 
   @Produces
   @ApplicationScoped
-  public NoteRepository noteRepository() {
+  public NoteRepository noteRepository(
+      Instance<PanacheNoteRepository> panacheNoteRepositoryInstance) {
     Optional<String> persistenceOptional =
         ConfigProvider.getConfig().getOptionalValue("persistence", String.class);
 
@@ -33,6 +35,11 @@ public class NoteBeans {
     if (persistence.contains("in-memory")) {
       logger.info("Using persistence type in-memory");
       return new InMemoryNoteRepository();
+    }
+
+    if (persistence.contains("sql")) {
+      logger.info("Using persistence type sql");
+      return panacheNoteRepositoryInstance.get();
     }
 
     throw new ConfigurationException("Unsupported persistence type: \"%s\"".formatted(persistence));

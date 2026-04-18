@@ -16,46 +16,46 @@ import pl.michallysak.notes.note.model.NoteUpdate;
 class InMemoryNoteRepositoryTest {
 
   @Test
-  void findAll_shouldReturnEmptyList_whenNoNotes() {
+  void findNotes_shouldReturnEmptyList_whenNoNotes() {
     // given
     NoteRepository noteRepository = createNoteRepository();
     // when
-    List<Note> notes = noteRepository.findAll();
+    List<Note> notes = noteRepository.findNotes();
     // then
     assertTrue(notes.isEmpty());
   }
 
   @Test
-  void findById_shouldReturnEmpty_whenNoExists() {
+  void findNoteWithId_shouldReturnEmpty_whenNoExists() {
     // given
     NoteRepository noteRepository = createNoteRepository();
     UUID randomId = UUID.randomUUID();
     // when
-    Optional<Note> note = noteRepository.findById(randomId);
+    Optional<Note> note = noteRepository.findNoteWithId(randomId);
     // then
     assertTrue(note.isEmpty());
   }
 
   @Test
-  void findById_shouldReturnNote_whenExists() {
+  void findNoteWithId_shouldReturnNote_whenExists() {
     // given
     NoteRepository noteRepository = createNoteRepository(createNote());
     UUID randomId = UUID.randomUUID();
     // when
-    Optional<Note> note = noteRepository.findById(randomId);
+    Optional<Note> note = noteRepository.findNoteWithId(randomId);
     // then
     assertTrue(note.isEmpty());
   }
 
   @Test
-  void save_shouldPersistenceNote() {
+  void save_Note_shouldPersistenceNote() {
     // given
     NoteRepository noteRepository = createNoteRepository();
     Note note = createNote();
     // when
-    noteRepository.save(note);
+    noteRepository.saveNote(note);
     // then
-    Optional<Note> foundNote = noteRepository.findById(note.getId());
+    Optional<Note> foundNote = noteRepository.findNoteWithId(note.getId());
     assertTrue(foundNote.isPresent());
     assertEquals(note.getId(), foundNote.get().getId());
     assertEquals(note.getTitle(), foundNote.get().getTitle());
@@ -63,11 +63,11 @@ class InMemoryNoteRepositoryTest {
   }
 
   @Test
-  void findAll_shouldReturnAllNotes() {
+  void findAll_shouldReturnNotesNotes() {
     // given
     NoteRepository noteRepository = createNoteRepository(createNote(), createNote());
     // when
-    List<Note> notes = noteRepository.findAll();
+    List<Note> notes = noteRepository.findNotes();
     // then
     assertEquals(2, notes.size());
   }
@@ -78,9 +78,9 @@ class InMemoryNoteRepositoryTest {
     Note note = createNote();
     NoteRepository noteRepository = createNoteRepository(note);
     // when
-    boolean deleted = noteRepository.deleteById(note.getId());
+    boolean deleted = noteRepository.deleteNoteWithId(note.getId());
     // then
-    assertTrue(noteRepository.findById(note.getId()).isEmpty());
+    assertTrue(noteRepository.findNoteWithId(note.getId()).isEmpty());
     assertTrue(deleted);
   }
 
@@ -91,9 +91,9 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(note);
     UUID randomId = UUID.randomUUID();
     // when
-    boolean deleted = noteRepository.deleteById(randomId);
+    boolean deleted = noteRepository.deleteNoteWithId(randomId);
     // then
-    assertTrue(noteRepository.findById(note.getId()).isPresent());
+    assertTrue(noteRepository.findNoteWithId(note.getId()).isPresent());
     assertFalse(deleted);
   }
 
@@ -111,16 +111,16 @@ class InMemoryNoteRepositoryTest {
             .build();
     note.update(noteUpdate);
     // when
-    noteRepository.save(note);
+    noteRepository.saveNote(note);
     // then
-    Note found = noteRepository.findById(note.getId()).orElseThrow();
+    Note found = noteRepository.findNoteWithId(note.getId()).orElseThrow();
     assertEquals(noteUpdate.title(), found.getTitle());
     assertEquals(noteUpdate.content(), found.getContent());
     assertTrue(found.isPinned());
   }
 
   @Test
-  void findAllWithAuthor_shouldReturnOnlyNotesWithGivenAuthor() {
+  void findNotesWithAuthor_shouldReturnOnlyNotesWithGivenAuthor() {
     // given
     UUID author1 = UUID.randomUUID();
     UUID author2 = UUID.randomUUID();
@@ -129,23 +129,23 @@ class InMemoryNoteRepositoryTest {
     Note note3 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());
     NoteRepository noteRepository = createNoteRepository(note1, note2, note3);
     // when
-    List<Note> notes = noteRepository.findAllWithAuthor(author1);
+    List<Note> notes = noteRepository.findNotesWithAuthor(author1);
     // then
     assertEquals(2, notes.size());
     assertTrue(notes.stream().allMatch(n -> n.getAuthorId().equals(author1)));
   }
 
   @Test
-  void deleteAll_shouldRemoveAllNotes() {
+  void deleteAll_shouldRemoveNotesNotes() {
     // given
     Note note1 = createNote();
     Note note2 = createNote();
     NoteRepository noteRepository = createNoteRepository(note1, note2);
-    assertEquals(2, noteRepository.findAll().size());
+    assertEquals(2, noteRepository.findNotes().size());
     // when
-    noteRepository.deleteAll();
+    noteRepository.deleteNotes();
     // then
-    assertTrue(noteRepository.findAll().isEmpty());
+    assertTrue(noteRepository.findNotes().isEmpty());
   }
 
   private NoteRepository createNoteRepository(Note... notes) {
