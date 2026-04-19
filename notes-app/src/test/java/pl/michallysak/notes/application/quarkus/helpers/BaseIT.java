@@ -33,7 +33,7 @@ public class BaseIT {
   @BeforeEach
   void setUp() {
     noteRepository.deleteNotes();
-    userRepository.deleteAll();
+    userRepository.deleteUsers();
   }
 
   protected String createUser(String email) {

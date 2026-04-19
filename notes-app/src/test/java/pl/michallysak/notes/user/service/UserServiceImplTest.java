@@ -51,7 +51,7 @@ class UserServiceImplTest {
     // when
     UserValue userValue = userService.createUser(emailPasswordCreateUser);
     // then
-    verify(userRepository).save(any());
+    verify(userRepository).saveUser(any());
     assertNotNull(userValue.id());
     assertEquals(emailPasswordCreateUser.email(), userValue.email());
   }
@@ -61,7 +61,7 @@ class UserServiceImplTest {
     // given
     User user =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
-    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    when(userRepository.findUserWithId(user.getId())).thenReturn(Optional.of(user));
     // when
     UserValue value = userService.getUser(user.getId());
     // then
@@ -73,7 +73,7 @@ class UserServiceImplTest {
   void getUser_shouldThrow_whenNotFound() {
     // given
     UUID id = UUID.randomUUID();
-    when(userRepository.findById(id)).thenReturn(Optional.empty());
+    when(userRepository.findUserWithId(id)).thenReturn(Optional.empty());
     // when
     Executable executable = () -> userService.getUser(id);
     // then
@@ -85,7 +85,7 @@ class UserServiceImplTest {
     // given
     EmailPasswordCreateUser emailPasswordCreateUser =
         UserTestUtils.createEmailPasswordCreateUserBuilder().build();
-    when(userRepository.existsByEmail(emailPasswordCreateUser.email())).thenReturn(true);
+    when(userRepository.existsWithEmail(emailPasswordCreateUser.email())).thenReturn(true);
     // when
     Executable executable = () -> userService.createUser(emailPasswordCreateUser);
     // then
@@ -130,7 +130,7 @@ class UserServiceImplTest {
         new EmailPasswordLogin(
             pl.michallysak.notes.common.Email.of("notfound@example.com"),
             pl.michallysak.notes.auth.model.Password.of("pw"));
-    when(userRepository.findByEmail(login.email())).thenReturn(Optional.empty());
+    when(userRepository.findUserWithEmail(login.email())).thenReturn(Optional.empty());
     // when
     Executable executable = () -> userService.login(login);
     // then
@@ -146,7 +146,7 @@ class UserServiceImplTest {
             pl.michallysak.notes.common.Email.of("user@example.com"),
             pl.michallysak.notes.auth.model.Password.of("pw"));
     User user = mock(User.class);
-    when(userRepository.findByEmail(login.email())).thenReturn(Optional.of(user));
+    when(userRepository.findUserWithEmail(login.email())).thenReturn(Optional.of(user));
     when(user.getLatestCredential(any())).thenReturn(Optional.empty());
     // when
     Executable executable = () -> userService.login(login);
@@ -163,7 +163,7 @@ class UserServiceImplTest {
             Email.of("user@example.com"), pl.michallysak.notes.auth.model.Password.of("pw"));
     User user = mock(User.class);
     PasswordCredential credential = getDummyPasswordCredential();
-    when(userRepository.findByEmail(login.email())).thenReturn(Optional.of(user));
+    when(userRepository.findUserWithEmail(login.email())).thenReturn(Optional.of(user));
     when(user.getLatestCredential(any())).thenReturn(Optional.of(credential));
     when(passwordPolicy.verifyPassword(any(), any())).thenReturn(false);
     // when
@@ -182,7 +182,7 @@ class UserServiceImplTest {
     User user = mock(User.class);
     PasswordCredential credential = getDummyPasswordCredential();
     AuthToken token = new AuthToken("token", OffsetDateTime.now().plusHours(1));
-    when(userRepository.findByEmail(login.email())).thenReturn(Optional.of(user));
+    when(userRepository.findUserWithEmail(login.email())).thenReturn(Optional.of(user));
     when(user.getLatestCredential(any())).thenReturn(Optional.of(credential));
     when(passwordPolicy.verifyPassword(any(), any())).thenReturn(true);
     when(passwordPolicy.isUpToDate(any())).thenReturn(true);
@@ -191,7 +191,7 @@ class UserServiceImplTest {
     AuthToken result = userService.login(login);
     // then
     assertEquals(token, result);
-    verify(userRepository, never()).save(any());
+    verify(userRepository, never()).saveUser(any());
   }
 
   @Test
@@ -202,7 +202,7 @@ class UserServiceImplTest {
     User user = mock(User.class);
     PasswordCredential credential = getDummyPasswordCredential();
     AuthToken token = new AuthToken("token", OffsetDateTime.now().plusHours(1));
-    when(userRepository.findByEmail(login.email())).thenReturn(Optional.of(user));
+    when(userRepository.findUserWithEmail(login.email())).thenReturn(Optional.of(user));
     when(user.getLatestCredential(any())).thenReturn(Optional.of(credential));
     when(passwordPolicy.verifyPassword(any(), any())).thenReturn(true);
     when(passwordPolicy.isUpToDate(any())).thenReturn(false);
@@ -214,7 +214,7 @@ class UserServiceImplTest {
     assertEquals(token, result);
     verify(user).deleteCredentials(PasswordCredential.class);
     verify(user).addCredential(credential);
-    verify(userRepository).save(user);
+    verify(userRepository).saveUser(user);
   }
 
   private static PasswordCredential getDummyPasswordCredential() {

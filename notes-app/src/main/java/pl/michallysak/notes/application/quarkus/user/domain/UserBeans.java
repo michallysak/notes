@@ -1,8 +1,12 @@
 package pl.michallysak.notes.application.quarkus.user.domain;
 
+import io.quarkus.runtime.configuration.ConfigurationException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.service.AuthTokenGenerator;
@@ -25,8 +29,28 @@ public class UserBeans {
 
   @Produces
   @ApplicationScoped
-  public UserRepository userRepository() {
-    return new InMemoryUserRepository();
+  public UserRepository userRepository(
+      Instance<PanacheUserRepository> panacheUserRepositoryInstance) {
+    Optional<String> persistenceOptional =
+        ConfigProvider.getConfig().getOptionalValue("persistence", String.class);
+
+    if (persistenceOptional.isEmpty()) {
+      logger.info("Persistence type not provided, use in-memory");
+      return new InMemoryUserRepository();
+    }
+
+    String persistence = persistenceOptional.get();
+    if (persistence.contains("in-memory")) {
+      logger.info("Using persistence type in-memory");
+      return new InMemoryUserRepository();
+    }
+
+    if (persistence.contains("sql")) {
+      logger.info("Using persistence type sql");
+      return panacheUserRepositoryInstance.get();
+    }
+
+    throw new ConfigurationException("Unsupported persistence type: \"%s\"".formatted(persistence));
   }
 
   @Produces

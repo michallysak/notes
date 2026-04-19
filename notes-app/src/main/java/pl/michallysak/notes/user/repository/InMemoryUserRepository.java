@@ -18,29 +18,29 @@ public class InMemoryUserRepository implements UserRepository {
   }
 
   @Override
-  public void save(User user) {
+  public void saveUser(User user) {
     if (!users.containsKey(user.getId())) {
       users.put(user.getId(), user);
     }
   }
 
   @Override
-  public Optional<User> findById(UUID id) {
+  public Optional<User> findUserWithId(UUID id) {
     return Optional.ofNullable(users.get(id));
   }
 
   @Override
-  public boolean existsByEmail(Email email) {
+  public boolean existsWithEmail(Email email) {
     return users.values().stream().anyMatch(user -> user.getEmail().equals(email));
   }
 
   @Override
-  public Optional<User> findByEmail(Email email) {
+  public Optional<User> findUserWithEmail(Email email) {
     return users.values().stream().filter(user -> user.getEmail().equals(email)).findFirst();
   }
 
   @Override
-  public void deleteAll() {
+  public void deleteUsers() {
     users.clear();
   }
 }

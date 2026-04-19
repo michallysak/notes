@@ -1,4 +1,4 @@
-package pl.michallysak.notes.application.quarkus.note.domain;
+package pl.michallysak.notes.application.quarkus.note.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,7 +10,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
-import pl.michallysak.notes.note.repository.NoteEntity;
 import pl.michallysak.notes.note.repository.NoteRepository;
 
 @ApplicationScoped

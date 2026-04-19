@@ -6,13 +6,13 @@ import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.user.domain.User;
 
 public interface UserRepository {
-  void save(User user);
+  void saveUser(User user);
 
-  Optional<User> findById(UUID id);
+  Optional<User> findUserWithId(UUID id);
 
-  boolean existsByEmail(Email email);
+  boolean existsWithEmail(Email email);
 
-  Optional<User> findByEmail(Email email);
+  Optional<User> findUserWithEmail(Email email);
 
-  void deleteAll();
+  void deleteUsers();
 }

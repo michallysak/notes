@@ -1,4 +1,4 @@
-package pl.michallysak.notes.note.repository;
+package pl.michallysak.notes.application.quarkus.note.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;

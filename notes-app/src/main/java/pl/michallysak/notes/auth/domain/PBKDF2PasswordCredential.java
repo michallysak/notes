@@ -15,6 +15,12 @@ public final class PBKDF2PasswordCredential extends PasswordCredential {
     this.hashedPassword = Objects.requireNonNull(hashedPassword);
   }
 
+  public PBKDF2PasswordCredential(
+      UUID id, OffsetDateTime createdAt, PBKDF2HashedPassword hashedPassword) {
+    super(Objects.requireNonNull(id), Objects.requireNonNull(createdAt));
+    this.hashedPassword = Objects.requireNonNull(hashedPassword);
+  }
+
   @Override
   public PBKDF2HashedPassword getHashedPassword() {
     return hashedPassword;

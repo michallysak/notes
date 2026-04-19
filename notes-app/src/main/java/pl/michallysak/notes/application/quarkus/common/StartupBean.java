@@ -49,7 +49,7 @@ public class StartupBean {
 
   private UserValue getUserValue(Email email, Password password) {
     return userRepository
-        .findByEmail(email)
+        .findUserWithEmail(email)
         .map(UserValue::from)
         .orElseGet(
             () -> {

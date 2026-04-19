@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserValue createUser(EmailPasswordCreateUser createUser) {
-    if (userRepository.existsByEmail(createUser.email())) {
+    if (userRepository.existsWithEmail(createUser.email())) {
       logger.debug("Attempt to create user with existing email %s".formatted(createUser.email()));
       throw new AuthException("Email already in use");
     }
@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
 
     User user =
         userRepository
-            .findByEmail(login.email())
+            .findUserWithEmail(login.email())
             .orElseThrow(
                 () -> {
                   logger.info("User not found with email %s".formatted(login.email()));
@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserValue getUser(UUID userId) {
-    User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+    User user = userRepository.findUserWithId(userId).orElseThrow(UserNotFoundException::new);
     return UserValue.from(user);
   }
 
@@ -89,6 +89,6 @@ public class UserServiceImpl implements UserService {
     PasswordCredential credential = passwordPolicy.hash(createUser);
     user.deleteCredentials(PasswordCredential.class);
     user.addCredential(credential);
-    userRepository.save(user);
+    userRepository.saveUser(user);
   }
 }

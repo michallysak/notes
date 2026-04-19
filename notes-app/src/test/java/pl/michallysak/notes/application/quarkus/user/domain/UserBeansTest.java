@@ -1,13 +1,21 @@
 package pl.michallysak.notes.application.quarkus.user.domain;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+import io.quarkus.runtime.configuration.ConfigurationException;
+import jakarta.enterprise.inject.Instance;
+import java.util.Optional;
+import java.util.function.Consumer;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.service.*;
@@ -23,17 +31,84 @@ import pl.michallysak.notes.user.validator.UserValidatorImpl;
 
 @ExtendWith(MockitoExtension.class)
 class UserBeansTest {
+  private static final String PERSISTENCE = "persistence";
 
   @Mock Logger logger;
+  @Mock PanacheUserRepository panacheUserRepository;
+  @Mock Instance<PanacheUserRepository> panacheUserRepositoryInstance;
 
   @InjectMocks UserBeans userBeans;
 
   @Test
-  void userRepository_shouldReturnInMemoryUserRepository() {
+  void userRepository_shouldReturnInMemoryUserRepository_whenGetPersistenceReturnEmptyString() {
     // when
-    UserRepository repo = userBeans.userRepository();
+    UserRepository repo = userBeans.userRepository(panacheUserRepositoryInstance);
     // then
     assertInstanceOf(InMemoryUserRepository.class, repo);
+    verifyNoInteractions(panacheUserRepositoryInstance);
+  }
+
+  @Test
+  void userRepository_shouldReturnInMemoryUserRepository_whenConfigInMemory() {
+    withMockedConfigProvider(
+        (config) -> {
+          // given
+          mockPersistenceConfig(config, "in-memory");
+          // when
+          UserRepository userRepository = userBeans.userRepository(panacheUserRepositoryInstance);
+          // then
+          assertNotNull(userRepository);
+          assertInstanceOf(InMemoryUserRepository.class, userRepository);
+          verifyNoInteractions(panacheUserRepositoryInstance);
+        });
+  }
+
+  @Test
+  void userRepository_shouldReturnInMemoryUserRepository_whenNoConfig() {
+    withMockedConfigProvider(
+        (config) -> {
+          // given
+          mockPersistenceConfig(config);
+          // when
+          UserRepository userRepository = userBeans.userRepository(panacheUserRepositoryInstance);
+          // then
+          assertNotNull(userRepository);
+          assertInstanceOf(InMemoryUserRepository.class, userRepository);
+          verifyNoInteractions(panacheUserRepositoryInstance);
+        });
+  }
+
+  @Test
+  void userRepository_shouldThrow_whenGetPersistenceReturnUnsupportedPersistence() {
+    withMockedConfigProvider(
+        (config) -> {
+          // given
+          String value = "xyz";
+          mockPersistenceConfig(config, value);
+          // when
+          Executable executable = () -> userBeans.userRepository(panacheUserRepositoryInstance);
+          // then
+          ConfigurationException exception = assertThrows(ConfigurationException.class, executable);
+          assertEquals(
+              "Unsupported persistence type: \"%s\"".formatted(value), exception.getMessage());
+          verifyNoInteractions(panacheUserRepositoryInstance);
+        });
+  }
+
+  @Test
+  void userRepository_shouldReturnPanacheUserRepository_whenConfigPanache() {
+    withMockedConfigProvider(
+        (config) -> {
+          // given
+          mockPersistenceConfig(config, "sql");
+          when(panacheUserRepositoryInstance.get()).thenReturn(panacheUserRepository);
+          // when
+          UserRepository userRepository = userBeans.userRepository(panacheUserRepositoryInstance);
+          // then
+          assertNotNull(userRepository);
+          assertSame(panacheUserRepository, userRepository);
+          verify(panacheUserRepositoryInstance).get();
+        });
   }
 
   @Test
@@ -87,5 +162,21 @@ class UserBeansTest {
             logger, userRepository, userValidator, jwtAuthGenerator, passwordPolicy);
     // then
     assertInstanceOf(UserServiceImpl.class, service);
+  }
+
+  private static void mockPersistenceConfig(Config config, String value) {
+    when(config.getOptionalValue(PERSISTENCE, String.class)).thenReturn(Optional.ofNullable(value));
+  }
+
+  private static void mockPersistenceConfig(Config config) {
+    when(config.getOptionalValue(PERSISTENCE, String.class)).thenReturn(Optional.empty());
+  }
+
+  private static void withMockedConfigProvider(Consumer<Config> consumer) {
+    try (MockedStatic<ConfigProvider> configProviderMock = mockStatic(ConfigProvider.class)) {
+      Config config = mock(Config.class);
+      configProviderMock.when(ConfigProvider::getConfig).thenReturn(config);
+      consumer.accept(config);
+    }
   }
 }

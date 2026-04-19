@@ -7,12 +7,12 @@ import org.mapstruct.Mapper;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
-import pl.michallysak.notes.note.repository.NoteEntity;
 
 @Mapper(componentModel = "cdi")
 public interface NoteMapper {

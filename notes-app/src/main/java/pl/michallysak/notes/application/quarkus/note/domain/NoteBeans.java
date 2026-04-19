@@ -8,6 +8,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import pl.michallysak.notes.application.quarkus.note.persistence.PanacheNoteRepository;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;

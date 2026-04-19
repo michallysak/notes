@@ -21,24 +21,24 @@ class InMemoryUserRepositoryTest {
   @Mock private UserValidator userValidator;
 
   @Test
-  void findById_shouldReturnEmpty_whenNoExists() {
+  void findUserWithId_shouldReturnEmpty_whenNoExists() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     UUID randomId = UUID.randomUUID();
     // when
-    Optional<User> userOptional = userRepository.findById(randomId);
+    Optional<User> userOptional = userRepository.findUserWithId(randomId);
     // then
     assertTrue(userOptional.isEmpty());
   }
 
   @Test
-  void findById_shouldReturnIt_whenExists() {
+  void findUserWithId_shouldReturnIt_whenExists() {
     // given
     User user =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
     UserRepository userRepository = new InMemoryUserRepository(Collections.singletonList(user));
     // when
-    Optional<User> userOptional = userRepository.findById(user.getId());
+    Optional<User> userOptional = userRepository.findUserWithId(user.getId());
     // then
     assertTrue(userOptional.isPresent());
     User userFromRepository = userOptional.get();
@@ -47,71 +47,71 @@ class InMemoryUserRepositoryTest {
   }
 
   @Test
-  void save_shouldPersistUser() {
+  void saveUser_shouldPersistUser() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     User user =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
     // when
-    userRepository.save(user);
+    userRepository.saveUser(user);
     // then
-    Optional<User> foundUser = userRepository.findById(user.getId());
+    Optional<User> foundUser = userRepository.findUserWithId(user.getId());
     assertTrue(foundUser.isPresent());
     assertEquals(user.getId(), foundUser.get().getId());
     assertEquals(user.getEmail(), foundUser.get().getEmail());
   }
 
   @Test
-  void findByEmail_shouldReturnUser_whenExists() {
+  void findUserWithEmail_shouldReturnUser_whenExists() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     User user =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
     // when
-    userRepository.save(user);
+    userRepository.saveUser(user);
     // then
-    assertTrue(userRepository.findByEmail(user.getEmail()).isPresent());
+    assertTrue(userRepository.findUserWithEmail(user.getEmail()).isPresent());
   }
 
   @Test
-  void findByEmail_shouldReturnEmpty_whenNotExists() {
+  void findUserWithEmail_shouldReturnEmpty_whenNotExists() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     // when
-    Optional<User> user = userRepository.findByEmail(Email.of("notfound@example.com"));
+    Optional<User> user = userRepository.findUserWithEmail(Email.of("notfound@example.com"));
     // then
     assertTrue(user.isEmpty());
   }
 
   @Test
-  void existsByEmail_shouldReturnTrue_whenExists() {
+  void existsWithEmail_shouldReturnTrue_whenExists() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     User user =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
     // when
-    userRepository.save(user);
+    userRepository.saveUser(user);
     // then
-    assertTrue(userRepository.existsByEmail(user.getEmail()));
+    assertTrue(userRepository.existsWithEmail(user.getEmail()));
   }
 
   @Test
-  void existsByEmail_shouldReturnFalse_whenNotExists() {
+  void existsWithEmail_shouldReturnFalse_whenNotExists() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     // when
-    boolean condition = userRepository.existsByEmail(Email.of("notfound@example.com"));
+    boolean condition = userRepository.existsWithEmail(Email.of("notfound@example.com"));
     // then
     assertFalse(condition);
   }
 
   @Test
-  void save_shouldNotOverwriteExistingUser() {
+  void saveUser_shouldNotOverwriteExistingUser() {
     // given
     User user =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
     UserRepository userRepository = new InMemoryUserRepository();
-    userRepository.save(user);
+    userRepository.saveUser(user);
     User user2 =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator) {
           @Override
@@ -120,28 +120,30 @@ class InMemoryUserRepositoryTest {
           }
         };
     // when
-    userRepository.save(user2);
-    Optional<User> found = userRepository.findById(user.getId());
+    userRepository.saveUser(user2);
+    Optional<User> found = userRepository.findUserWithId(user.getId());
     assertTrue(found.isPresent());
     assertSame(user, found.get());
   }
 
   @Test
-  void deleteAll_shouldRemoveAllUsers() {
+  void deleteUsers_shouldRemoveAllUsers() {
     // given
     UserRepository userRepository = new InMemoryUserRepository();
     User user1 =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
     User user2 =
         new UserImpl(UserTestUtils.createEmailPasswordCreateUserBuilder().build(), userValidator);
-    userRepository.save(user1);
-    userRepository.save(user2);
+    userRepository.saveUser(user1);
+    userRepository.saveUser(user2);
     // when
-    userRepository.deleteAll();
+    userRepository.deleteUsers();
     // then
-    assertTrue(userRepository.findById(user1.getId()).isEmpty());
-    assertTrue(userRepository.findById(user2.getId()).isEmpty());
-    assertFalse(userRepository.existsByEmail(user1.getEmail()));
-    assertFalse(userRepository.existsByEmail(user2.getEmail()));
+    assertTrue(userRepository.findUserWithId(user1.getId()).isEmpty());
+    assertTrue(userRepository.findUserWithId(user2.getId()).isEmpty());
+    assertFalse(userRepository.existsWithEmail(user1.getEmail()));
+    assertFalse(userRepository.existsWithEmail(user2.getEmail()));
+    assertTrue(userRepository.findUserWithEmail(user1.getEmail()).isEmpty());
+    assertTrue(userRepository.findUserWithEmail(user2.getEmail()).isEmpty());
   }
 }

@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.application.quarkus.note.persistence.PanacheNoteRepository;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;

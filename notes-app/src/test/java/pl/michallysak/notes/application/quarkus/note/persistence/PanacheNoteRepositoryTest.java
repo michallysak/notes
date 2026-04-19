@@ -1,4 +1,4 @@
-package pl.michallysak.notes.application.quarkus.note.domain;
+package pl.michallysak.notes.application.quarkus.note.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
-import pl.michallysak.notes.note.repository.NoteEntity;
 
 @ExtendWith(MockitoExtension.class)
 class PanacheNoteRepositoryTest {

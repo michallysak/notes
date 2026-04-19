@@ -38,7 +38,7 @@ class StartupBeanTest {
     Password password = Password.of("Admin123!");
     UserValue user = mock(UserValue.class);
     when(user.id()).thenReturn(UUID.randomUUID());
-    when(userRepository.findByEmail(any(Email.class))).thenReturn(Optional.empty());
+    when(userRepository.findUserWithEmail(any(Email.class))).thenReturn(Optional.empty());
     when(userService.createUser(any(EmailPasswordCreateUser.class))).thenReturn(user);
     when(userService.login(any(EmailPasswordLogin.class))).thenReturn(mock(AuthToken.class));
     when(noteService.getCreatedNotes(any(UUID.class))).thenReturn(List.of());
@@ -102,7 +102,7 @@ class StartupBeanTest {
     // given
     UserValue user = mock(UserValue.class);
     when(user.id()).thenReturn(UUID.randomUUID());
-    when(userRepository.findByEmail(any(Email.class))).thenReturn(Optional.empty());
+    when(userRepository.findUserWithEmail(any(Email.class))).thenReturn(Optional.empty());
     when(userService.createUser(any(EmailPasswordCreateUser.class))).thenReturn(user);
     when(userService.login(any(EmailPasswordLogin.class))).thenReturn(mock(AuthToken.class));
     when(noteService.getCreatedNotes(any(UUID.class))).thenReturn(List.of(mock(NoteValue.class)));

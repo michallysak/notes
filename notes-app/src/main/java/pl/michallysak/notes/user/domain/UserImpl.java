@@ -6,6 +6,7 @@ import lombok.ToString;
 import pl.michallysak.notes.auth.domain.Credential;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
+import pl.michallysak.notes.user.model.UserValue;
 import pl.michallysak.notes.user.validator.UserValidator;
 
 @Getter
@@ -21,6 +22,13 @@ public class UserImpl implements User {
     userValidator.validateCreateUser(emailPasswordCreateUser);
     this.id = UUID.randomUUID();
     this.email = emailPasswordCreateUser.email();
+  }
+
+  public UserImpl(UserValue userValue, List<Credential> credentials, UserValidator userValidator) {
+    this.userValidator = userValidator;
+    this.id = Objects.requireNonNull(userValue.id());
+    this.email = Objects.requireNonNull(userValue.email());
+    this.credentials.addAll(Objects.requireNonNull(credentials));
   }
 
   @Override
