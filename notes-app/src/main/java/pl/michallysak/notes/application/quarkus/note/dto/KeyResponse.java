@@ -1,4 +1,4 @@
-package pl.michallysak.notes.application.quarkus.note.resource;
+package pl.michallysak.notes.application.quarkus.note.dto;
 
 import java.time.Instant;
 import lombok.AllArgsConstructor;

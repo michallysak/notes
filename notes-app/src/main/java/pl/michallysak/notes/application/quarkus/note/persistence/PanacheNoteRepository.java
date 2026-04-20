@@ -33,7 +33,7 @@ public class PanacheNoteRepository
 
   @Override
   public List<Note> findNotesWithAuthor(UUID authorId) {
-    return list("authorId", authorId).stream().map(noteMapper::mapToDomain).toList();
+    return list("author.id", authorId).stream().map(noteMapper::mapToDomain).toList();
   }
 
   @Override

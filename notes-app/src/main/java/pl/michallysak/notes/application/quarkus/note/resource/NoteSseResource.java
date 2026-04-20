@@ -18,6 +18,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import pl.michallysak.notes.application.quarkus.note.domain.SseDomainEventPublisher;
+import pl.michallysak.notes.application.quarkus.note.dto.KeyResponse;
 
 @Path("/notes/events")
 @ApplicationScoped

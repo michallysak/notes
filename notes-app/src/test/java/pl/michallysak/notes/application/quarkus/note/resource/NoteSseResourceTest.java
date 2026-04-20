@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.domain.SseDomainEventPublisher;
+import pl.michallysak.notes.application.quarkus.note.dto.KeyResponse;
 
 @ExtendWith(MockitoExtension.class)
 class NoteSseResourceTest {

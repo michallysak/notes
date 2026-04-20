@@ -6,10 +6,14 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
@@ -21,11 +25,22 @@ import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.validator.NoteValidator;
+import pl.michallysak.notes.user.repository.UserEntity;
 
+@ExtendWith(MockitoExtension.class)
 class NoteMapperTest {
 
   private static final UUID AUTHOR_ID = UUID.randomUUID();
-  private final NoteMapper noteMapper = new NoteMapperImpl();
+
+  @Mock private NoteValidator noteValidator;
+  private NoteMapper noteMapper;
+
+  @BeforeEach
+  void setUp() {
+    this.noteMapper = new NoteMapperImpl();
+    noteMapper.setNoteValidator(noteValidator);
+  }
 
   @Test
   void mapToNoteUpdate_shouldMapCorrectly() {
@@ -169,13 +184,14 @@ class NoteMapperTest {
   @Test
   void mapToEntity_shouldMapDomainNoteToEntity() {
     // given
-    Note note = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().build());
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
     // when
     NoteEntity noteEntity = noteMapper.mapToEntity(note);
     // then
     assertNotNull(noteEntity);
     assertEquals(note.getId(), noteEntity.getId());
-    assertEquals(note.getAuthorId(), noteEntity.getAuthorId());
+    assertEquals(note.getAuthorId(), noteEntity.getAuthor().getId());
     assertEquals(note.getTitle(), noteEntity.getTitle());
     assertEquals(note.getContent(), noteEntity.getContent());
     assertEquals(note.getCreated(), noteEntity.getCreated());
@@ -200,9 +216,11 @@ class NoteMapperTest {
     UUID authorId = UUID.randomUUID();
     OffsetDateTime created = OffsetDateTime.now().minusDays(1);
     OffsetDateTime updated = OffsetDateTime.now();
+    UserEntity author = new UserEntity();
+    author.setId(authorId);
     NoteEntity noteEntity = new NoteEntity();
     noteEntity.setId(id);
-    noteEntity.setAuthorId(authorId);
+    noteEntity.setAuthor(author);
     noteEntity.setTitle("note-title");
     noteEntity.setContent("note-content");
     noteEntity.setCreated(created);
@@ -229,5 +247,43 @@ class NoteMapperTest {
     NoteValue noteValue = noteMapper.mapToNoteValue(noteEntity);
     // then
     assertNull(noteValue);
+  }
+
+  @Test
+  void mapToNoteValue_shouldReturnNull_whenAuthorNull() {
+    // given
+    NoteEntity noteEntity = new NoteEntity();
+    noteEntity.setId(UUID.randomUUID());
+    noteEntity.setAuthor(null);
+    noteEntity.setTitle("title");
+    noteEntity.setContent("content");
+    noteEntity.setCreated(OffsetDateTime.now());
+    noteEntity.setUpdated(OffsetDateTime.now());
+    noteEntity.setPinned(false);
+    // when
+    NoteValue noteValue = noteMapper.mapToNoteValue(noteEntity);
+    // then
+    assertNotNull(noteValue);
+    assertNull(noteValue.authorId());
+  }
+
+  @Test
+  void mapToNoteValue_shouldReturnNull_whenAuthorIdNull() {
+    // given
+    NoteEntity noteEntity = new NoteEntity();
+    noteEntity.setId(UUID.randomUUID());
+    UserEntity author = new UserEntity();
+    author.setId(null);
+    noteEntity.setAuthor(author);
+    noteEntity.setTitle("title");
+    noteEntity.setContent("content");
+    noteEntity.setCreated(OffsetDateTime.now());
+    noteEntity.setUpdated(OffsetDateTime.now());
+    noteEntity.setPinned(false);
+    // when
+    NoteValue noteValue = noteMapper.mapToNoteValue(noteEntity);
+    // then
+    assertNotNull(noteValue);
+    assertNull(noteValue.authorId());
   }
 }

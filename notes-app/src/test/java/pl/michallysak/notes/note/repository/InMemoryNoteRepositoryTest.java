@@ -1,19 +1,27 @@
 package pl.michallysak.notes.note.repository;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.validator.NoteValidator;
 
+@ExtendWith(MockitoExtension.class)
 class InMemoryNoteRepositoryTest {
+
+  @Mock private NoteValidator noteValidator;
 
   @Test
   void findNotes_shouldReturnEmptyList_whenNoNotes() {
@@ -124,9 +132,11 @@ class InMemoryNoteRepositoryTest {
     // given
     UUID author1 = UUID.randomUUID();
     UUID author2 = UUID.randomUUID();
-    Note note1 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());
-    Note note2 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author2).build());
-    Note note3 = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().authorId(author1).build());
+    CreateNote createNote1 = NoteTestUtils.createCreateNoteBuilder().authorId(author1).build();
+    CreateNote createNote2 = NoteTestUtils.createCreateNoteBuilder().authorId(author2).build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    Note note3 = new NoteImpl(createNote1, noteValidator);
     NoteRepository noteRepository = createNoteRepository(note1, note2, note3);
     // when
     List<Note> notes = noteRepository.findNotesWithAuthor(author1);
@@ -154,6 +164,6 @@ class InMemoryNoteRepositoryTest {
 
   private Note createNote() {
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    return new NoteImpl(createNote);
+    return new NoteImpl(createNote, noteValidator);
   }
 }

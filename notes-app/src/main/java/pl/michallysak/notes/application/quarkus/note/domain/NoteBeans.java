@@ -14,11 +14,19 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.note.validator.NoteValidator;
+import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 
 @ApplicationScoped
 @RequiredArgsConstructor
 public class NoteBeans {
   private final Logger logger;
+
+  @Produces
+  @ApplicationScoped
+  public NoteValidator noteValidator() {
+    return new NoteValidatorImpl();
+  }
 
   @Produces
   @ApplicationScoped
@@ -49,7 +57,9 @@ public class NoteBeans {
   @Produces
   @ApplicationScoped
   public NoteService noteService(
-      NoteRepository noteRepository, DomainEventPublisher eventPublisher) {
-    return new NoteServiceImpl(noteRepository, eventPublisher);
+      NoteRepository noteRepository,
+      DomainEventPublisher eventPublisher,
+      NoteValidator noteValidator) {
+    return new NoteServiceImpl(noteRepository, eventPublisher, noteValidator);
   }
 }

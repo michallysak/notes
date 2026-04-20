@@ -12,6 +12,8 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.note.validator.NoteValidator;
+import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
@@ -24,6 +26,7 @@ public class NoteBeans {
   private NoteRepository noteRepositoryInstance;
   private Presenter rootPresenterInstance;
   private CurrentUserProvider currentUserProvider;
+  private NoteValidator noteValidatorInstance;
 
   public NoteBeans(String[] arguments) {
     this.arguments = Arrays.asList(arguments);
@@ -62,9 +65,17 @@ public class NoteBeans {
     return domainEventPublisher;
   }
 
+  public NoteValidator noteValidator() {
+    if (noteValidatorInstance == null) {
+      noteValidatorInstance = new NoteValidatorImpl();
+    }
+    return noteValidatorInstance;
+  }
+
   public NoteService noteService() {
     if (noteServiceInstance == null) {
-      noteServiceInstance = new NoteServiceImpl(noteRepository(), domainEventPublisher());
+      noteServiceInstance =
+          new NoteServiceImpl(noteRepository(), domainEventPublisher(), noteValidator());
     }
     return noteServiceInstance;
   }

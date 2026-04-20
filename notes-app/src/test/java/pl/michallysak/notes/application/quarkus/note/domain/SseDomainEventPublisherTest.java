@@ -22,7 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.common.JsonWebTokenProvider;
-import pl.michallysak.notes.application.quarkus.note.resource.KeyResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.KeyResponse;
 import pl.michallysak.notes.note.domain.event.DomainEvent;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 

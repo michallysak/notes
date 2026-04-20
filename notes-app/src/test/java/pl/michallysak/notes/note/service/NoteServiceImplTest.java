@@ -26,6 +26,7 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.repository.NoteRepository;
+import pl.michallysak.notes.note.validator.NoteValidator;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +35,8 @@ class NoteServiceImplTest {
   @Mock private NoteRepository repository;
 
   @Mock private DomainEventPublisher eventPublisher = events -> {};
+
+  @Mock private NoteValidator noteValidator;
 
   @InjectMocks private NoteServiceImpl service;
 
@@ -57,7 +60,7 @@ class NoteServiceImplTest {
   void getCreatedNotes_shouldReturnMappedValues() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     when(repository.findNotesWithAuthor(eq(AUTHOR_ID))).thenReturn(List.of(note));
     // when
     List<NoteValue> noteValues = service.getCreatedNotes(AUTHOR_ID);
@@ -70,7 +73,7 @@ class NoteServiceImplTest {
   void getCreatedNote_shouldReturnMappedValue() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     UUID id = note.getId();
     when(repository.findNoteWithId(id)).thenReturn(Optional.of(note));
     // when
@@ -94,7 +97,7 @@ class NoteServiceImplTest {
   void updateNote_shouldValidateAndSave() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     UUID id = note.getId();
     NoteUpdate update =
         NoteTestUtils.createNoteUpdateBuilder()
@@ -115,7 +118,8 @@ class NoteServiceImplTest {
   void deleteNote_shouldDelete() {
     // given
     UUID id = UUID.randomUUID();
-    Note note = new NoteImpl(NoteTestUtils.createCreateNoteBuilder().build());
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
     when(repository.findNoteWithId(id)).thenReturn(Optional.of(note));
     when(repository.deleteNoteWithId(id)).thenReturn(true);
     // when

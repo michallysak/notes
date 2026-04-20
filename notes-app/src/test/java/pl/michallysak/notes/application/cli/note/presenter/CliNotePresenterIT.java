@@ -8,19 +8,24 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.michallysak.notes.note.NoteTestUtils;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 class CliNotePresenterIT {
 
   private static final UUID AUTHOR_ID = new NoAuthCurrentUserProvider().getCurrentUserId();
+  private final NoteValidatorImpl noteValidator = new NoteValidatorImpl();
+  private final DomainEventPublisher domainEventPublisher = events -> {};
   private final InMemoryNoteRepository noteRepository = new InMemoryNoteRepository();
-  private final NoteService noteService = new NoteServiceImpl(noteRepository, events -> {});
+  private final NoteService noteService =
+      new NoteServiceImpl(noteRepository, domainEventPublisher, noteValidator);
 
   @BeforeEach
   void setUp() {

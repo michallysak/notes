@@ -10,7 +10,6 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.validator.NoteValidator;
-import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 
 @Getter
 @ToString
@@ -22,11 +21,11 @@ public class NoteImpl implements Note {
   private OffsetDateTime updated;
   private boolean isPinned;
   private final UUID authorId;
+  private final NoteValidator noteValidator;
 
-  private static final NoteValidator NOTE_VALIDATOR = new NoteValidatorImpl();
-
-  public NoteImpl(CreateNote createNote) {
-    NOTE_VALIDATOR.validateCreateNote(createNote);
+  public NoteImpl(CreateNote createNote, NoteValidator noteValidator) {
+    this.noteValidator = noteValidator;
+    noteValidator.validateCreateNote(createNote);
     this.authorId = createNote.authorId();
     this.id = UUID.randomUUID();
     this.title = createNote.title();
@@ -36,7 +35,8 @@ public class NoteImpl implements Note {
     this.isPinned = false;
   }
 
-  public NoteImpl(NoteValue noteValue) {
+  public NoteImpl(NoteValue noteValue, NoteValidator noteValidator) {
+    this.noteValidator = noteValidator;
     this.id = noteValue.id();
     this.authorId = noteValue.authorId();
     this.title = noteValue.title();
@@ -60,7 +60,7 @@ public class NoteImpl implements Note {
   public void update(NoteUpdate noteUpdate) {
     UUID actingUserId = noteUpdate.actingUserId();
     checkOwnership(actingUserId);
-    NOTE_VALIDATOR.validateNoteUpdate(id, noteUpdate, this);
+    noteValidator.validateNoteUpdate(id, noteUpdate, this);
     boolean updatedAny = false;
     if (noteUpdate.title() != null) {
       this.title = noteUpdate.title();

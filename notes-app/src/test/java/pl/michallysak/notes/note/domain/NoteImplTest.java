@@ -1,23 +1,32 @@
 package pl.michallysak.notes.note.domain;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.UUID;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.validator.NoteValidator;
 
+@ExtendWith(MockitoExtension.class)
 class NoteImplTest {
+
+  @Mock private NoteValidator noteValidator;
+
   @Test
   void constructor_shouldInitializeFieldsCorrectly() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     // when
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     // then
     assertNotNull(note.getId());
     assertEquals(createNote.authorId(), note.getAuthorId());
@@ -33,7 +42,7 @@ class NoteImplTest {
   void update_shouldModifyFieldsAndSetUpdated_whenNotNullPinned() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     NoteUpdate noteUpdate =
         NoteTestUtils.createNoteUpdateBuilder()
             .title("newTitle")
@@ -57,7 +66,7 @@ class NoteImplTest {
   void update_shouldModifyFieldsAndSetUpdated_whenNullPinned() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     NoteUpdate noteUpdate =
         NoteTestUtils.createNoteUpdateBuilder()
             .title("newTitle")
@@ -80,7 +89,7 @@ class NoteImplTest {
   void update_shouldNotModifyFieldsOrSetUpdated_whenAllFieldsNull() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     Thread.sleep(100);
     NoteUpdate noteUpdate = NoteUpdate.builder().actingUserId(note.getAuthorId()).build();
     // when
@@ -97,7 +106,7 @@ class NoteImplTest {
   void update_shouldNotModifyTitle_whenTitleIsNull() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     Thread.sleep(100);
     NoteUpdate noteUpdate =
         NoteUpdate.builder()
@@ -120,7 +129,7 @@ class NoteImplTest {
   void update_shouldNotModifyContent_whenContentIsNull() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     Thread.sleep(100);
     NoteUpdate noteUpdate =
         NoteUpdate.builder()
@@ -143,7 +152,7 @@ class NoteImplTest {
   void update_shouldNotModifyPinned_whenPinnedIsNull() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     Thread.sleep(100);
     NoteUpdate noteUpdate =
         NoteUpdate.builder()
@@ -165,7 +174,7 @@ class NoteImplTest {
   void update_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     UUID notAuthorId = UUID.randomUUID();
     NoteUpdate noteUpdate =
         NoteUpdate.builder()
@@ -184,7 +193,7 @@ class NoteImplTest {
   void delete_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     UUID notAuthorId = UUID.randomUUID();
     // when
     Executable executable = () -> note.delete(notAuthorId);
@@ -196,7 +205,7 @@ class NoteImplTest {
   void read_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     UUID notAuthorId = UUID.randomUUID();
     // when
     Executable executable = () -> note.read(notAuthorId);

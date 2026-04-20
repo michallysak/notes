@@ -141,7 +141,7 @@ class PanacheNoteRepositoryTest {
     NoteEntity entity2 = new NoteEntity();
     Note note1 = mock(Note.class);
     Note note2 = mock(Note.class);
-    doReturn(List.of(entity1, entity2)).when(noteRepository).list("authorId", authorId);
+    doReturn(List.of(entity1, entity2)).when(noteRepository).list("author.id", authorId);
     when(noteMapper.mapToDomain(entity1)).thenReturn(note1);
     when(noteMapper.mapToDomain(entity2)).thenReturn(note2);
     // when

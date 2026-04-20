@@ -6,13 +6,16 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import lombok.Setter;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants;
 import pl.michallysak.notes.application.quarkus.user.dto.AuthTokenResponse;
 import pl.michallysak.notes.application.quarkus.user.dto.LoginUserRequest;
 import pl.michallysak.notes.application.quarkus.user.dto.RegisterUserRequest;
 import pl.michallysak.notes.application.quarkus.user.dto.UserResponse;
+import pl.michallysak.notes.auth.domain.Credential;
 import pl.michallysak.notes.auth.model.AuthToken;
+import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.user.domain.User;
 import pl.michallysak.notes.user.domain.UserImpl;
@@ -29,52 +32,33 @@ import pl.michallysak.notes.user.validator.UserValidator;
  * @see <a href="https://mapstruct.org/documentation/stable/reference/html/#injection-strategy">
  *     MapStruct Injection Strategy</a>
  */
-@Mapper(componentModel = "cdi")
+@Setter(onMethod_ = @Inject)
+@Mapper(componentModel = MappingConstants.ComponentModel.CDI)
 @ApplicationScoped
 public abstract class UserMapper {
   protected UserValidator userValidator;
   protected CredentialMapper credentialMapper;
 
-  @Inject
-  public void setUserValidator(UserValidator userValidator) {
-    this.userValidator = userValidator;
-  }
-
-  @Inject
-  public void setCredentialMapper(CredentialMapper credentialMapper) {
-    this.credentialMapper = credentialMapper;
-  }
-
-  @Mapping(
-      target = "email",
-      expression = "java(pl.michallysak.notes.common.Email.of(request.getEmail()))")
-  @Mapping(
-      target = "password",
-      expression = "java(pl.michallysak.notes.auth.model.Password.of(request.getPassword()))")
   public abstract EmailPasswordLogin mapToEmailPasswordLogin(LoginUserRequest request);
 
-  @Mapping(
-      target = "email",
-      expression = "java(pl.michallysak.notes.common.Email.of(request.getEmail()))")
-  @Mapping(
-      target = "password",
-      expression = "java(pl.michallysak.notes.auth.model.Password.of(request.getPassword()))")
   public abstract EmailPasswordLogin mapToEmailPasswordLogin(RegisterUserRequest request);
 
-  @Mapping(
-      target = "email",
-      expression = "java(pl.michallysak.notes.common.Email.of(request.getEmail()))")
-  @Mapping(
-      target = "password",
-      expression = "java(pl.michallysak.notes.auth.model.Password.of(request.getPassword()))")
   public abstract EmailPasswordCreateUser mapToEmailPasswordCreateUser(RegisterUserRequest request);
 
   public abstract UserResponse mapToUserResponse(UserValue userValue);
 
   public abstract AuthTokenResponse mapToAuthTokenResponse(AuthToken authToken);
 
-  public String map(Email value) {
+  protected String mapToEmailValue(Email value) {
     return Optional.ofNullable(value).map(Email::getValue).orElse(null);
+  }
+
+  protected Email mapToEmail(String value) {
+    return Email.of(value);
+  }
+
+  protected Password mapToPassword(String value) {
+    return Password.of(value);
   }
 
   public UserEntity mapToEntity(User user) {
@@ -88,8 +72,9 @@ public abstract class UserMapper {
   }
 
   public User mapToDomain(UserEntity userEntity) {
-    return new UserImpl(
-        mapToUserValue(userEntity), credentialMapper.mapToDomain(userEntity), userValidator);
+    UserValue userValue = mapToUserValue(userEntity);
+    List<Credential> credentials = credentialMapper.mapToDomain(userEntity);
+    return new UserImpl(userValue, credentials, userValidator);
   }
 
   private UserValue mapToUserValue(UserEntity userEntity) {

@@ -23,6 +23,8 @@ import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.note.validator.NoteValidator;
+import pl.michallysak.notes.note.validator.NoteValidatorImpl;
 
 @ExtendWith(MockitoExtension.class)
 class NoteBeansTest {
@@ -33,6 +35,7 @@ class NoteBeansTest {
 
   @Mock PanacheNoteRepository panacheNoteRepository;
   @Mock Instance<PanacheNoteRepository> panacheNoteRepositoryInstance;
+  @Mock NoteValidator noteValidator;
 
   @InjectMocks NoteBeans noteBeans;
 
@@ -99,10 +102,19 @@ class NoteBeansTest {
     NoteRepository noteRepository = mock(NoteRepository.class);
     DomainEventPublisher eventPublisher = mock(DomainEventPublisher.class);
     // when
-    NoteService noteService = noteBeans.noteService(noteRepository, eventPublisher);
+    NoteService noteService = noteBeans.noteService(noteRepository, eventPublisher, noteValidator);
     // then
     assertNotNull(noteService);
     assertInstanceOf(NoteServiceImpl.class, noteService);
+  }
+
+  @Test
+  void noteValidator_shouldReturnNoteValidatorImpl() {
+    // when
+    NoteValidator noteValidator = noteBeans.noteValidator();
+    // then
+    assertNotNull(noteValidator);
+    assertInstanceOf(NoteValidatorImpl.class, noteValidator);
   }
 
   @Test

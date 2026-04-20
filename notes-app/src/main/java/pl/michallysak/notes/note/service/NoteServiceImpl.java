@@ -15,16 +15,18 @@ import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.repository.NoteRepository;
+import pl.michallysak.notes.note.validator.NoteValidator;
 
 @RequiredArgsConstructor
 public class NoteServiceImpl implements NoteService {
 
   private final NoteRepository noteRepository;
   private final DomainEventPublisher eventPublisher;
+  private final NoteValidator noteValidator;
 
   @Override
   public NoteValue createNote(CreateNote createNote) {
-    Note note = new NoteImpl(createNote);
+    Note note = new NoteImpl(createNote, noteValidator);
     noteRepository.saveNote(note);
     NoteValue noteValue = NoteValue.from(note);
     NoteCreatedEvent noteCreatedEvent = NoteCreatedEvent.from(noteValue);

@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.jboss.logging.Logger;
 import pl.michallysak.notes.application.quarkus.common.JsonWebTokenProvider;
 import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
-import pl.michallysak.notes.application.quarkus.note.resource.KeyResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.KeyResponse;
 import pl.michallysak.notes.note.domain.event.DomainEvent;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
