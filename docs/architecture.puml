@@ -4,6 +4,13 @@ skinparam rectangle {
   FontSize 14
 }
 
+skinparam backgroundColor transparent
+
+skinparam arrow {
+  Color Grey
+  Thickness 1
+}
+
 top to bottom direction
 
 rectangle "Domain Layer\n(Entities, Validators, Services)" as DomainLayer

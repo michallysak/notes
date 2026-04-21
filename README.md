@@ -11,7 +11,7 @@ The application is structured into four main layers:
    - **Services** (e.g., `NoteService`): Orchestrate domain, persistence, and presentation layers.
 2. **Persistence Layer**: Implements data storage and retrieval (e.g., `NoteRepository`).
 3. **Controller Layer**: Handles incoming requests and coordinates between the presentation and domain layers. (e.g., `NoteController`).
-4. **Presentation Layer**: User interface components. *(e.g. `NotePresenter`, `NoteResource`)*
+4. **Presentation Layer**: User interface components. (e.g. `NotePresenter`, `NoteResource`)
 
 ### Diagram
 
@@ -39,6 +39,11 @@ To run app you can use the following implementations README.md file:
 A simple command-line interface for managing notes. [docs/cli/README.md](docs/cli/README.md)
 - **Quarkus Note App**
 A rest api interface for managing notes build with Quarkus. [docs/quarkus/README.md](docs/quarkus/README.md)
+
+### Clients
+
+- **Angular Note App**
+A web client for managing notes built with Angular. [clients/notes-angular/README.md](clients/notes-angular/README.md)
 
 
 ## License
