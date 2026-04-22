@@ -7,6 +7,10 @@
   [draggable]="false"
   (onHide)="onHide()"
 >
-  <app-login-form />
+  @if (isLoginForm()) {
+    <app-login-form (toggleRegister)="toggleForm()" />
+  } @else {
+    <app-register-form (toggleToLogin)="toggleForm()" />
+  }
 </p-dialog>
 

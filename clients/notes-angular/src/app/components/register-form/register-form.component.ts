@@ -4,7 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { LoginUserRequest } from '@notes/notes_service';
+import { RegisterUserRequest } from '@notes/notes_service';
 import { AuthService } from '../../services/auth/auth.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { catchError, EMPTY } from 'rxjs';
@@ -15,40 +15,40 @@ type UserForm = {
 };
 
 @Component({
-  selector: 'app-login-form',
+  selector: 'app-register-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, TranslatePipe],
-  templateUrl: './login-form.component.html',
-  styleUrls: ['./login-form.component.scss'],
+  templateUrl: './register-form.component.html',
+  styleUrls: ['./register-form.component.scss'],
 })
-export class LoginFormComponent {
+export class RegisterFormComponent {
   form: FormGroup<UserForm>;
   error = signal(false);
-  @Output() toggleRegister = new EventEmitter<void>();
+  @Output() toggleToLogin = new EventEmitter<void>();
 
   constructor(
     private router: Router,
     private auth: AuthService,
   ) {
     this.form = new FormGroup<UserForm>({
-      email: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+      password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
     });
     this.form.valueChanges.subscribe(() => this.error.set(false));
   }
 
-  login() {
+  register() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const loginUserRequest: LoginUserRequest = {
+    const registerUserRequest: RegisterUserRequest = {
       email: this.form.controls.email.value,
       password: this.form.controls.password.value,
     };
     this.auth
-      .login(loginUserRequest)
+      .register(registerUserRequest)
       .pipe(
         catchError(() => {
           this.error.set(true);
@@ -58,7 +58,8 @@ export class LoginFormComponent {
       .subscribe(() => this.router.navigate(['/']));
   }
 
-  protected onToggleRegister() {
-    this.toggleRegister.emit();
+  protected toggleLogin() {
+    this.toggleToLogin.emit();
   }
 }
+

@@ -64,8 +64,21 @@ describe('AuthDialogComponent', () => {
     expect(component.visible).toBe(false);
     expect(visibleChangeSpy).toHaveBeenCalledWith(false);
   });
-});
 
+  it('should start with login form displayed', () => {
+    expect(component.isLoginForm()).toBe(true);
+  });
+
+  it('should toggle between login and register forms', () => {
+    expect(component.isLoginForm()).toBe(true);
+
+    component.toggleForm();
+    expect(component.isLoginForm()).toBe(false);
+
+    component.toggleForm();
+    expect(component.isLoginForm()).toBe(true);
+  });
+});
 
 
 

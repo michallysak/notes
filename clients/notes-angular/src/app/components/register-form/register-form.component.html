@@ -1,8 +1,8 @@
 <form
-  class="login"
+  class="register"
   [formGroup]="form"
 >
-  <h2>{{ 'AUTH.LOGIN_TITLE' | translate }}</h2>
+  <h2>{{ 'AUTH.REGISTER_TITLE' | translate }}</h2>
   <div>
     <input
       pInputText
@@ -19,23 +19,24 @@
     />
   </div>
   @if (error()) {
-    <div class="error">{{'AUTH.INVALID_CREDENTIALS' | translate}}</div>
+    <div class="error">{{'AUTH.REGISTER_ERROR' | translate}}</div>
   }
-  <div class="login-footer">
+  <div class="register-footer">
     <p-button
       type="button"
-      label="{{ 'AUTH.LOGIN_BUTTON' | translate }}"
-      (onClick)="login()"
+      label="{{ 'AUTH.REGISTER_BUTTON' | translate }}"
+      (onClick)="register()"
       [disabled]="form.invalid"
     />
     <br>
     <p-button
       type="button"
       styleClass="p-button-text"
-      (onClick)="onToggleRegister()"
-      [label]="'AUTH.NO_ACCOUNT_REGISTER' | translate"
+      (onClick)="toggleLogin()"
+      [label]="'AUTH.HAVE_ACCOUNT_LOGIN' | translate"
     />
   </div>
 
 </form>
+
 

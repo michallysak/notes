@@ -5,7 +5,11 @@
     "LOGIN_TITLE": "Login",
     "LOGIN_BUTTON": "Log in",
     "NO_ACCOUNT_REGISTER": "No account? Register",
-    "INVALID_CREDENTIALS": "Invalid credentials"
+    "INVALID_CREDENTIALS": "Invalid credentials",
+    "REGISTER_TITLE": "Create Account",
+    "REGISTER_BUTTON": "Register",
+    "REGISTER_ERROR": "Registration failed. Please try again.",
+    "HAVE_ACCOUNT_LOGIN": "Already have an account? Login"
   },
   "ACTION": {
     "LOGOUT": "Log out"

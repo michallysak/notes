@@ -3,23 +3,23 @@ import { By } from '@angular/platform-browser';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { LoginFormComponent } from './login-form.component';
+import { RegisterFormComponent } from './register-form.component';
 import * as AuthModule from '../../services/auth/auth.service';
 
-describe('LoginFormComponent', () => {
-  let component: LoginFormComponent;
-  let fixture: ComponentFixture<LoginFormComponent>;
+describe('RegisterFormComponent', () => {
+  let component: RegisterFormComponent;
+  let fixture: ComponentFixture<RegisterFormComponent>;
   let router: Router;
 
   const authService = {
-    login: vi.fn(),
+    register: vi.fn(),
   };
 
   beforeEach(async () => {
-    authService.login.mockReset();
+    authService.register.mockReset();
 
     await TestBed.configureTestingModule({
-      imports: [LoginFormComponent],
+      imports: [RegisterFormComponent],
       providers: [
         provideRouter([]),
         provideTranslateService({
@@ -30,7 +30,7 @@ describe('LoginFormComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(LoginFormComponent);
+    fixture = TestBed.createComponent(RegisterFormComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
     fixture.detectChanges();
@@ -40,54 +40,54 @@ describe('LoginFormComponent', () => {
 
   it('should render correctly', () => {
     expect(component).toBeTruthy();
-    expect(queryElement('form.login')).toBeTruthy();
+    expect(queryElement('form.register')).toBeTruthy();
     expect(queryElement('input[formControlName="email"]')).toBeTruthy();
     expect(queryElement('input[formControlName="password"]')).toBeTruthy();
   });
 
   it('should not submit when form is invalid', () => {
-    component.login();
+    component.register();
 
-    expect(authService.login).not.toHaveBeenCalled();
+    expect(authService.register).not.toHaveBeenCalled();
     expect(component.form.touched).toBe(true);
   });
 
-  it('should navigate to root on successful login', () => {
+  it('should navigate to root on successful register', () => {
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-    authService.login.mockReturnValue(of({}));
-    component.form.setValue({ email: 'user@example.com', password: 'secret' });
+    authService.register.mockReturnValue(of({}));
+    component.form.setValue({ email: 'user@example.com', password: 'password123' });
 
-    component.login();
+    component.register();
 
-    expect(authService.login).toHaveBeenCalledWith({
+    expect(authService.register).toHaveBeenCalledWith({
       email: 'user@example.com',
-      password: 'secret',
+      password: 'password123',
     });
     expect(navigateSpy).toHaveBeenCalledWith(['/']);
   });
 
-  it('should call login from login button click binding', () => {
-    const loginSpy = vi.spyOn(component, 'login');
+  it('should call register from register button click binding', () => {
+    const registerSpy = vi.spyOn(component, 'register');
 
     fixture.debugElement.queryAll(By.css('p-button'))[0].triggerEventHandler('onClick', {});
 
-    expect(loginSpy).toHaveBeenCalled();
+    expect(registerSpy).toHaveBeenCalled();
   });
 
-  it('should call toggleRegister from register button click binding', () => {
-    const toggleSpy = vi.spyOn(component.toggleRegister, 'emit');
+  it('should emit toggleToLogin from back to login button click binding', () => {
+    const toggleSpy = vi.spyOn(component.toggleToLogin, 'emit');
 
     fixture.debugElement.queryAll(By.css('p-button'))[1].triggerEventHandler('onClick', {});
 
     expect(toggleSpy).toHaveBeenCalled();
   });
 
-  it('should set error on failed login and not navigate', () => {
+  it('should set error on failed register and not navigate', () => {
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-    authService.login.mockReturnValue(throwError(() => new Error('bad credentials')));
-    component.form.setValue({ email: 'user@example.com', password: 'wrong' });
+    authService.register.mockReturnValue(throwError(() => new Error('email already exists')));
+    component.form.setValue({ email: 'user@example.com', password: 'password123' });
 
-    component.login();
+    component.register();
     fixture.detectChanges();
 
     expect(component.error()).toBe(true);
@@ -110,7 +110,23 @@ describe('LoginFormComponent', () => {
     expect(component.error()).toBe(true);
     expect(queryElement('.error')).toBeTruthy();
   });
+
+  it('should validate email format', () => {
+    const emailControl = component.form.controls.email;
+    emailControl.setValue('invalid-email');
+    expect(emailControl.hasError('email')).toBe(true);
+
+    emailControl.setValue('valid@example.com');
+    expect(emailControl.hasError('email')).toBe(false);
+  });
+
+  it('should validate password minimum length', () => {
+    const passwordControl = component.form.controls.password;
+    passwordControl.setValue('short');
+    expect(passwordControl.hasError('minlength')).toBe(true);
+
+    passwordControl.setValue('longenough123');
+    expect(passwordControl.hasError('minlength')).toBe(false);
+  });
 });
-
-
 

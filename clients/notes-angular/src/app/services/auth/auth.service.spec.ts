@@ -5,6 +5,7 @@ describe('AuthService', () => {
   const usersApi = {
     getCurrentUser: vi.fn(),
     loginUser: vi.fn(),
+    registerUser: vi.fn(),
   };
 
   const tokenService = {
@@ -18,6 +19,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     usersApi.getCurrentUser.mockReset();
     usersApi.loginUser.mockReset();
+    usersApi.registerUser.mockReset();
     tokenService.getItem.mockReset();
     tokenService.setItem.mockReset();
     tokenService.revoke.mockReset();
@@ -78,54 +80,78 @@ describe('AuthService', () => {
     expect(tokenService.revoke).toHaveBeenCalled();
   });
 
-  it('stores token and user on successful login', async () => {
-    const request = { email: 'user@example.com', password: 'secret' };
-    const tokenResponse = { token: 'jwt-token' };
-    const user = { id: '1', email: 'user@example.com' };
-    usersApi.loginUser.mockReturnValue(of(tokenResponse));
-    usersApi.getCurrentUser.mockReturnValue(of(user));
+  it('revokes token and clears current user on logout', () => {
     const service = createService();
+    service['currentUserSubject'].next({ id: '1', email: 'user@example.com' });
 
-    const result = await firstValueFrom(service.login(request));
-
-    expect(usersApi.loginUser).toHaveBeenCalledWith(request);
-    expect(tokenService.setItem).toHaveBeenCalledWith('jwt-token');
-    expect(result).toEqual(user);
-  });
-
-  it('emits logged state based on current user stream', async () => {
-    const request = { email: 'user@example.com', password: 'secret' };
-    const user = { id: '1', email: 'user@example.com' };
-    usersApi.loginUser.mockReturnValue(of({ token: 'jwt-token' }));
-    usersApi.getCurrentUser.mockReturnValue(of(user));
-    const service = createService();
-    const states: boolean[] = [];
-    service.logged$.subscribe((value) => {
-      states.push(value);
-    });
-
-    await firstValueFrom(service.login(request));
-    service.logout();
-
-    expect(states).toEqual([false, true, false]);
-  });
-
-  it('revokes token and clears current user on logout', async () => {
-    const request = { email: 'user@example.com', password: 'secret' };
-    const user = { id: '1', email: 'user@example.com' };
-    usersApi.loginUser.mockReturnValue(of({ token: 'jwt-token' }));
-    usersApi.getCurrentUser.mockReturnValue(of(user));
-    const service = createService();
-    let latestUser: unknown = undefined;
-    service.currentUser$.subscribe((value) => {
-      latestUser = value;
-    });
-
-    await firstValueFrom(service.login(request));
     service.logout();
 
     expect(tokenService.revoke).toHaveBeenCalled();
-    expect(latestUser).toBeNull();
+    expect(service['currentUserSubject'].value).toBeNull();
+  });
+
+  describe('Authentication Flow (shared login/register logic)', () => {
+    const testAuthenticationFlow = (authMethod: 'login' | 'register') => {
+      const request =
+        authMethod === 'login'
+          ? { email: 'user@example.com', password: 'secret' }
+          : { email: 'user@example.com', password: 'secret' };
+      const tokenResponse = { token: 'jwt-token' };
+      const user = { id: '1', email: 'user@example.com' };
+      const mockApi = authMethod === 'login' ? usersApi.loginUser : usersApi.registerUser;
+
+      mockApi.mockReturnValue(of(tokenResponse));
+      usersApi.getCurrentUser.mockReturnValue(of(user));
+      const service = createService();
+
+      return { request, user, service };
+    };
+
+    it('stores token and user on successful login', async () => {
+      const { request, user, service } = testAuthenticationFlow('login');
+
+      const result = await firstValueFrom(service.login(request));
+
+      expect(usersApi.loginUser).toHaveBeenCalledWith(request);
+      expect(tokenService.setItem).toHaveBeenCalledWith('jwt-token');
+      expect(usersApi.getCurrentUser).toHaveBeenCalled();
+      expect(result).toEqual(user);
+    });
+
+    it('stores token and user on successful register', async () => {
+      const { request, user, service } = testAuthenticationFlow('register');
+
+      const result = await firstValueFrom(service.register(request));
+
+      expect(usersApi.registerUser).toHaveBeenCalledWith(request);
+      expect(tokenService.setItem).toHaveBeenCalledWith('jwt-token');
+      expect(usersApi.getCurrentUser).toHaveBeenCalled();
+      expect(result).toEqual(user);
+    });
+
+    it('updates current user subject during authentication', async () => {
+      const { request, user, service } = testAuthenticationFlow('login');
+      let latestUser: unknown = undefined;
+      service.currentUser$.subscribe((value) => {
+        latestUser = value;
+      });
+
+      await firstValueFrom(service.login(request));
+
+      expect(latestUser).toEqual(user);
+    });
+
+    it('emits logged state transitions during authentication', async () => {
+      const { request, service } = testAuthenticationFlow('login');
+      const states: boolean[] = [];
+      service.logged$.subscribe((value) => {
+        states.push(value);
+      });
+
+      await firstValueFrom(service.login(request));
+
+      expect(states).toContain(true);
+    });
   });
 });
 

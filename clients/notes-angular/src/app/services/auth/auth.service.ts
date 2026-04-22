@@ -3,6 +3,7 @@ import { BehaviorSubject, firstValueFrom, Observable, switchMap, tap } from 'rxj
 import {
   AuthTokenResponse,
   LoginUserRequest,
+  RegisterUserRequest,
   UsersAPIService,
 } from '@notes/notes_service';
 import { AuthTokenService } from '../auth-token/auth-token.service';
@@ -46,7 +47,15 @@ export class AuthService {
   }
 
   login(loginUserRequest: LoginUserRequest): Observable<User> {
-    return this.usersApi.loginUser(loginUserRequest).pipe(
+    return this.authenticateWithToken(this.usersApi.loginUser(loginUserRequest));
+  }
+
+  register(registerUserRequest: RegisterUserRequest): Observable<User> {
+    return this.authenticateWithToken(this.usersApi.registerUser(registerUserRequest));
+  }
+
+  private authenticateWithToken(authResponse$: Observable<AuthTokenResponse>): Observable<User> {
+    return authResponse$.pipe(
       tap(({ token }: AuthTokenResponse) => {
         this.tokenService.setItem(token);
       }),
@@ -55,6 +64,8 @@ export class AuthService {
     );
   }
 }
+
+
 
 
 
