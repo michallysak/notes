@@ -14,7 +14,8 @@ public record NoteValue(
     String content,
     OffsetDateTime created,
     Optional<OffsetDateTime> updated,
-    boolean pinned) {
+    boolean pinned,
+    NoteStyle style) {
   public static NoteValue from(Note note) {
     return NoteValue.builder()
         .id(note.getId())
@@ -24,6 +25,7 @@ public record NoteValue(
         .created(note.getCreated())
         .pinned(note.isPinned())
         .updated(note.getUpdated())
+        .style(note.getStyle())
         .build();
   }
 }

@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
@@ -166,6 +167,24 @@ class NoteImplTest {
     assertEquals(noteUpdate.title(), note.getTitle());
     assertEquals(noteUpdate.content(), note.getContent());
     assertFalse(note.isPinned());
+    assertTrue(note.getUpdated().isPresent());
+    assertTrue(note.getUpdated().get().isAfter(note.getCreated()));
+  }
+
+  @SneakyThrows
+  @Test
+  void update_shouldModifyStyleAndSetUpdated_whenStyleNotNull() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    NoteStyle noteStyle = NoteStyle.builder().color("#AA11FF").build();
+    NoteUpdate noteUpdate =
+        NoteUpdate.builder().style(noteStyle).actingUserId(note.getAuthorId()).build();
+    Thread.sleep(100);
+    // when
+    note.update(noteUpdate);
+    // then
+    assertEquals(noteStyle, note.getStyle());
     assertTrue(note.getUpdated().isPresent());
     assertTrue(note.getUpdated().get().isAfter(note.getCreated()));
   }

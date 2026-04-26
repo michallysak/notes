@@ -4,4 +4,5 @@ import java.util.UUID;
 import lombok.Builder;
 
 @Builder
-public record NoteUpdate(String title, String content, Boolean pinned, UUID actingUserId) {}
+public record NoteUpdate(
+    String title, String content, Boolean pinned, UUID actingUserId, NoteStyle style) {}

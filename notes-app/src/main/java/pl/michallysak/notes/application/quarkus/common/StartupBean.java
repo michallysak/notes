@@ -9,6 +9,7 @@ import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.service.NoteService;
@@ -42,7 +43,9 @@ public class StartupBean {
     logger.info("Created first note: " + first);
     NoteValue second = noteService.createNote(getCreateNote(user, "second"));
     logger.info("Created second note: " + second);
-    NoteUpdate noteUpdate = NoteUpdate.builder().pinned(true).actingUserId(user.id()).build();
+    NoteStyle noteStyle = NoteStyle.builder().color("#b03a3a").build();
+    NoteUpdate noteUpdate =
+        NoteUpdate.builder().pinned(true).actingUserId(user.id()).style(noteStyle).build();
     NoteValue noteValue = noteService.updateNote(second.id(), noteUpdate);
     logger.info("Updated second note: " + noteValue);
   }

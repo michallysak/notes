@@ -37,4 +37,7 @@ public class NoteResponse {
 
   @Schema(required = true, description = "Indicates if the note is pinned", examples = "true")
   private boolean pinned;
+
+  @Schema(description = "Style of the note")
+  private NoteStyleDTO style;
 }

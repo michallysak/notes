@@ -17,12 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteStyleDTO;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.validator.NoteValidator;
@@ -285,5 +287,29 @@ class NoteMapperTest {
     // then
     assertNotNull(noteValue);
     assertNull(noteValue.authorId());
+  }
+
+  @Test
+  void noteStyleDTOToNoteStyle_shouldMapCorrectly_whenNoteStyleDTONotNull() {
+    // given
+    NoteMapperImpl mapper = (NoteMapperImpl) noteMapper;
+    NoteStyleDTO noteStyleDTO = NoteStyleDTO.builder().color("#AABBCC").build();
+    // when
+    NoteStyle noteStyle = mapper.noteStyleDTOToNoteStyle(noteStyleDTO);
+    // then
+    assertNotNull(noteStyle);
+    assertEquals(noteStyleDTO.getColor(), noteStyle.color());
+  }
+
+  @Test
+  void noteStyleToNoteStyleDTO_shouldMapCorrectly_whenNoteStyleNotNull() {
+    // given
+    NoteMapperImpl mapper = (NoteMapperImpl) noteMapper;
+    NoteStyle noteStyle = NoteStyle.builder().color("#112233").build();
+    // when
+    NoteStyleDTO noteStyleDTO = mapper.noteStyleToNoteStyleDTO(noteStyle);
+    // then
+    assertNotNull(noteStyleDTO);
+    assertEquals(noteStyle.color(), noteStyleDTO.getColor());
   }
 }

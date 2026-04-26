@@ -20,4 +20,7 @@ public class NoteUpdateRequest {
 
   @Schema(description = "Indicates if the note is pinned", examples = "true")
   private Boolean pinned;
+
+  @Schema(description = "Style of the note")
+  private NoteStyleDTO style;
 }

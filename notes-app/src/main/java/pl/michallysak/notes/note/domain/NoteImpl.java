@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.ToString;
 import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.validator.NoteValidator;
@@ -21,6 +22,7 @@ public class NoteImpl implements Note {
   private OffsetDateTime updated;
   private boolean isPinned;
   private final UUID authorId;
+  private NoteStyle style;
   private final NoteValidator noteValidator;
 
   public NoteImpl(CreateNote createNote, NoteValidator noteValidator) {
@@ -44,6 +46,7 @@ public class NoteImpl implements Note {
     this.created = noteValue.created();
     this.updated = noteValue.updated().orElse(null);
     this.isPinned = noteValue.pinned();
+    this.style = noteValue.style();
   }
 
   @Override
@@ -72,6 +75,10 @@ public class NoteImpl implements Note {
     }
     if (noteUpdate.pinned() != null) {
       this.isPinned = noteUpdate.pinned();
+      updatedAny = true;
+    }
+    if (noteUpdate.style() != null) {
+      this.style = noteUpdate.style();
       updatedAny = true;
     }
     if (updatedAny) {

@@ -12,6 +12,9 @@ import java.util.UUID;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.user.repository.UserEntity;
 
 @Data
@@ -39,4 +42,8 @@ public class NoteEntity extends PanacheEntityBase {
 
   @Column(nullable = false)
   private boolean pinned;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(columnDefinition = "jsonb")
+  private NoteStyle style;
 }
