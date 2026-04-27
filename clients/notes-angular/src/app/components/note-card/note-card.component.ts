@@ -9,6 +9,7 @@ import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change
 import { MenuItem } from 'primeng/api';
 import { Note } from '../../types/note';
 import { NoteService } from '../../services/note/note.service';
+import { mixHexWithBase } from '../../utils/color-contrast.util';
 
 @Component({
   selector: 'app-note-card',
@@ -47,6 +48,51 @@ export class NoteCardComponent {
         },
       },
     ];
+  }
+
+  get cardPt() {
+    const backgroundColor = this.cardBackgroundColor();
+    const textColor = this.cardTextColor() ?? undefined;
+
+    return {
+      root: {
+        style: {
+          backgroundColor,
+          color: textColor,
+          borderRadius: '0.75rem',
+          overflow: 'hidden',
+        },
+      },
+      header: { style: { backgroundColor, color: textColor, padding: '0 0.75rem 0' } },
+      body: { style: { backgroundColor, color: textColor, padding: '0 0.75rem 0.75rem' } },
+      content: { style: { backgroundColor, color: textColor, padding: '0.5rem 0 0' } },
+      footer: { style: { backgroundColor, color: textColor } },
+    };
+  }
+
+  get controlButtonPt() {
+    const textColor = this.cardTextColor() ?? 'var(--p-text-color)';
+
+    return {
+      root: {
+        style: {
+          color: textColor,
+        },
+      },
+      icon: {
+        style: {
+          color: textColor,
+        },
+      },
+    };
+  }
+
+  cardBackgroundColor() {
+    return mixHexWithBase(this.note?.style?.color, 'var(--p-content-background)', 32);
+  }
+
+  cardTextColor() {
+    return 'var(--p-text-color)';
   }
 
   handleCardClick() {

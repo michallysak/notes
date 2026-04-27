@@ -1,20 +1,20 @@
-<p-card class="card-container" (click)="handleCardClick()">
+<p-card class="card-container" [pt]="cardPt" (click)="handleCardClick()">
   <ng-template #header>
     <div class="card-header">
-      <h3 class="text-trim">{{ note.title }}</h3>
-      <p-menu #menu [model]="items" popup="true" [appendTo]="'body'"></p-menu>
+      <h3 class="text-trim" [style.color]="cardTextColor()">{{ note.title }}</h3>
+      <p-menu #menu [model]="items" popup="true" [appendTo]="'body'" ></p-menu>
       <div class="controls">
         <p-button
+          [pt]="controlButtonPt"
           variant="text"
-          severity="secondary"
           pTooltip="{{ (note.pinned ? 'NOTES.UNPIN' : 'NOTES.PIN') | translate }}"
           (onClick)="onPinClick($event)"
         >
           <i class="pi pi-thumbtack"></i>
         </p-button>
         <p-button
+          [pt]="controlButtonPt"
           variant="text"
-          severity="secondary"
           pTooltip="{{ 'NOTES.MORE' | translate }}"
           (onClick)="onMenuClick($event, menu)"
         >
@@ -26,6 +26,6 @@
 
   </ng-template>
 
-  <div class="text-trim">{{ note.content }}</div>
+  <div class="text-trim" [style.color]="cardTextColor()">{{ note.content }}</div>
 </p-card>
 

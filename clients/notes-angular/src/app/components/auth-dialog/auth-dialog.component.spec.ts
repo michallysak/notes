@@ -69,7 +69,7 @@ describe('AuthDialogComponent', () => {
     expect(component.isLoginForm()).toBe(true);
   });
 
-  it('should toggle between login and register forms', () => {
+  it('should toggle multiple times correctly', () => {
     expect(component.isLoginForm()).toBe(true);
 
     component.toggleForm();
@@ -77,6 +77,19 @@ describe('AuthDialogComponent', () => {
 
     component.toggleForm();
     expect(component.isLoginForm()).toBe(true);
+  });
+
+  it('should have opposite state after each toggle', () => {
+    const initialState = component.isLoginForm();
+
+    component.toggleForm();
+    expect(component.isLoginForm()).not.toBe(initialState);
+
+    component.toggleForm();
+    expect(component.isLoginForm()).toBe(initialState);
+
+    component.toggleForm();
+    expect(component.isLoginForm()).not.toBe(initialState);
   });
 });
 

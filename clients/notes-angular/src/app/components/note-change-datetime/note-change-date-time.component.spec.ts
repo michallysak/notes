@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { NoteChangeDateTimeComponent } from './note-change-date-time.component';
 import { NoteResponse } from '@notes/notes_service';
 import { Note } from '../../types/note';
@@ -7,6 +8,7 @@ import { Note } from '../../types/note';
 describe('NoteMetaComponent', () => {
   let component: NoteChangeDateTimeComponent;
   let fixture: ComponentFixture<NoteChangeDateTimeComponent>;
+  let translateService: TranslateService;
 
   const createNote = (overrides: Partial<Note> = {}): NoteResponse =>
     ({
@@ -22,7 +24,19 @@ describe('NoteMetaComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [NoteChangeDateTimeComponent],
+      providers: [provideTranslateService({ lang: 'en', fallbackLang: 'en' })],
     }).compileComponents();
+
+    translateService = TestBed.inject(TranslateService);
+    translateService.setTranslation('en', {
+      NOTES: {
+        META: {
+          CREATED: 'Created {{date}}',
+          EDITED: 'Edited {{date}}',
+        },
+      },
+    });
+    translateService.use('en');
 
     fixture = TestBed.createComponent(NoteChangeDateTimeComponent);
     component = fixture.componentInstance;
@@ -36,6 +50,7 @@ describe('NoteMetaComponent', () => {
 
     const text = queryElement('.note-meta span').nativeElement.textContent;
     expect(text).toContain('Created');
+    expect(text).toContain('01.01.2026');
   });
 
   it('should show edited date when note was edited', () => {
@@ -47,5 +62,6 @@ describe('NoteMetaComponent', () => {
 
     const text = queryElement('.note-meta span').nativeElement.textContent;
     expect(text).toContain('Edited');
+    expect(text).toContain('01.02.2026');
   });
 });

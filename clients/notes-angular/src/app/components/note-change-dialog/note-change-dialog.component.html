@@ -6,72 +6,116 @@
   [closable]="true"
   [draggable]="false"
   [dismissableMask]="true"
-  [header]="note ? 'Update Note' : 'Create Note'"
+  [header]="(activeNote() ? 'NOTES.DIALOG.UPDATE_TITLE' : 'NOTES.DIALOG.CREATE_TITLE') | translate"
+  [pt]="dialogPt"
   [style]="{ width: '520px' }"
 >
-  <div style="display: flex;">
-    @if (lastSavedNote(); as note) {
-      <app-note-change-datetime [note]="note"></app-note-change-datetime>
-    }
-    @if (saving()) {
-      <div class="flex justify-center">
-        <p-progress-spinner
-          strokeWidth="4"
-          style=" margin-left: 0.5em; width: 16px; height: 16px; align-self: flex-start"
-          ariaLabel="loading"
-        ></p-progress-spinner>
-      </div>
-    }
-    @if (saved()) {
+  <div class="note-dialog-body">
+    <div class="note-dialog-status">
+      @if (lastSavedNote(); as note) {
+        <app-note-change-datetime [note]="note"></app-note-change-datetime>
+      }
+      @if (saving()) {
+        <div class="flex justify-center">
+          <p-progress-spinner
+            strokeWidth="4"
+            style=" margin-left: 0.5em; width: 16px; height: 16px; align-self: flex-start"
+            [ariaLabel]="'NOTES.DIALOG.LOADING' | translate"
+          ></p-progress-spinner>
+        </div>
+      }
+      @if (saved()) {
       <p-message severity="success" size="small" variant="simple">{{
-          'SAVED' | translate
+          'NOTES.DIALOG.SAVED' | translate
         }}</p-message>
-    }
-    @if (form.dirty && lastSavedNote() && notSaved()) {
+      }
+      @if (form.dirty && lastSavedNote() && notSaved()) {
       <p-message severity="error" size="small" variant="simple">{{
-          'NOT_SAVED' | translate
+          'NOTES.DIALOG.NOT_SAVED' | translate
         }}</p-message>
-    }
-  </div>
+      }
+    </div>
 
-  <form [formGroup]="form">
-    <p-floatlabel variant="on" style="margin-top: 1.5em">
-      <input
-        pInputText
-        id="title"
-        type="text"
-        [invalid]="form.controls.title.invalid && (form.controls.title.touched || form.controls.title.dirty)"
-        formControlName="title"
-        autocomplete="off"
-        fluid
-      />
-      <label for="title">Title</label>
-    </p-floatlabel>
-    <div class="range-row">
-      <app-text-range
-        [min]="3"
-        [max]="64"
-        [current]="form.controls.title.value.length || 0"
-      ></app-text-range>
-    </div>
-    <p-floatlabel variant="on">
-          <textarea
-            id="content"
-            pTextarea
-            rows="5"
-            cols="30"
-            [autoResize]="true"
-            formControlName="content"
-            fluid
-          ></textarea>
-      <label for="content">Title</label>
-    </p-floatlabel>
-    <div class="range-row">
-      <app-text-range
-        [min]="0"
-        [max]="2048"
-        [current]="form.controls.content.value.length || 0"
-      ></app-text-range>
-    </div>
-  </form>
+    <form [formGroup]="form">
+      @if (activeNote()) {
+        <div class="note-color-row">
+          <label class="note-color-label" for="note-color">{{ 'NOTES.DIALOG.COLOR' | translate }}</label>
+          <div class="note-color-controls">
+            <input
+              id="note-color"
+              class="note-color-picker"
+              type="color"
+              [value]="colorPickerValue()"
+              (input)="onColorInput($event)"
+            />
+            @if (form.controls.color.value) {
+              <p-button type="button" variant="text" size="small" [label]="'NOTES.DIALOG.CLEAR_COLOR' | translate"
+                        (onClick)="clearColor()"></p-button>
+            }
+          </div>
+        </div>
+      }
+
+      <p-floatlabel variant="on" style="margin-top: 1.5em">
+        <input
+          pInputText
+          id="title"
+          type="text"
+          [style.background-color]="inputBackgroundColor()"
+          [style.border-color]="inputBorderColor()"
+          [style.color]="inputTextColor()"
+          [invalid]="form.controls.title.invalid && (form.controls.title.touched || form.controls.title.dirty)"
+          formControlName="title"
+          autocomplete="off"
+          fluid
+        />
+        <label
+          for="title"
+          class="note-field-label"
+          [style.background-color]="inputBackgroundColor()"
+          [style.color]="inputTextColor()"
+        >
+          {{ 'NOTES.DIALOG.TITLE_LABEL' | translate }}
+        </label>
+      </p-floatlabel>
+      <div class="range-row">
+        <app-text-range
+          [min]="3"
+          [max]="64"
+          [current]="form.controls.title.value.length || 0"
+          [backgroundColor]="inputBackgroundColor()"
+        ></app-text-range>
+      </div>
+      <p-floatlabel variant="on">
+            <textarea
+              id="content"
+              pTextarea
+              rows="5"
+              cols="30"
+              [style.background-color]="inputBackgroundColor()"
+              [style.border-color]="inputBorderColor()"
+              [style.color]="inputTextColor()"
+              [autoResize]="true"
+              formControlName="content"
+              fluid
+            ></textarea>
+        <label
+          for="content"
+          class="note-field-label"
+          [style.background-color]="inputBackgroundColor()"
+          [style.color]="inputTextColor()"
+        >
+          {{ 'NOTES.DIALOG.CONTENT_LABEL' | translate }}
+        </label>
+      </p-floatlabel>
+      <div class="range-row">
+        <app-text-range
+          [min]="0"
+          [max]="2048"
+          [current]="form.controls.content.value.length || 0"
+          [backgroundColor]="inputBackgroundColor()"
+        ></app-text-range>
+      </div>
+    </form>
+  </div>
 </p-dialog>

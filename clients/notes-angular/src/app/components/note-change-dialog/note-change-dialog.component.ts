@@ -13,12 +13,14 @@ import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change
 import { TextRangeComponent } from '../text-range/text-range.component';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { MessageModule } from 'primeng/message';
 import { TranslatePipe } from '@ngx-translate/core';
+import { mixHexWithBase, normalizeHexColor } from '../../utils/color-contrast.util';
+import { Message } from 'primeng/message';
 
 type NoteForm = {
   title: FormControl<string>;
   content: FormControl<string>;
+  color: FormControl<string | null>;
 };
 
 @Component({
@@ -35,9 +37,9 @@ type NoteForm = {
     NoteChangeDateTimeComponent,
     TextRangeComponent,
     ProgressSpinnerModule,
-    MessageModule,
     TranslatePipe,
     FloatLabelModule,
+    Message,
   ],
   templateUrl: './note-change-dialog.component.html',
   styleUrls: ['./note-change-dialog.component.scss'],
@@ -66,6 +68,7 @@ export class NoteChangeDialogComponent {
         nonNullable: true,
         validators: [Validators.maxLength(2048)],
       }),
+      color: new FormControl<string | null>(null),
     });
 
     this.form.valueChanges.pipe(debounceTime(this.saveDebounce)).subscribe(() => {
@@ -86,39 +89,13 @@ export class NoteChangeDialogComponent {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['note']) {
-      if (this.note) {
-        this.form.patchValue({ title: this.note.title || '', content: this.note.content || '' });
-        this.lastSavedNote.set({ ...this.note });
-        this.form.markAsPristine();
-        this.form.markAsUntouched();
-        this.notSaved.set(false);
-        this.saved.set(false);
-      } else {
-        this.form.reset({ title: '', content: '' });
-        this.lastSavedNote.set(null);
-        this.form.markAsPristine();
-        this.form.markAsUntouched();
-        this.notSaved.set(true);
-        this.saved.set(false);
-      }
+      this.syncDialogState(this.note);
     }
 
     if (changes['visible']) {
       const vis = changes['visible'].currentValue as boolean;
       if (vis) {
-        if (this.note) {
-          this.form.patchValue({ title: this.note.title || '', content: this.note.content || '' });
-          this.lastSavedNote.set({ ...this.note });
-          this.notSaved.set(false);
-          this.saved.set(false);
-        } else {
-          this.form.reset({ title: '', content: '' });
-          this.lastSavedNote.set(null);
-          this.notSaved.set(true);
-          this.saved.set(false);
-        }
-        this.form.markAsPristine();
-        this.form.markAsUntouched();
+        this.syncDialogState(this.note);
       }
     }
   }
@@ -126,10 +103,98 @@ export class NoteChangeDialogComponent {
   onHide() {
     this.visible = false;
     this.visibleChange.emit(this.visible);
-    this.form.reset({ title: '', content: '' });
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
+    this.resetForm();
+    this.lastSavedNote.set(null);
+    this.notSaved.set(false);
     this.saved.set(false);
+  }
+
+  colorPickerValue() {
+    return this.form.controls.color.value ?? '#ffffff';
+  }
+
+  onColorInput(event: Event) {
+    const target = event.target as HTMLInputElement | null;
+    const color = this.normalizeColor(target?.value);
+
+    this.form.controls.color.setValue(color);
+    this.form.controls.color.markAsDirty();
+    this.form.controls.color.markAsTouched();
+    this.form.markAsDirty();
+  }
+
+  clearColor() {
+    this.form.controls.color.setValue(null);
+    this.form.controls.color.markAsDirty();
+    this.form.controls.color.markAsTouched();
+    this.form.markAsDirty();
+  }
+
+  get dialogPt() {
+    const backgroundColor = this.dialogSurfaceColor();
+    const textColor = this.dialogTextColor();
+
+    return {
+      root: {
+        style: {
+          backgroundColor,
+          color: textColor,
+          borderRadius: '0.75rem',
+          overflow: 'hidden',
+        },
+      },
+      header: {
+        style: {
+          backgroundColor,
+          color: textColor,
+        },
+      },
+      content: {
+        style: {
+          backgroundColor,
+          color: textColor,
+        },
+      },
+      footer: {
+        style: {
+          backgroundColor,
+          color: textColor,
+        },
+      },
+    };
+  }
+
+  dialogTextColor() {
+    return 'var(--p-text-color)';
+  }
+
+
+  private dialogSurfaceColor() {
+    return mixHexWithBase(this.form.controls.color.value, 'var(--p-content-background)', 28);
+  }
+
+  inputBackgroundColor() {
+    return mixHexWithBase(
+      this.form.controls.color.value,
+      'var(--p-inputtext-background, var(--p-content-background))',
+      36,
+    );
+  }
+
+  inputBorderColor() {
+    return mixHexWithBase(
+      this.form.controls.color.value,
+      'var(--p-inputtext-border-color, var(--p-content-border-color))',
+      68,
+    );
+  }
+
+  inputTextColor() {
+    return 'var(--p-text-color)';
+  }
+
+  activeNote() {
+    return this.lastSavedNote() ?? this.note;
   }
 
   private save() {
@@ -143,7 +208,7 @@ export class NoteChangeDialogComponent {
 
     const currentNote = this.lastSavedNote() ?? this.note;
     if (currentNote && currentNote.id) {
-      const body: NoteUpdateRequest = this.form.value;
+      const body = this.buildUpdateRequest();
       this.noteService
         .updateNote(currentNote.id, body)
         .pipe(delay(1000)) // simulate network delay
@@ -173,7 +238,7 @@ export class NoteChangeDialogComponent {
   private onSaveSuccess(res: NoteResponse) {
     this.saving.set(false);
     this.lastSavedNote.set(res);
-    this.form.markAsPristine();
+    this.resetForm(res);
     this.notSaved.set(false);
     // Only mark saved on successful server response
     this.saved.set(true);
@@ -183,5 +248,43 @@ export class NoteChangeDialogComponent {
     this.saving.set(false);
     this.notSaved.set(true);
     this.saved.set(false);
+  }
+
+  private syncDialogState(note: NoteResponse | null) {
+    this.resetForm(note);
+    this.lastSavedNote.set(note ? { ...note } : null);
+    this.notSaved.set(!note);
+    this.saved.set(false);
+  }
+
+  private resetForm(note: NoteResponse | null = null) {
+    this.form.reset(
+      {
+        title: note?.title || '',
+        content: note?.content || '',
+        color: this.normalizeColor(note?.style?.color),
+      },
+      { emitEvent: false },
+    );
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+  }
+
+  private buildUpdateRequest(): NoteUpdateRequest {
+    const { title, content, color } = this.form.getRawValue();
+    const normalizedColor = this.normalizeColor(color);
+    const styleWithNullableColor = {
+      color: normalizedColor ?? null,
+    } as unknown as NoteUpdateRequest['style'];
+
+    return {
+      title,
+      content,
+      style: styleWithNullableColor,
+    };
+  }
+
+  private normalizeColor(color: string | null | undefined) {
+    return normalizeHexColor(color);
   }
 }

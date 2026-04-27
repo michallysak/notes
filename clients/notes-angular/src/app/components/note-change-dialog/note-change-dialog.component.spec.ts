@@ -93,7 +93,7 @@ describe('NoteChangeDialogComponent', () => {
     mockApi.createNote.mockReturnValue(of(res));
 
     component.note = null;
-    component.form.setValue({ title: 'New', content: 'Body' });
+    component.form.setValue({ title: 'New', content: 'Body', color: null });
 
     // call private save and advance timers so delayed subscribe runs
     (component as any).save();
@@ -109,12 +109,12 @@ describe('NoteChangeDialogComponent', () => {
     mockApi.updateNote.mockReturnValue(of(sampleNote));
     component.note = sampleNote as any;
     // title must be long enough to pass validators (minLength 3)
-    component.form.setValue({ title: 'Title', content: 'C1' });
+    component.form.setValue({ title: 'Title', content: 'C1', color: null });
 
     (component as any).save();
     vi.advanceTimersByTime(1000);
 
-    expect(mockApi.updateNote).toHaveBeenCalledWith({ title: 'Title', content: 'C1' }, '10');
+    expect(mockApi.updateNote).toHaveBeenCalledWith({ title: 'Title', content: 'C1', style: { color: null } }, '10');
     vi.useRealTimers();
   });
 
@@ -124,7 +124,7 @@ describe('NoteChangeDialogComponent', () => {
 
     component.note = null;
     // title must satisfy validators so save() proceeds
-    component.form.setValue({ title: 'Abc', content: 'Y' });
+    component.form.setValue({ title: 'Abc', content: 'Y', color: null });
 
     (component as any).save();
     vi.advanceTimersByTime(1000);
@@ -136,7 +136,7 @@ describe('NoteChangeDialogComponent', () => {
   it('should set notSaved and saved=false when form is invalid after debounce', () => {
     vi.useFakeTimers();
 
-    component.form.setValue({ title: 'A', content: 'Y' });
+    component.form.setValue({ title: 'A', content: 'Y', color: null });
     // ensure form is considered dirty so valueChanges handler proceeds
     component.form.markAsDirty();
     // advance debounce
@@ -152,7 +152,7 @@ describe('NoteChangeDialogComponent', () => {
     vi.useFakeTimers();
     const saveSpy = vi.spyOn(component as any, 'save').mockImplementation(() => undefined);
 
-    component.form.setValue({ title: 'Valid title', content: 'Body' });
+    component.form.setValue({ title: 'Valid title', content: 'Body', color: null });
     component.form.markAsDirty();
     vi.advanceTimersByTime(1000);
 
@@ -163,7 +163,7 @@ describe('NoteChangeDialogComponent', () => {
 
   it('does not save when a request is already in progress', () => {
     component.saving.set(true);
-    component.form.setValue({ title: 'Valid title', content: 'Body' });
+    component.form.setValue({ title: 'Valid title', content: 'Body', color: null });
 
     (component as any).save();
 
@@ -187,7 +187,7 @@ describe('NoteChangeDialogComponent', () => {
     vi.useFakeTimers();
     mockApi.updateNote.mockReturnValue(throwError(() => new Error('update fail')));
     component.note = sampleNote as any;
-    component.form.setValue({ title: 'Title', content: 'C1' });
+    component.form.setValue({ title: 'Title', content: 'C1', color: null });
 
     (component as any).save();
     vi.advanceTimersByTime(1000);
@@ -214,6 +214,171 @@ describe('NoteChangeDialogComponent', () => {
     expect(component.notSaved()).toBe(true);
     expect(component.saved()).toBe(false);
     expect(component.lastSavedNote()).toBeNull();
+  });
+
+  it('should return white color as default from colorPickerValue when color is null', () => {
+    component.form.controls.color.setValue(null);
+
+    expect(component.colorPickerValue()).toBe('#ffffff');
+  });
+
+  it('should return actual color from colorPickerValue when color is set', () => {
+    const testColor = '#ff0000';
+    component.form.controls.color.setValue(testColor);
+
+    expect(component.colorPickerValue()).toBe(testColor);
+  });
+
+  it('should update color control and mark form dirty when onColorInput is called', () => {
+    const input = document.createElement('input');
+    input.value = '#00ff00';
+    const event = new Event('input');
+    Object.defineProperty(event, 'target', { value: input, enumerable: true });
+
+    component.form.markAsPristine();
+    component.onColorInput(event);
+
+    expect(component.form.dirty).toBe(true);
+    expect(component.form.controls.color.dirty).toBe(true);
+    expect(component.form.controls.color.touched).toBe(true);
+  });
+
+  it('should clear color and mark form dirty when clearColor is called', () => {
+    component.form.controls.color.setValue('#ff0000');
+    component.form.markAsPristine();
+
+    component.clearColor();
+
+    expect(component.form.controls.color.value).toBeNull();
+    expect(component.form.dirty).toBe(true);
+    expect(component.form.controls.color.dirty).toBe(true);
+    expect(component.form.controls.color.touched).toBe(true);
+  });
+
+  it('should include color in form value', () => {
+    component.form.setValue({ title: 'Test', content: 'Content', color: '#aabbcc' });
+
+    expect(component.form.value.color).toBe('#aabbcc');
+  });
+
+  it('should have color control on form', () => {
+    expect(component.form.controls.color).toBeTruthy();
+  });
+
+  it('should call updateNote with color property when saving note with color', async () => {
+    vi.useFakeTimers();
+    mockApi.updateNote.mockReturnValue(of(sampleNote));
+    component.note = sampleNote as any;
+    component.form.setValue({ title: 'Title', content: 'C1', color: '#ff0000' });
+
+    (component as any).save();
+    vi.advanceTimersByTime(1000);
+
+    expect(mockApi.updateNote).toHaveBeenCalled();
+    const updateCall = mockApi.updateNote.mock.calls[0];
+    expect(updateCall[0]).toHaveProperty('style');
+    vi.useRealTimers();
+  });
+
+  it('should reset form with color when note is provided', () => {
+    const noteWithColor = { ...sampleNote, style: { color: '#ff0000' } } as any;
+    component.note = noteWithColor;
+
+    component.ngOnChanges({ note: { currentValue: noteWithColor, firstChange: true, previousValue: null, isFirstChange: () => true } as any });
+
+    expect(component.form.controls.color.value).toBeTruthy();
+  });
+
+  it('should update visible from p-dialog visibleChange binding', () => {
+    expect(component.visible).toBe(false);
+
+    const dialogElement = fixture.debugElement.query(By.css('p-dialog'));
+    dialogElement?.triggerEventHandler('visibleChange', true);
+
+    expect(component.visible).toBe(true);
+  });
+
+  it('should call onHide when p-dialog onHide event fires', () => {
+    const onHideSpy = vi.spyOn(component, 'onHide');
+    component.visible = true;
+
+    const dialogElement = fixture.debugElement.query(By.css('p-dialog'));
+    dialogElement?.triggerEventHandler('onHide', {});
+
+    expect(onHideSpy).toHaveBeenCalled();
+  });
+
+  it('should trap color input value and normalize it on onColorInput', () => {
+    const input = document.createElement('input');
+    input.value = '#FF0000';
+    const event = new Event('input');
+    Object.defineProperty(event, 'target', { value: input, enumerable: true });
+
+    component.onColorInput(event);
+
+    expect(component.form.controls.color.value).toBe('#ff0000');
+  });
+
+  it('should handle color input with various valid hex formats', () => {
+    const testCases = [
+      { input: '#FFF', expected: '#ffffff' },
+      { input: '#ffffff', expected: '#ffffff' },
+      { input: '#ABCDEF', expected: '#abcdef' },
+      { input: '#abc', expected: '#aabbcc' },
+    ];
+
+    testCases.forEach(({ input, expected }) => {
+      const inputElement = document.createElement('input');
+      inputElement.value = input;
+      const event = new Event('input');
+      Object.defineProperty(event, 'target', { value: inputElement, enumerable: true });
+
+      component.onColorInput(event);
+
+      expect(component.form.controls.color.value).toBe(expected);
+    });
+  });
+
+  it('should have colorPickerValue return current color value when set', () => {
+    component.form.setValue({ title: 'Test', content: 'Content', color: '#abcdef' });
+
+    expect(component.colorPickerValue()).toBe('#abcdef');
+  });
+
+  it('should have activeNote return lastSavedNote when it exists', () => {
+    component.lastSavedNote.set(sampleNote as any);
+
+    expect(component.activeNote()).toBe(sampleNote);
+  });
+
+  it('should have activeNote return current note when lastSavedNote is null', () => {
+    component.note = sampleNote as any;
+    component.lastSavedNote.set(null);
+
+    expect(component.activeNote()).toBe(sampleNote);
+  });
+
+  it('should properly reset form with color and other fields', () => {
+    const noteWithStyle = {
+      ...sampleNote,
+      style: { color: '#ff0000' },
+      title: 'Updated Title',
+      content: 'Updated Content',
+    } as any;
+
+    component.note = noteWithStyle;
+    component.ngOnChanges({
+      note: {
+        currentValue: noteWithStyle,
+        firstChange: true,
+        previousValue: null,
+        isFirstChange: () => true,
+      } as any,
+    });
+
+    expect(component.form.controls.title.value).toBe('Updated Title');
+    expect(component.form.controls.content.value).toBe('Updated Content');
+    expect(component.form.controls.color.value).toBeTruthy();
   });
 });
 

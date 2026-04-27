@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="text-range">
+    <div class="text-range" [style.background-color]="backgroundColor || defaultBackgroundColor">
       <span [class.red]="isRed" [class.yellow]="isYellow" [class.green]="isGreen">
         {{ current }} / {{ max }}
       </span>
@@ -17,6 +17,8 @@ import { CommonModule } from '@angular/common';
       .text-range {
         font-size: 0.85rem;
         margin-top: 0.25rem;
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.6rem;
         span {
           font-weight: 600;
         }
@@ -37,6 +39,9 @@ export class TextRangeComponent {
   @Input({ required: true }) min!: number;
   @Input({ required: true }) max!: number;
   @Input({ required: true }) current!: number;
+  @Input() backgroundColor: string | null = null;
+
+  protected readonly defaultBackgroundColor = 'var(--p-inputtext-background, transparent)';
 
   get percent(): number {
     if (!this.max) return 0;

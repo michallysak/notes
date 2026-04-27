@@ -27,6 +27,22 @@
     "DELETE": "Delete",
     "PIN": "Unpin note",
     "UNPIN": "Unpin note",
-    "MORE": "More"
+    "MORE": "More",
+    "DIALOG": {
+      "UPDATE_TITLE": "Update Note",
+      "CREATE_TITLE": "Create Note",
+      "LOADING": "Loading",
+      "SAVED": "Saved",
+      "NOT_SAVED": "Not saved",
+      "COLOR": "Click to change color",
+      "DEFAULT_COLOR": "Default",
+      "CLEAR_COLOR": "Clear color",
+      "TITLE_LABEL": "Title",
+      "CONTENT_LABEL": "Content"
+    },
+    "META": {
+      "CREATED": "Created {{date}}",
+      "EDITED": "Edited {{date}}"
+    }
   }
 }

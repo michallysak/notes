@@ -1,10 +1,66 @@
+
+.note {
+  &-dialog {
+    &-body {
+      border-radius: 0.75rem;
+    }
+
+    &-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  }
+
+  &-status-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  &-color {
+    &-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 0.5rem 0 1rem;
+    }
+
+    &-label {
+      font-weight: 600;
+    }
+
+    &-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    &-picker {
+      width: 0;
+      height: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    &-value {
+      font-family: monospace;
+      min-width: 5.5rem;
+    }
+  }
+
+  &-field-label {
+    border-radius: 0.25rem;
+    display: inline-block;
+    padding: 0 0.25rem;
+  }
+}
+
 .range-row {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 0.75rem;
 }
 
-.p-message-content-wrapper {
-  display: flex;
-  align-items: flex-end;
-}

@@ -208,5 +208,70 @@ describe('NoteService', () => {
 
     expect(latest).toEqual(initial);
   });
+
+  it('upserts note from SSE updated event when payload exists', () => {
+    const initial = [createNote({ id: '1', title: 'Initial' })];
+    notesApi.getNotes.mockReturnValue(new BehaviorSubject<Note[]>(initial));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    let latest: Note[] = [];
+    service.notes$.subscribe((n) => (latest = n));
+
+    const updated = createNote({ id: '1', title: 'Updated via SSE' });
+    noteUpdatedEvents$.next({ payload: updated });
+
+    expect(latest).toHaveLength(1);
+    expect(latest[0].title).toBe('Updated via SSE');
+  });
+
+  it('adds new note from SSE updated event if not present in list', () => {
+    const initial = [createNote({ id: '1' })];
+    notesApi.getNotes.mockReturnValue(new BehaviorSubject<Note[]>(initial));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    let latest: Note[] = [];
+    service.notes$.subscribe((n) => (latest = n));
+
+    const newNote = createNote({ id: '2', title: 'New from SSE' });
+    noteUpdatedEvents$.next({ payload: newNote });
+
+    expect(latest).toHaveLength(2);
+    expect(latest[0].id).toBe('2');
+    expect(latest[1].id).toBe('1');
+  });
+
+  it('ignores SSE updated events without payload', () => {
+    const initial = [createNote({ id: '1' })];
+    notesApi.getNotes.mockReturnValue(new BehaviorSubject<Note[]>(initial));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    let latest: Note[] = [];
+    service.notes$.subscribe((n) => (latest = n));
+
+    noteUpdatedEvents$.next({});
+    noteUpdatedEvents$.next(null);
+    noteUpdatedEvents$.next({ payload: undefined });
+
+    expect(latest).toEqual(initial);
+  });
+
+  it('updates multiple notes in correct positions from SSE updated events', () => {
+    const first = createNote({ id: '1', title: 'First' });
+    const second = createNote({ id: '2', title: 'Second' });
+    const third = createNote({ id: '3', title: 'Third' });
+    notesApi.getNotes.mockReturnValue(new BehaviorSubject<Note[]>([first, second, third]));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    let latest: Note[] = [];
+    service.notes$.subscribe((n) => (latest = n));
+
+    const updatedSecond = createNote({ id: '2', title: 'Updated Second' });
+    noteUpdatedEvents$.next({ payload: updatedSecond });
+
+    expect(latest).toHaveLength(3);
+    expect(latest[1].title).toBe('Updated Second');
+    expect(latest[0].title).toBe('First');
+    expect(latest[2].title).toBe('Third');
+  });
 });
 
