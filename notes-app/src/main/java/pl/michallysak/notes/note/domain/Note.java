@@ -2,7 +2,9 @@ package pl.michallysak.notes.note.domain;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import pl.michallysak.notes.note.model.NoteShare;
 import pl.michallysak.notes.note.model.NoteStyle;
 
 public interface Note extends NoteActions {
@@ -21,4 +23,6 @@ public interface Note extends NoteActions {
   UUID getAuthorId();
 
   NoteStyle getStyle();
+
+  Set<NoteShare> getShares();
 }

@@ -1,20 +1,26 @@
 package pl.michallysak.notes.note.domain;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.exception.NoteAccessException;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePermission;
+import pl.michallysak.notes.note.model.NoteShare;
 import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
 @ExtendWith(MockitoExtension.class)
@@ -230,5 +236,232 @@ class NoteImplTest {
     Executable executable = () -> note.read(notAuthorId);
     // then
     assertThrows(NoteAccessException.class, executable);
+  }
+
+  @Test
+  void constructorWithNoteValue_shouldInitializeAllFieldsAndEmptyShares_whenSharesIsNull() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .shares(null)
+            .build();
+    // when
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // then
+    assertEquals(noteValue.id(), note.getId());
+    assertEquals(noteValue.authorId(), note.getAuthorId());
+    assertEquals(noteValue.title(), note.getTitle());
+    assertEquals(noteValue.content(), note.getContent());
+    assertEquals(noteValue.created(), note.getCreated());
+    assertEquals(noteValue.updated(), note.getUpdated());
+    assertEquals(noteValue.pinned(), note.isPinned());
+    assertEquals(noteValue.style(), note.getStyle());
+    assertNotNull(note.getShares());
+    assertTrue(note.getShares().isEmpty());
+  }
+
+  @Test
+  void constructorWithNoteValue_shouldInitializeAllFieldsAndShares_whenSharesIsNotNull() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID sharedUserId = UUID.randomUUID();
+    Set<NoteShare> shares = Set.of(new NoteShare(sharedUserId, Set.of(NotePermission.READ)));
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder().authorId(authorId).shares(shares).build();
+    // when
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // then
+    assertEquals(noteValue.id(), note.getId());
+    assertEquals(noteValue.authorId(), note.getAuthorId());
+    assertEquals(noteValue.title(), note.getTitle());
+    assertEquals(noteValue.content(), note.getContent());
+    assertEquals(noteValue.created(), note.getCreated());
+    assertEquals(noteValue.updated(), note.getUpdated());
+    assertEquals(noteValue.pinned(), note.isPinned());
+    assertEquals(noteValue.style(), note.getStyle());
+    assertEquals(1, note.getShares().size());
+    assertTrue(
+        note.getShares().stream()
+            .anyMatch(
+                s ->
+                    s.userId().equals(sharedUserId)
+                        && s.permissions().contains(NotePermission.READ)));
+  }
+
+  @Test
+  void setPermissions_shouldAddNewShare_whenTargetUserNotInShares() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    UUID targetUserId = UUID.randomUUID();
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+    // when
+    note.setPermissions(note.getAuthorId(), targetUserId, permissions);
+    // then
+    assertEquals(1, note.getShares().size());
+    assertTrue(
+        note.getShares().stream()
+            .anyMatch(s -> s.userId().equals(targetUserId) && s.permissions().equals(permissions)));
+  }
+
+  @Test
+  void setPermissions_shouldReplaceExistingShare_whenTargetUserAlreadyInShares() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    Set<NoteShare> initialShares = Set.of(new NoteShare(targetUserId, Set.of(NotePermission.READ)));
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .shares(new HashSet<>(initialShares))
+            .build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    Set<NotePermission> newPermissions = Set.of(NotePermission.EDIT);
+    // when
+    note.setPermissions(authorId, targetUserId, newPermissions);
+    // then
+    assertEquals(1, note.getShares().size());
+    assertTrue(
+        note.getShares().stream()
+            .anyMatch(
+                s -> s.userId().equals(targetUserId) && s.permissions().equals(newPermissions)));
+    assertFalse(
+        note.getShares().stream()
+            .anyMatch(
+                s ->
+                    s.userId().equals(targetUserId)
+                        && s.permissions().contains(NotePermission.READ)));
+  }
+
+  @Test
+  void setPermissions_shouldThrowNoteAccessException_whenNotAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    UUID notAuthorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    // when
+    Executable executable =
+        () -> note.setPermissions(notAuthorId, targetUserId, Set.of(NotePermission.READ));
+    // then
+    assertThrows(NoteAccessException.class, executable);
+  }
+
+  @Test
+  void removeAccess_shouldRemoveUserFromShares() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID removedUserId = UUID.randomUUID();
+    UUID remainingUserId = UUID.randomUUID();
+    Set<NoteShare> initialShares =
+        Set.of(
+            new NoteShare(removedUserId, Set.of(NotePermission.READ)),
+            new NoteShare(remainingUserId, Set.of(NotePermission.EDIT)));
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .shares(new HashSet<>(initialShares))
+            .build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // when
+    note.removeAccess(authorId, removedUserId);
+    // then
+    assertEquals(1, note.getShares().size());
+    assertTrue(note.getShares().stream().anyMatch(s -> s.userId().equals(remainingUserId)));
+    assertFalse(note.getShares().stream().anyMatch(s -> s.userId().equals(removedUserId)));
+  }
+
+  @Test
+  void removeAccess_shouldThrowNoteAccessException_whenNotAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    UUID notAuthorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    // when
+    Executable executable = () -> note.removeAccess(notAuthorId, targetUserId);
+    // then
+    assertThrows(NoteAccessException.class, executable);
+  }
+
+  @Test
+  void read_shouldSucceed_whenUserIsAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    // when then (should not throw)
+    assertDoesNotThrow(() -> note.read(note.getAuthorId()));
+  }
+
+  @Test
+  void read_shouldSucceed_whenUserHasReadPermission() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID readerUserId = UUID.randomUUID();
+    Set<NoteShare> shares = Set.of(new NoteShare(readerUserId, Set.of(NotePermission.READ)));
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .shares(new HashSet<>(shares))
+            .build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // when then (should not throw)
+    assertDoesNotThrow(() -> note.read(readerUserId));
+  }
+
+  @Test
+  void read_shouldSucceed_whenUserHasEditPermission() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID editorUserId = UUID.randomUUID();
+    Set<NoteShare> shares = Set.of(new NoteShare(editorUserId, Set.of(NotePermission.EDIT)));
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .shares(new HashSet<>(shares))
+            .build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // when then (should not throw)
+    assertDoesNotThrow(() -> note.read(editorUserId));
+  }
+
+  @Test
+  void read_shouldThrowNoteAccessException_whenUserNoPermissions() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID unauthorizedUserId = UUID.randomUUID();
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder().authorId(authorId).shares(new HashSet<>()).build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // when
+    Executable executable = () -> note.read(unauthorizedUserId);
+    // then
+    assertThrows(NoteAccessException.class, executable);
+  }
+
+  @Test
+  void delete_shouldSucceed_whenUserIsAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    // when then (should not throw)
+    assertDoesNotThrow(() -> note.delete(note.getAuthorId()));
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  void setPermissions_shouldThrowIllegalArgumentException_whenPermissionsIsNullOrEmpty(
+      Set<NotePermission> permissions) {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    UUID targetUserId = UUID.randomUUID();
+    // when
+    Executable executable =
+        () -> note.setPermissions(note.getAuthorId(), targetUserId, permissions);
+    // then
+    assertThrows(IllegalArgumentException.class, executable);
   }
 }

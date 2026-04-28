@@ -2,6 +2,7 @@ package pl.michallysak.notes.note.model;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
 import pl.michallysak.notes.note.domain.Note;
@@ -15,7 +16,8 @@ public record NoteValue(
     OffsetDateTime created,
     Optional<OffsetDateTime> updated,
     boolean pinned,
-    NoteStyle style) {
+    NoteStyle style,
+    Set<NoteShare> shares) {
   public static NoteValue from(Note note) {
     return NoteValue.builder()
         .id(note.getId())
@@ -26,6 +28,7 @@ public record NoteValue(
         .pinned(note.isPinned())
         .updated(note.getUpdated())
         .style(note.getStyle())
+        .shares(note.getShares())
         .build();
   }
 }

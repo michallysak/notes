@@ -32,5 +32,6 @@ class NoteValueTest {
     assertEquals(note.getCreated(), value.created());
     assertEquals(note.getUpdated(), value.updated());
     assertEquals(note.isPinned(), value.pinned());
+    assertEquals(note.getShares(), value.shares());
   }
 }

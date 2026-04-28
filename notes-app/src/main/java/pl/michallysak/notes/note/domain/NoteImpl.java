@@ -1,15 +1,14 @@
 package pl.michallysak.notes.note.domain;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.ToString;
 import pl.michallysak.notes.note.exception.NoteAccessException;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteStyle;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
 @Getter
@@ -24,6 +23,12 @@ public class NoteImpl implements Note {
   private final UUID authorId;
   private NoteStyle style;
   private final NoteValidator noteValidator;
+  private final Set<NoteShare> shares = new HashSet<>();
+
+  @Override
+  public Set<NoteShare> getShares() {
+    return Set.copyOf(shares);
+  }
 
   public NoteImpl(CreateNote createNote, NoteValidator noteValidator) {
     this.noteValidator = noteValidator;
@@ -47,6 +52,10 @@ public class NoteImpl implements Note {
     this.updated = noteValue.updated().orElse(null);
     this.isPinned = noteValue.pinned();
     this.style = noteValue.style();
+
+    if (noteValue.shares() != null) {
+      this.shares.addAll(Set.copyOf(noteValue.shares()));
+    }
   }
 
   @Override
@@ -56,13 +65,13 @@ public class NoteImpl implements Note {
 
   @Override
   public void read(UUID actingUserId) {
-    checkOwnership(actingUserId);
+    checkPermission(actingUserId, NotePermission.READ);
   }
 
   @Override
   public void update(NoteUpdate noteUpdate) {
     UUID actingUserId = noteUpdate.actingUserId();
-    checkOwnership(actingUserId);
+    checkPermission(actingUserId, NotePermission.EDIT);
     noteValidator.validateNoteUpdate(id, noteUpdate, this);
     boolean updatedAny = false;
     if (noteUpdate.title() != null) {
@@ -91,9 +100,40 @@ public class NoteImpl implements Note {
     checkOwnership(actingUserId);
   }
 
+  @Override
+  public void setPermissions(
+      UUID actingUserId, UUID targetUserId, Set<NotePermission> permissions) {
+    checkOwnership(actingUserId);
+
+    if (permissions == null || permissions.isEmpty()) {
+      throw new IllegalArgumentException("Permissions cannot be empty");
+    }
+
+    shares.removeIf(s -> s.userId().equals(targetUserId));
+    shares.add(new NoteShare(targetUserId, Set.copyOf(permissions)));
+  }
+
+  @Override
+  public void removeAccess(UUID actingUserId, UUID targetUserId) {
+    checkOwnership(actingUserId);
+    shares.removeIf(s -> s.userId().equals(targetUserId));
+  }
+
   private void checkOwnership(UUID actingUserId) {
     if (!authorId.equals(actingUserId)) {
       throw new NoteAccessException(id, actingUserId);
     }
+  }
+
+  private void checkPermission(UUID userId, NotePermission required) {
+    if (authorId.equals(userId)) {
+      return;
+    }
+
+    shares.stream()
+        .filter(s -> s.userId().equals(userId))
+        .findFirst()
+        .filter(s -> s.allows(required))
+        .orElseThrow(() -> new NoteAccessException(id, userId));
   }
 }
