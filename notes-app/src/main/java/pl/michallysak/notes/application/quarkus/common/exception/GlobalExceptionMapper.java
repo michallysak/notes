@@ -10,6 +10,7 @@ import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
 import pl.michallysak.notes.auth.exception.AuthException;
 import pl.michallysak.notes.common.exception.EntityNotFoundException;
 import pl.michallysak.notes.common.exception.ValidationException;
+import pl.michallysak.notes.note.exception.NoteAccessException;
 
 @Provider
 @ApplicationScoped
@@ -23,7 +24,9 @@ public class GlobalExceptionMapper implements ExceptionMapper<Throwable> {
     return switch (throwable) {
       case EntityNotFoundException exception -> notFoundResponse(exception);
       case ValidationException exception -> badReqestResponse(exception);
+      case IllegalArgumentException exception -> badRequestResponse(exception);
       case AuthException exception -> unauthorizedResponse(exception);
+      case NoteAccessException exception -> forbiddenResponse(exception);
       default -> internalServerError(throwable);
     };
   }
@@ -36,8 +39,16 @@ public class GlobalExceptionMapper implements ExceptionMapper<Throwable> {
     return buildResponse(Response.Status.BAD_REQUEST, exception);
   }
 
+  private Response badRequestResponse(IllegalArgumentException exception) {
+    return buildResponse(Response.Status.BAD_REQUEST, exception);
+  }
+
   private Response unauthorizedResponse(AuthException exception) {
     return buildResponse(Response.Status.UNAUTHORIZED, exception);
+  }
+
+  private Response forbiddenResponse(NoteAccessException exception) {
+    return buildResponse(Response.Status.FORBIDDEN, exception);
   }
 
   private Response internalServerError(Throwable throwable) {

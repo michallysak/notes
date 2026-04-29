@@ -2,6 +2,7 @@ package pl.michallysak.notes.application.quarkus.note.resource;
 
 import io.quarkus.security.Authenticated;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
@@ -19,7 +20,9 @@ import pl.michallysak.notes.application.quarkus.common.openapi.OpenApiConfig;
 import pl.michallysak.notes.application.quarkus.note.controller.NoteController;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 
 @Tag(name = "Notes API", description = "Operations on notes")
 @Path("/notes")
@@ -115,5 +118,67 @@ public class NoteResource {
       content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   public void deleteNote(@PathParam("id") UUID id) {
     noteController.deleteNote(id);
+  }
+
+  @GET
+  @Path("/{id}/permissions")
+  @Operation(
+      summary = "Get note permissions status",
+      operationId = "getPermissions",
+      description = "Retrieves the list of users with access to the note and their permissions")
+  @APIResponse(
+      responseCode = "200",
+      description = "List of shared users and their permissions",
+      content =
+          @Content(
+              schema = @Schema(implementation = NoteShareResponse.class, type = SchemaType.ARRAY)))
+  @APIResponse(
+      responseCode = "404",
+      description = "Note not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public List<NoteShareResponse> getPermissions(@PathParam("id") UUID id) {
+    return noteController.getPermissions(id);
+  }
+
+  @PUT
+  @Path("/{id}/permissions")
+  @Operation(
+      summary = "Set note permissions",
+      operationId = "setNotePermissions",
+      description = "Sets access permissions for a target user on the note")
+  @APIResponse(responseCode = "204", description = "Permissions updated")
+  @APIResponse(
+      responseCode = "400",
+      description = "Invalid request",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "403",
+      description = "Insufficient permissions",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "404",
+      description = "Note not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public void setPermissions(@PathParam("id") UUID id, @Valid SetNotePermissionsRequest request) {
+    noteController.setPermissions(id, request);
+  }
+
+  @DELETE
+  @Path("/{id}/permissions/{targetUserId}")
+  @Operation(
+      summary = "Remove note access",
+      operationId = "removeNoteAccess",
+      description = "Removes all access permissions for a target user on the note")
+  @APIResponse(responseCode = "204", description = "Access removed")
+  @APIResponse(
+      responseCode = "403",
+      description = "Insufficient permissions",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "404",
+      description = "Note not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public void removeAccess(@PathParam("id") UUID id, @PathParam("targetUserId") UUID targetUserId) {
+    noteController.removeAccess(id, targetUserId);
   }
 }

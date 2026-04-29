@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +18,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteStyleDTO;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
+import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePermission;
+import pl.michallysak.notes.note.model.NoteShare;
 import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
@@ -115,7 +120,9 @@ class NoteMapperTest {
   void toNoteResponse_shouldMapCorrectly(
       @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<OffsetDateTime> updated) {
     // given
-    NoteValue value = NoteTestUtils.createNoteValueBuilder().updated(updated).build();
+    NoteShare share = new NoteShare(UUID.randomUUID(), Set.of(NotePermission.READ));
+    NoteValue value =
+        NoteTestUtils.createNoteValueBuilder().updated(updated).shares(Set.of(share)).build();
     // when
     NoteResponse noteResponse = noteMapper.mapToNoteResponse(value);
     // then
@@ -199,6 +206,7 @@ class NoteMapperTest {
     assertEquals(note.getCreated(), noteEntity.getCreated());
     assertEquals(note.getUpdated().orElse(null), noteEntity.getUpdated());
     assertEquals(note.isPinned(), noteEntity.isPinned());
+    assertEquals(note.getShares(), noteEntity.getShares());
   }
 
   @Test
@@ -216,6 +224,7 @@ class NoteMapperTest {
     // given
     UUID id = UUID.randomUUID();
     UUID authorId = UUID.randomUUID();
+    UUID sharedUserId = UUID.randomUUID();
     OffsetDateTime created = OffsetDateTime.now().minusDays(1);
     OffsetDateTime updated = OffsetDateTime.now();
     UserEntity author = new UserEntity();
@@ -228,6 +237,15 @@ class NoteMapperTest {
     noteEntity.setCreated(created);
     noteEntity.setUpdated(updated);
     noteEntity.setPinned(true);
+    // and
+    NoteShareEntity shareEntity = new NoteShareEntity();
+    shareEntity.setId(UUID.randomUUID());
+    shareEntity.setNote(noteEntity);
+    UserEntity sharedUser = new UserEntity();
+    sharedUser.setId(sharedUserId);
+    shareEntity.setUser(sharedUser);
+    shareEntity.setPermissions(Set.of(NotePermission.READ));
+    noteEntity.setShares(Set.of(shareEntity));
     // when
     Note note = noteMapper.mapToDomain(noteEntity);
     // then
@@ -239,6 +257,44 @@ class NoteMapperTest {
     assertEquals(created, note.getCreated());
     assertEquals(Optional.of(updated), note.getUpdated());
     assertTrue(note.isPinned());
+    // and
+    assertNotNull(note.getShares());
+    assertEquals(1, note.getShares().size());
+    NoteShare share = note.getShares().iterator().next();
+    assertEquals(sharedUserId, share.userId());
+    assertEquals(Set.of(NotePermission.READ), share.permissions());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldMapCorrectly() {
+    // given
+    NoteShare share = new NoteShare(UUID.randomUUID(), Set.of(NotePermission.EDIT));
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share);
+    // then
+    assertNotNull(response);
+    assertEquals(share.userId(), response.getUserId());
+    assertEquals(share.permissions(), response.getPermissions());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldReturnNull_whenShareNull() {
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(null);
+    // then
+    assertNull(response);
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldMapNullPermissions() {
+    // given
+    NoteShare share = new NoteShare(UUID.randomUUID(), null);
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share);
+    // then
+    assertNotNull(response);
+    assertEquals(share.userId(), response.getUserId());
+    assertNull(response.getPermissions());
   }
 
   @Test
@@ -287,6 +343,73 @@ class NoteMapperTest {
     // then
     assertNotNull(noteValue);
     assertNull(noteValue.authorId());
+  }
+
+  @Test
+  void mapToNoteValue_shouldReturnNullShares_whenEntitySharesNull() {
+    // given
+    NoteEntity noteEntity = new NoteEntity();
+    UserEntity author = new UserEntity();
+    author.setId(UUID.randomUUID());
+    noteEntity.setId(UUID.randomUUID());
+    noteEntity.setAuthor(author);
+    noteEntity.setTitle("title");
+    noteEntity.setContent("content");
+    noteEntity.setCreated(OffsetDateTime.now());
+    noteEntity.setPinned(false);
+    noteEntity.setShares(null);
+    // when
+    NoteValue noteValue = noteMapper.mapToNoteValue(noteEntity);
+    // then
+    assertNotNull(noteValue);
+    assertNull(noteValue.shares());
+  }
+
+  @Test
+  void mapToEntity_shouldMapSharesToShareEntities() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    NoteImpl note = new NoteImpl(createNote, noteValidator);
+    UUID sharedUserId = UUID.randomUUID();
+    note.setPermissions(note.getAuthorId(), sharedUserId, Set.of(NotePermission.READ));
+    // when
+    NoteEntity noteEntity = noteMapper.mapToEntity(note);
+    // then
+    assertNotNull(noteEntity);
+    assertNotNull(noteEntity.getShares());
+    assertEquals(1, noteEntity.getShares().size());
+    NoteShareEntity shareEntity = noteEntity.getShares().iterator().next();
+    assertNull(shareEntity.getId());
+    assertNull(shareEntity.getNote());
+    assertNotNull(shareEntity.getUser());
+    assertEquals(sharedUserId, shareEntity.getUser().getId());
+    assertEquals(Set.of(NotePermission.READ), shareEntity.getPermissions());
+  }
+
+  @Test
+  void noteShareEntityToDomainNoteShare_shouldReturnNull_whenUserMissing() {
+    // given
+    NoteShareEntity entity = new NoteShareEntity();
+    // when
+    NoteShare mapped = ((NoteMapperImpl) noteMapper).noteShareEntityToDomainNoteShare(entity);
+    // then
+    assertNull(mapped);
+  }
+
+  @Test
+  void noteShareToDomainNoteShareEntity_shouldReturnNull_whenShareNull() {
+    // when
+    NoteShareEntity entity = ((NoteMapperImpl) noteMapper).noteShareToDomainNoteShareEntity(null);
+    // then
+    assertNull(entity);
+  }
+
+  @Test
+  void noteToUserEntity_shouldReturnNull_whenNoteNull() {
+    // when
+    UserEntity userEntity = ((NoteMapperImpl) noteMapper).noteToUserEntity(null);
+    // then
+    assertNull(userEntity);
   }
 
   @Test

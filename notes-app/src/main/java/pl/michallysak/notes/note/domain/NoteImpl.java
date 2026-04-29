@@ -105,6 +105,10 @@ public class NoteImpl implements Note {
       UUID actingUserId, UUID targetUserId, Set<NotePermission> permissions) {
     checkOwnership(actingUserId);
 
+    if (actingUserId.equals(targetUserId)) {
+      throw new IllegalArgumentException("Cannot set permissions for yourself");
+    }
+
     if (permissions == null || permissions.isEmpty()) {
       throw new IllegalArgumentException("Permissions cannot be empty");
     }

@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 
 import io.restassured.response.Response;
 import jakarta.ws.rs.core.MediaType;
+import java.util.UUID;
 import pl.michallysak.notes.application.quarkus.helpers.RestTestClient;
 
 public class NoteResourceRestTestClient extends RestTestClient {
@@ -52,5 +53,26 @@ public class NoteResourceRestTestClient extends RestTestClient {
 
   public Response deleteNote(String noteId) {
     return given().headers(authorizationHeaders).when().delete(getNotePath(noteId));
+  }
+
+  public Response setPermissions(String noteId, String bodyJson) {
+    return given()
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(authorizationHeaders)
+        .body(bodyJson)
+        .when()
+        .put(getNotePath(noteId) + "/permissions");
+  }
+
+  public Response getPermissions(String noteId) {
+    return given().headers(authorizationHeaders).when().get(getNotePath(noteId) + "/permissions");
+  }
+
+  public Response removeAccess(String noteId, UUID targetUserId) {
+    return given()
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(authorizationHeaders)
+        .when()
+        .delete(getNotePath(noteId) + "/permissions/" + targetUserId);
   }
 }

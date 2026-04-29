@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.verify;
 
 import jakarta.ws.rs.core.Response;
+import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
 import pl.michallysak.notes.auth.exception.AuthException;
 import pl.michallysak.notes.common.exception.EntityNotFoundException;
 import pl.michallysak.notes.common.exception.ValidationException;
+import pl.michallysak.notes.note.exception.NoteAccessException;
 
 @ExtendWith(MockitoExtension.class)
 class GlobalExceptionMapperTest {
@@ -75,6 +77,22 @@ class GlobalExceptionMapperTest {
 
   @Test
   @SuppressWarnings("resource")
+  void toResponse_shouldReturnValidErrorResponse_whenIllegalArgumentException() {
+    // given
+    IllegalArgumentException exception = new IllegalArgumentException("bad request");
+    // when
+    Response response = globalExceptionMapper.toResponse(exception);
+    // then
+    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    Object entity = response.getEntity();
+    // and
+    assertInstanceOf(ErrorResponse.class, entity);
+    ErrorResponse error = (ErrorResponse) entity;
+    assertEquals("bad request", error.getMessage());
+  }
+
+  @Test
+  @SuppressWarnings("resource")
   void toResponse_shouldReturnValidErrorResponse_whenAuthException() {
     // given
     AuthException exception = new AuthException("unauthorized");
@@ -87,5 +105,23 @@ class GlobalExceptionMapperTest {
     assertInstanceOf(ErrorResponse.class, entity);
     ErrorResponse error = (ErrorResponse) entity;
     assertEquals("unauthorized", error.getMessage());
+  }
+
+  @Test
+  @SuppressWarnings("resource")
+  void toResponse_shouldReturnValidErrorResponse_whenNoteAccessException() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID actingUserId = UUID.randomUUID();
+    NoteAccessException exception = new NoteAccessException(noteId, actingUserId);
+    // when
+    Response response = globalExceptionMapper.toResponse(exception);
+    // then
+    assertEquals(Response.Status.FORBIDDEN.getStatusCode(), response.getStatus());
+    Object entity = response.getEntity();
+    // and
+    assertInstanceOf(ErrorResponse.class, entity);
+    ErrorResponse error = (ErrorResponse) entity;
+    assertEquals(exception.getMessage(), error.getMessage());
   }
 }

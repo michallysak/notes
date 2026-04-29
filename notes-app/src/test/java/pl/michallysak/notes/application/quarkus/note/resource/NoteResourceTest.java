@@ -1,5 +1,6 @@
 package pl.michallysak.notes.application.quarkus.note.resource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -12,7 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.controller.NoteController;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 
 @ExtendWith(MockitoExtension.class)
 class NoteResourceTest {
@@ -76,5 +79,41 @@ class NoteResourceTest {
     noteResource.deleteNote(id);
     // then
     verify(noteController).deleteNote(id);
+  }
+
+  @Test
+  void setPermissions_shouldDelegateToController() {
+    // given
+    UUID id = UUID.randomUUID();
+    SetNotePermissionsRequest request = mock(SetNotePermissionsRequest.class);
+    // when
+    noteResource.setPermissions(id, request);
+    // then
+    verify(noteController).setPermissions(id, request);
+  }
+
+  @Test
+  void removeAccess_shouldDelegateToController() {
+    // given
+    UUID id = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    // when
+    noteResource.removeAccess(id, targetUserId);
+    // then
+    verify(noteController).removeAccess(id, targetUserId);
+  }
+
+  @Test
+  void getPermissions_shouldDelegateToController() {
+    // given
+    UUID id = UUID.randomUUID();
+    @SuppressWarnings("unchecked")
+    List<NoteShareResponse> responses = mock(List.class);
+    when(noteController.getPermissions(id)).thenReturn(responses);
+    // when
+    List<NoteShareResponse> result = noteResource.getPermissions(id);
+    // then
+    assertEquals(responses, result);
+    verify(noteController).getPermissions(id);
   }
 }

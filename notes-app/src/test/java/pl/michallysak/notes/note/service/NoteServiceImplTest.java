@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,9 +23,7 @@ import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
 import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.validator.NoteValidator;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
@@ -137,6 +136,61 @@ class NoteServiceImplTest {
     when(repository.findNoteWithId(id)).thenReturn(Optional.empty());
     // when
     Executable executable = () -> service.deleteNote(id, AUTHOR_ID);
+    // then
+    assertThrows(NoteNotFoundException.class, executable);
+  }
+
+  @Test
+  void setPermissions_shouldSaveAndPublishUpdateEvent_whenNoteExists() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    UUID noteId = note.getId();
+    UUID targetUserId = UUID.randomUUID();
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+    SetNotePermissions setNotePermissions = new SetNotePermissions(targetUserId, permissions);
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.of(note));
+    // when
+    service.setPermissions(noteId, AUTHOR_ID, setNotePermissions);
+    // then
+    verify(repository).saveNote(note);
+  }
+
+  @Test
+  void setPermissions_shouldThrow_whenNotExists() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    SetNotePermissions request = new SetNotePermissions(targetUserId, Set.of(NotePermission.READ));
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.empty());
+    // when
+    Executable executable = () -> service.setPermissions(noteId, AUTHOR_ID, request);
+    // then
+    assertThrows(NoteNotFoundException.class, executable);
+  }
+
+  @Test
+  void removeAccess_shouldSaveAndPublishUpdateEvent_whenNoteExists() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    UUID noteId = note.getId();
+    UUID targetUserId = UUID.randomUUID();
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.of(note));
+    // when
+    service.removeAccess(noteId, AUTHOR_ID, targetUserId);
+    // then
+    verify(repository).saveNote(note);
+  }
+
+  @Test
+  void removeAccess_shouldThrow_whenNotExists() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.empty());
+    // when
+    Executable executable = () -> service.removeAccess(noteId, AUTHOR_ID, targetUserId);
     // then
     assertThrows(NoteNotFoundException.class, executable);
   }

@@ -2,17 +2,25 @@ package pl.michallysak.notes.application.quarkus.note.resource;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils.createNoteUpdateRequestBuilder;
+import static pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder;
 import static pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils.getCreateNoteRequestBuilder;
 import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
+
+import java.util.Arrays;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import pl.michallysak.notes.application.quarkus.helpers.BaseIT;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
+import pl.michallysak.notes.application.quarkus.user.resource.UserResourceRestTestClient;
+import pl.michallysak.notes.note.model.NotePermission;
 
 @QuarkusTest
 class NoteResourceIT extends BaseIT {
@@ -236,5 +244,276 @@ class NoteResourceIT extends BaseIT {
     Response response = noteResourceTestClient.deleteNote(nonExistentId);
     // then
     response.then().statusCode(404);
+  }
+
+  @Test
+  void setPermissions_shouldReturn204AndAllowSharedUserToReadNote() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String sharedUserToken = createUser(EMAIL_2);
+    NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
+    NoteResourceRestTestClient sharedUserClient = NoteResourceRestTestClient.auth(sharedUserToken);
+    String sharedUserId =
+        UserResourceRestTestClient.auth(sharedUserToken)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    SetNotePermissionsRequest request =
+        createSetNotePermissionsRequestBuilder()
+            .targetUserId(UUID.fromString(sharedUserId))
+            .build();
+    // when
+    Response response = ownerClient.setPermissions(noteId, toJsonString(request));
+    // then
+    response.then().statusCode(204);
+    Response permissionsResponse = ownerClient.getPermissions(noteId);
+    permissionsResponse.then().statusCode(200);
+    NoteShareResponse[] permissions = permissionsResponse.as(NoteShareResponse[].class);
+    assertEquals(1, permissions.length);
+    assertEquals(sharedUserId, permissions[0].getUserId().toString());
+    assertTrue(permissions[0].getPermissions().contains(NotePermission.READ));
+    // and
+    Response sharedUserGetResponse = sharedUserClient.getNote(noteId);
+    sharedUserGetResponse.then().statusCode(200);
+  }
+
+  @Test
+  void setPermissions_shouldReturn403_whenRequestingUserIsNotNoteOwner() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String secondUserToken = createUser(EMAIL_2);
+    String secondUserId =
+        UserResourceRestTestClient.auth(secondUserToken)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    SetNotePermissionsRequest request =
+        createSetNotePermissionsRequestBuilder()
+            .targetUserId(UUID.fromString(secondUserId))
+            .build();
+    // when
+    Response response =
+        NoteResourceRestTestClient.auth(secondUserToken)
+            .setPermissions(noteId, toJsonString(request));
+    // then
+    response.then().statusCode(403);
+  }
+
+  @Test
+  void setPermissions_shouldReturn400_whenPermissionsEmpty() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String sharedUserToken = createUser(EMAIL_2);
+    String sharedUserId =
+        UserResourceRestTestClient.auth(sharedUserToken)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    SetNotePermissionsRequest request =
+        createSetNotePermissionsRequestBuilder()
+            .targetUserId(UUID.fromString(sharedUserId))
+            .permissions(java.util.Set.of())
+            .build();
+    // when
+    Response response =
+        NoteResourceRestTestClient.auth(ownerToken).setPermissions(noteId, toJsonString(request));
+    // then
+    response.then().statusCode(400);
+  }
+
+  @Test
+  void setPermissions_shouldReturn400_whenTargetUserIsActingUser() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String ownerId =
+        UserResourceRestTestClient.auth(ownerToken)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    SetNotePermissionsRequest request =
+        createSetNotePermissionsRequestBuilder().targetUserId(UUID.fromString(ownerId)).build();
+    // when
+    Response response =
+        NoteResourceRestTestClient.auth(ownerToken).setPermissions(noteId, toJsonString(request));
+    // then
+    response.then().statusCode(400);
+    assertTrue(response.asString().contains("Cannot set permissions for yourself"));
+  }
+
+  @Test
+  void setPermissions_shouldReturn404_whenTargetUserDoesNotExist() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    UUID nonExistentUserId = UUID.randomUUID();
+    SetNotePermissionsRequest request =
+        createSetNotePermissionsRequestBuilder().targetUserId(nonExistentUserId).build();
+    // when
+    Response response =
+        NoteResourceRestTestClient.auth(ownerToken).setPermissions(noteId, toJsonString(request));
+    // then
+    response.then().statusCode(404);
+  }
+
+  @Test
+  void removeAccess_shouldReturn204AndRevokeSharedUserAccess() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String sharedUserToken = createUser(EMAIL_2);
+    NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
+    NoteResourceRestTestClient sharedUserClient = NoteResourceRestTestClient.auth(sharedUserToken);
+    String sharedUserId =
+        UserResourceRestTestClient.auth(sharedUserToken)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    UUID targetUserId = UUID.fromString(sharedUserId);
+    SetNotePermissionsRequest request =
+        createSetNotePermissionsRequestBuilder().targetUserId(targetUserId).build();
+    ownerClient.setPermissions(noteId, toJsonString(request)).then().statusCode(204);
+    // and
+    Response permissionsBeforeResponse = ownerClient.getPermissions(noteId);
+    permissionsBeforeResponse.then().statusCode(200);
+    NoteShareResponse[] permissionsBefore = permissionsBeforeResponse.as(NoteShareResponse[].class);
+    assertEquals(1, permissionsBefore.length);
+    // when
+    Response response = ownerClient.removeAccess(noteId, targetUserId);
+    // then
+    response.then().statusCode(204);
+    // and
+    Response permissionsAfterResponse = ownerClient.getPermissions(noteId);
+    permissionsAfterResponse.then().statusCode(200);
+    NoteShareResponse[] permissionsAfter = permissionsAfterResponse.as(NoteShareResponse[].class);
+    assertEquals(0, permissionsAfter.length);
+    // and
+    sharedUserClient.getNote(noteId).then().statusCode(403);
+  }
+
+  @Test
+  void removeAccess_shouldReturn401_whenNoAuth() {
+    // given
+    String randomId = UUID.randomUUID().toString();
+    UUID targetUserId = UUID.randomUUID();
+    // when
+    Response response = NoteResourceRestTestClient.noAuth().removeAccess(randomId, targetUserId);
+    // then
+    response.then().statusCode(401);
+  }
+
+  @Test
+  void removeAccess_shouldReturn404_whenTargetUserDoesNotExist() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    UUID nonExistentUserId = UUID.randomUUID();
+    // when
+    Response response =
+        NoteResourceRestTestClient.auth(ownerToken).removeAccess(noteId, nonExistentUserId);
+    // then
+    response.then().statusCode(404);
+  }
+
+  @Test
+  void getPermissions_shouldReturn200AndEmptyList_whenNoPermissionsSet() {
+    // given
+    String token = createUser(EMAIL_1);
+    NoteResourceRestTestClient noteResourceTestClient = NoteResourceRestTestClient.auth(token);
+    CreateNoteRequest createNoteRequest = getCreateNoteRequestBuilder().build();
+    String noteId = createNote(token, createNoteRequest);
+    // when
+    Response response = noteResourceTestClient.getPermissions(noteId);
+    // then
+    response.then().statusCode(200);
+    // and
+    NoteShareResponse[] permissions = response.as(NoteShareResponse[].class);
+    assertEquals(0, permissions.length);
+  }
+
+  @Test
+  void getPermissions_shouldReturn200AndPermissionsList() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String sharedUser1Token = createUser(EMAIL_2);
+    String sharedUser2Token = createUser("test3@example.com");
+    NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
+    String sharedUser1Id =
+        UserResourceRestTestClient.auth(sharedUser1Token)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String sharedUser2Id =
+        UserResourceRestTestClient.auth(sharedUser2Token)
+            .me()
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    // and
+    SetNotePermissionsRequest request1 =
+        createSetNotePermissionsRequestBuilder()
+            .targetUserId(UUID.fromString(sharedUser1Id))
+            .build();
+    ownerClient.setPermissions(noteId, toJsonString(request1)).then().statusCode(204);
+    // and
+    SetNotePermissionsRequest request2 =
+        createSetNotePermissionsRequestBuilder()
+            .targetUserId(UUID.fromString(sharedUser2Id))
+            .permissions(Set.of(NotePermission.READ))
+            .build();
+    ownerClient.setPermissions(noteId, toJsonString(request2)).then().statusCode(204);
+    // when
+    Response response = ownerClient.getPermissions(noteId);
+    // then
+    response.then().statusCode(200);
+    // and
+    NoteShareResponse[] permissions = response.as(NoteShareResponse[].class);
+    assertEquals(2, permissions.length);
+    assertTrue(
+        Arrays.stream(permissions)
+            .anyMatch(p -> p.getUserId().toString().equals(sharedUser1Id)));
+    assertTrue(
+        Arrays.stream(permissions)
+            .anyMatch(p -> p.getUserId().toString().equals(sharedUser2Id)));
+  }
+
+  @Test
+  void getPermissions_shouldReturn404_whenNoteNotExists() {
+    // given
+    String token = createUser(EMAIL_1);
+    NoteResourceRestTestClient noteResourceTestClient = NoteResourceRestTestClient.auth(token);
+    String nonExistentId = UUID.randomUUID().toString();
+    // when
+    Response response = noteResourceTestClient.getPermissions(nonExistentId);
+    // then
+    response.then().statusCode(404);
+  }
+
+  @Test
+  void getPermissions_shouldReturn401_whenNoAuth() {
+    // given
+    NoteResourceRestTestClient noteResourceTestClient = NoteResourceRestTestClient.noAuth();
+    String randomId = UUID.randomUUID().toString();
+    // when
+    Response response = noteResourceTestClient.getPermissions(randomId);
+    // then
+    response.then().statusCode(401);
   }
 }

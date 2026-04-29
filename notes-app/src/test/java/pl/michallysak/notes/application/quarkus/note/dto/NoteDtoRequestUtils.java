@@ -1,7 +1,9 @@
 package pl.michallysak.notes.application.quarkus.note.dto;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
+import pl.michallysak.notes.note.model.NotePermission;
 
 public class NoteDtoRequestUtils {
 
@@ -21,5 +23,12 @@ public class NoteDtoRequestUtils {
 
   public static CreateNoteRequest.CreateNoteRequestBuilder getCreateNoteRequestBuilder() {
     return CreateNoteRequest.builder().title("title").content("content");
+  }
+
+  public static SetNotePermissionsRequest.SetNotePermissionsRequestBuilder
+      createSetNotePermissionsRequestBuilder() {
+    return SetNotePermissionsRequest.builder()
+        .targetUserId(UUID.randomUUID())
+        .permissions(Set.of(NotePermission.READ));
   }
 }

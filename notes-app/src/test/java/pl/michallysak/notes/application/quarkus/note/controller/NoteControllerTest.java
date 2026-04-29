@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,13 +15,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePermission;
+import pl.michallysak.notes.note.model.NoteShare;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.SetNotePermissions;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
+import pl.michallysak.notes.user.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
 class NoteControllerTest {
@@ -28,6 +35,7 @@ class NoteControllerTest {
   @Mock NoteService noteService;
   @Mock NoteMapper noteMapper;
   @Mock CurrentUserProvider currentUserProvider;
+  @Mock UserService userService;
   @InjectMocks NoteController noteController;
 
   @Test
@@ -121,5 +129,61 @@ class NoteControllerTest {
     noteController.deleteNote(id);
     // then
     verify(noteService).deleteNote(id, AUTHOR_ID);
+  }
+
+  @Test
+  void setPermissions_shouldDelegate() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    SetNotePermissionsRequest request =
+        SetNotePermissionsRequest.builder()
+            .targetUserId(targetUserId)
+            .permissions(Set.of(NotePermission.READ))
+            .build();
+    SetNotePermissions serviceRequest =
+        new SetNotePermissions(targetUserId, request.getPermissions());
+    when(userService.getUser(targetUserId)).thenReturn(null);
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    // when
+    noteController.setPermissions(noteId, request);
+    // then
+    verify(userService).getUser(targetUserId);
+    verify(noteService).setPermissions(noteId, AUTHOR_ID, serviceRequest);
+  }
+
+  @Test
+  void removeAccess_shouldDelegate() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    when(userService.getUser(targetUserId)).thenReturn(null);
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    // when
+    noteController.removeAccess(noteId, targetUserId);
+    // then
+    verify(userService).getUser(targetUserId);
+    verify(noteService).removeAccess(noteId, AUTHOR_ID, targetUserId);
+  }
+
+  @Test
+  void getPermissions_shouldReturnMappedShares() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID sharedUserId = UUID.randomUUID();
+    NoteShare noteShare = new NoteShare(sharedUserId, Set.of(NotePermission.READ));
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteShareResponse response = mock(NoteShareResponse.class);
+    when(noteValue.shares()).thenReturn(Set.of(noteShare));
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteService.getCreatedNote(noteId, AUTHOR_ID)).thenReturn(noteValue);
+    when(noteMapper.mapToNoteShareResponse(noteShare)).thenReturn(response);
+    // when
+    List<NoteShareResponse> result = noteController.getPermissions(noteId);
+    // then
+    assertEquals(1, result.size());
+    assertTrue(result.contains(response));
+    verify(noteService).getCreatedNote(noteId, AUTHOR_ID);
+    verify(noteMapper).mapToNoteShareResponse(noteShare);
   }
 }

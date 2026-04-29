@@ -243,10 +243,7 @@ class NoteImplTest {
     // given
     UUID authorId = UUID.randomUUID();
     NoteValue noteValue =
-        NoteTestUtils.createNoteValueBuilder()
-            .authorId(authorId)
-            .shares(null)
-            .build();
+        NoteTestUtils.createNoteValueBuilder().authorId(authorId).shares(null).build();
     // when
     Note note = new NoteImpl(noteValue, noteValidator);
     // then

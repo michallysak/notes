@@ -2,14 +2,13 @@ package pl.michallysak.notes.application.quarkus.note.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.Data;
@@ -17,39 +16,27 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import pl.michallysak.notes.note.model.NoteStyle;
+import pl.michallysak.notes.note.model.NotePermission;
 import pl.michallysak.notes.user.repository.UserEntity;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "notes")
+@Table(name = "note_shares")
 @NoArgsConstructor
-public class NoteEntity extends PanacheEntityBase {
+public class NoteShareEntity extends PanacheEntityBase {
   @Id private UUID id;
 
   @ManyToOne
-  @JoinColumn(name = "author_id", nullable = false)
-  private UserEntity author;
+  @JoinColumn(name = "note_id", nullable = false)
+  private NoteEntity note;
 
-  @Column(nullable = false)
-  private String title;
+  @ManyToOne
+  @JoinColumn(name = "user_id", nullable = false)
+  private UserEntity user;
 
-  @Column(nullable = false, columnDefinition = "TEXT")
-  private String content;
-
-  @Column(nullable = false)
-  private OffsetDateTime created;
-
-  private OffsetDateTime updated;
-
-  @Column(nullable = false)
-  private boolean pinned;
-
+  @ElementCollection(fetch = FetchType.EAGER)
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
-  private NoteStyle style;
-
-  @OneToMany(mappedBy = "note", orphanRemoval = true)
-  private Set<NoteShareEntity> shares = new HashSet<>();
+  private Set<NotePermission> permissions;
 }

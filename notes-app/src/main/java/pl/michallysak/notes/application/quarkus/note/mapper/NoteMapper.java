@@ -11,11 +11,14 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
+import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NoteShare;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.validator.NoteValidator;
@@ -36,11 +39,14 @@ public abstract class NoteMapper {
 
   public abstract NoteResponse mapToNoteResponse(NoteValue noteValue);
 
+  public abstract NoteShareResponse mapToNoteShareResponse(NoteShare noteShare);
+
   @Mapping(target = "author", expression = "java(new UserEntity())")
   @Mapping(target = "author.id", source = "authorId")
   public abstract NoteEntity mapToEntity(Note note);
 
   @Mapping(target = "authorId", source = "author.id")
+  @Mapping(target = "shares", source = "shares")
   public abstract NoteValue mapToNoteValue(NoteEntity noteEntity);
 
   public Note mapToDomain(NoteEntity noteEntity) {
@@ -53,5 +59,29 @@ public abstract class NoteMapper {
 
   protected Optional<OffsetDateTime> mapToOptionalOffsetDateTime(OffsetDateTime value) {
     return Optional.ofNullable(value);
+  }
+
+  protected NoteShare noteShareEntityToDomainNoteShare(NoteShareEntity entity) {
+    if (entity == null) {
+      return null;
+    }
+    if (entity.getUser() == null || entity.getUser().getId() == null) {
+      return null;
+    }
+    return new NoteShare(entity.getUser().getId(), entity.getPermissions());
+  }
+
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "note", ignore = true)
+  @Mapping(target = "user", source = "userId")
+  protected abstract NoteShareEntity noteShareToDomainNoteShareEntity(NoteShare noteShare);
+
+  protected UserEntity userIdToUserEntity(UUID userId) {
+    if (userId == null) {
+      return null;
+    }
+    UserEntity user = new UserEntity();
+    user.setId(userId);
+    return user;
   }
 }

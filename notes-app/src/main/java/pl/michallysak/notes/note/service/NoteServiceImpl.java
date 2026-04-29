@@ -14,6 +14,7 @@ import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.SetNotePermissions;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
@@ -68,5 +69,21 @@ public class NoteServiceImpl implements NoteService {
     NoteValue noteValue = NoteValue.from(note);
     NoteDeletedEvent noteDeletedEvent = NoteDeletedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteDeletedEvent));
+  }
+
+  @Override
+  public void setPermissions(UUID noteId, UUID actingUserId, SetNotePermissions request)
+      throws NoteNotFoundException {
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    note.setPermissions(actingUserId, request.targetUserId(), request.permissions());
+    noteRepository.saveNote(note);
+  }
+
+  @Override
+  public void removeAccess(UUID noteId, UUID actingUserId, UUID targetUserId)
+      throws NoteNotFoundException {
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    note.removeAccess(actingUserId, targetUserId);
+    noteRepository.saveNote(note);
   }
 }
