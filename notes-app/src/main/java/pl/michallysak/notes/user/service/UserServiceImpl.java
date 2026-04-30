@@ -10,6 +10,7 @@ import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.auth.service.AuthTokenGenerator;
 import pl.michallysak.notes.auth.service.PasswordPolicy;
+import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.user.domain.User;
 import pl.michallysak.notes.user.domain.UserImpl;
 import pl.michallysak.notes.user.exception.UserNotFoundException;
@@ -83,6 +84,14 @@ public class UserServiceImpl implements UserService {
   public UserValue getUser(UUID userId) {
     User user = userRepository.findUserWithId(userId).orElseThrow(UserNotFoundException::new);
     return UserValue.from(user);
+  }
+
+  @Override
+  public UserValue getUserByEmail(Email email) {
+    return userRepository
+        .findUserWithEmail(email)
+        .map(UserValue::from)
+        .orElseThrow(UserNotFoundException::new);
   }
 
   private void saveUserPassword(User user, Password createUser) {

@@ -1,9 +1,9 @@
 package pl.michallysak.notes.application.quarkus.note.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import java.util.Set;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,12 +17,13 @@ import pl.michallysak.notes.note.model.NotePermission;
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Schema(description = "Request to set note permissions for a target user")
 public class SetNotePermissionsRequest {
-  @NotNull
+  @NotBlank
+  @Email
   @Schema(
-      description = "User id to grant note access to",
-      examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e",
+      description = "Email of user to grant note access to",
+      examples = "user@example.com",
       required = true)
-  private UUID targetUserId;
+  private String email;
 
   @NotEmpty
   @Schema(description = "Permissions for the target user", required = true)

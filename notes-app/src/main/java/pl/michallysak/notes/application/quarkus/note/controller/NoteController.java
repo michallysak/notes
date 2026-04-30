@@ -10,11 +10,10 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
-import pl.michallysak.notes.note.model.SetNotePermissions;
+import pl.michallysak.notes.common.Email;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.service.NoteService;
+import pl.michallysak.notes.user.model.UserValue;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 import pl.michallysak.notes.user.service.UserService;
 
@@ -59,10 +58,11 @@ public class NoteController {
   }
 
   public void setPermissions(UUID id, SetNotePermissionsRequest request) {
-    userService.getUser(request.getTargetUserId());
+    Email email = Email.of(request.getEmail());
+    UserValue targetUser = userService.getUserByEmail(email);
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     SetNotePermissions setPermissions =
-        new SetNotePermissions(request.getTargetUserId(), request.getPermissions());
+        new SetNotePermissions(targetUser.id(), request.getPermissions());
     noteService.setPermissions(id, currentUserId, setPermissions);
   }
 
@@ -75,6 +75,11 @@ public class NoteController {
   public List<NoteShareResponse> getPermissions(UUID id) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     NoteValue noteValue = noteService.getCreatedNote(id, currentUserId);
-    return noteValue.shares().stream().map(noteMapper::mapToNoteShareResponse).toList();
+    return noteValue.shares().stream().map(this::mapToNoteShareResponse).toList();
+  }
+
+  private NoteShareResponse mapToNoteShareResponse(NoteShare noteShare) {
+    Email email = userService.getUser(noteShare.userId()).email();
+    return noteMapper.mapToNoteShareResponse(noteShare, email);
   }
 }

@@ -18,6 +18,9 @@ public class NoteShareResponse {
   @Schema(description = "Shared user id", examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
   private UUID userId;
 
+  @Schema(description = "Shared user email", examples = "user@example.com")
+  private String email;
+
   @Schema(description = "Granted permissions")
   private Set<NotePermission> permissions;
 }

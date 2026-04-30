@@ -81,6 +81,31 @@ class UserServiceImplTest {
   }
 
   @Test
+  void getUserByEmail_shouldReturnMappedValue() {
+    // given
+    EmailPasswordCreateUser emailPasswordCreateUser =
+        UserTestUtils.createEmailPasswordCreateUserBuilder().build();
+    User user = new UserImpl(emailPasswordCreateUser, userValidator);
+    when(userRepository.findUserWithEmail(user.getEmail())).thenReturn(Optional.of(user));
+    // when
+    UserValue value = userService.getUserByEmail(user.getEmail());
+    // then
+    assertEquals(user.getId(), value.id());
+    assertEquals(user.getEmail(), value.email());
+  }
+
+  @Test
+  void getUserByEmail_shouldThrow_whenNotFound() {
+    // given
+    Email email = Email.of("missing@example.com");
+    when(userRepository.findUserWithEmail(email)).thenReturn(Optional.empty());
+    // when
+    Executable executable = () -> userService.getUserByEmail(email);
+    // then
+    assertThrows(UserNotFoundException.class, executable);
+  }
+
+  @Test
   void createUser_shouldThrow_whenEmailAlreadyExists() {
     // given
     EmailPasswordCreateUser emailPasswordCreateUser =

@@ -15,6 +15,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
+import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
@@ -39,7 +40,13 @@ public abstract class NoteMapper {
 
   public abstract NoteResponse mapToNoteResponse(NoteValue noteValue);
 
+  @Mapping(target = "email", ignore = true)
   public abstract NoteShareResponse mapToNoteShareResponse(NoteShare noteShare);
+
+  @Mapping(target = "email", source = "email.value")
+  @Mapping(target = "userId", source = "noteShare.userId")
+  @Mapping(target = "permissions", source = "noteShare.permissions")
+  public abstract NoteShareResponse mapToNoteShareResponse(NoteShare noteShare, Email email);
 
   @Mapping(target = "author", expression = "java(new UserEntity())")
   @Mapping(target = "author.id", source = "authorId")

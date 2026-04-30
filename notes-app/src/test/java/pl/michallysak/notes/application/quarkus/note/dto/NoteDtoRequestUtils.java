@@ -28,7 +28,7 @@ public class NoteDtoRequestUtils {
   public static SetNotePermissionsRequest.SetNotePermissionsRequestBuilder
       createSetNotePermissionsRequestBuilder() {
     return SetNotePermissionsRequest.builder()
-        .targetUserId(UUID.randomUUID())
+        .email("shared@example.com")
         .permissions(Set.of(NotePermission.READ));
   }
 }

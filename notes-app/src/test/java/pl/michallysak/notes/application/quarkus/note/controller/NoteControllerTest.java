@@ -19,6 +19,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
+import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.model.CreateNote;
 import pl.michallysak.notes.note.model.NotePermission;
 import pl.michallysak.notes.note.model.NoteShare;
@@ -26,6 +27,7 @@ import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.model.SetNotePermissions;
 import pl.michallysak.notes.note.service.NoteService;
+import pl.michallysak.notes.user.model.UserValue;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 import pl.michallysak.notes.user.service.UserService;
 
@@ -136,19 +138,21 @@ class NoteControllerTest {
     // given
     UUID noteId = UUID.randomUUID();
     UUID targetUserId = UUID.randomUUID();
+    Email targetEmail = Email.of("shared@example.com");
     SetNotePermissionsRequest request =
         SetNotePermissionsRequest.builder()
-            .targetUserId(targetUserId)
+            .email(targetEmail.getValue())
             .permissions(Set.of(NotePermission.READ))
             .build();
     SetNotePermissions serviceRequest =
         new SetNotePermissions(targetUserId, request.getPermissions());
-    when(userService.getUser(targetUserId)).thenReturn(null);
+    when(userService.getUserByEmail(targetEmail))
+        .thenReturn(UserValue.builder().id(targetUserId).email(targetEmail).build());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     // when
     noteController.setPermissions(noteId, request);
     // then
-    verify(userService).getUser(targetUserId);
+    verify(userService).getUserByEmail(targetEmail);
     verify(noteService).setPermissions(noteId, AUTHOR_ID, serviceRequest);
   }
 
@@ -171,19 +175,30 @@ class NoteControllerTest {
     // given
     UUID noteId = UUID.randomUUID();
     UUID sharedUserId = UUID.randomUUID();
+    Email sharedUserEmail = Email.of("shared@example.com");
     NoteShare noteShare = new NoteShare(sharedUserId, Set.of(NotePermission.READ));
     NoteValue noteValue = mock(NoteValue.class);
-    NoteShareResponse response = mock(NoteShareResponse.class);
+    NoteShareResponse mappedResponse =
+        NoteShareResponse.builder()
+            .userId(sharedUserId)
+            .email(sharedUserEmail.getValue())
+            .permissions(Set.of(NotePermission.READ))
+            .build();
     when(noteValue.shares()).thenReturn(Set.of(noteShare));
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNote(noteId, AUTHOR_ID)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteShareResponse(noteShare)).thenReturn(response);
+    when(noteMapper.mapToNoteShareResponse(noteShare, sharedUserEmail)).thenReturn(mappedResponse);
+    when(userService.getUser(sharedUserId))
+        .thenReturn(UserValue.builder().id(sharedUserId).email(sharedUserEmail).build());
     // when
     List<NoteShareResponse> result = noteController.getPermissions(noteId);
     // then
     assertEquals(1, result.size());
-    assertTrue(result.contains(response));
+    assertEquals(sharedUserId, result.getFirst().getUserId());
+    assertEquals(sharedUserEmail.getValue(), result.getFirst().getEmail());
+    assertEquals(Set.of(NotePermission.READ), result.getFirst().getPermissions());
     verify(noteService).getCreatedNote(noteId, AUTHOR_ID);
-    verify(noteMapper).mapToNoteShareResponse(noteShare);
+    verify(noteMapper).mapToNoteShareResponse(noteShare, sharedUserEmail);
+    verify(userService).getUser(sharedUserId);
   }
 }

@@ -8,7 +8,6 @@ import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
-
 import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
@@ -253,18 +252,9 @@ class NoteResourceIT extends BaseIT {
     String sharedUserToken = createUser(EMAIL_2);
     NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
     NoteResourceRestTestClient sharedUserClient = NoteResourceRestTestClient.auth(sharedUserToken);
-    String sharedUserId =
-        UserResourceRestTestClient.auth(sharedUserToken)
-            .me()
-            .then()
-            .statusCode(200)
-            .extract()
-            .path("id");
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     SetNotePermissionsRequest request =
-        createSetNotePermissionsRequestBuilder()
-            .targetUserId(UUID.fromString(sharedUserId))
-            .build();
+        createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
     // when
     Response response = ownerClient.setPermissions(noteId, toJsonString(request));
     // then
@@ -273,7 +263,7 @@ class NoteResourceIT extends BaseIT {
     permissionsResponse.then().statusCode(200);
     NoteShareResponse[] permissions = permissionsResponse.as(NoteShareResponse[].class);
     assertEquals(1, permissions.length);
-    assertEquals(sharedUserId, permissions[0].getUserId().toString());
+    assertEquals(EMAIL_2, permissions[0].getEmail());
     assertTrue(permissions[0].getPermissions().contains(NotePermission.READ));
     // and
     Response sharedUserGetResponse = sharedUserClient.getNote(noteId);
@@ -285,18 +275,9 @@ class NoteResourceIT extends BaseIT {
     // given
     String ownerToken = createUser(EMAIL_1);
     String secondUserToken = createUser(EMAIL_2);
-    String secondUserId =
-        UserResourceRestTestClient.auth(secondUserToken)
-            .me()
-            .then()
-            .statusCode(200)
-            .extract()
-            .path("id");
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     SetNotePermissionsRequest request =
-        createSetNotePermissionsRequestBuilder()
-            .targetUserId(UUID.fromString(secondUserId))
-            .build();
+        createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
     // when
     Response response =
         NoteResourceRestTestClient.auth(secondUserToken)
@@ -309,18 +290,11 @@ class NoteResourceIT extends BaseIT {
   void setPermissions_shouldReturn400_whenPermissionsEmpty() {
     // given
     String ownerToken = createUser(EMAIL_1);
-    String sharedUserToken = createUser(EMAIL_2);
-    String sharedUserId =
-        UserResourceRestTestClient.auth(sharedUserToken)
-            .me()
-            .then()
-            .statusCode(200)
-            .extract()
-            .path("id");
+    createUser(EMAIL_2);
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     SetNotePermissionsRequest request =
         createSetNotePermissionsRequestBuilder()
-            .targetUserId(UUID.fromString(sharedUserId))
+            .email(EMAIL_2)
             .permissions(java.util.Set.of())
             .build();
     // when
@@ -334,16 +308,9 @@ class NoteResourceIT extends BaseIT {
   void setPermissions_shouldReturn400_whenTargetUserIsActingUser() {
     // given
     String ownerToken = createUser(EMAIL_1);
-    String ownerId =
-        UserResourceRestTestClient.auth(ownerToken)
-            .me()
-            .then()
-            .statusCode(200)
-            .extract()
-            .path("id");
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     SetNotePermissionsRequest request =
-        createSetNotePermissionsRequestBuilder().targetUserId(UUID.fromString(ownerId)).build();
+        createSetNotePermissionsRequestBuilder().email(EMAIL_1).build();
     // when
     Response response =
         NoteResourceRestTestClient.auth(ownerToken).setPermissions(noteId, toJsonString(request));
@@ -357,9 +324,8 @@ class NoteResourceIT extends BaseIT {
     // given
     String ownerToken = createUser(EMAIL_1);
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
-    UUID nonExistentUserId = UUID.randomUUID();
     SetNotePermissionsRequest request =
-        createSetNotePermissionsRequestBuilder().targetUserId(nonExistentUserId).build();
+        createSetNotePermissionsRequestBuilder().email("missing.user@test.pl").build();
     // when
     Response response =
         NoteResourceRestTestClient.auth(ownerToken).setPermissions(noteId, toJsonString(request));
@@ -384,7 +350,7 @@ class NoteResourceIT extends BaseIT {
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     UUID targetUserId = UUID.fromString(sharedUserId);
     SetNotePermissionsRequest request =
-        createSetNotePermissionsRequestBuilder().targetUserId(targetUserId).build();
+        createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
     ownerClient.setPermissions(noteId, toJsonString(request)).then().statusCode(204);
     // and
     Response permissionsBeforeResponse = ownerClient.getPermissions(noteId);
@@ -448,34 +414,18 @@ class NoteResourceIT extends BaseIT {
   void getPermissions_shouldReturn200AndPermissionsList() {
     // given
     String ownerToken = createUser(EMAIL_1);
-    String sharedUser1Token = createUser(EMAIL_2);
-    String sharedUser2Token = createUser("test3@example.com");
+    createUser(EMAIL_2);
+    createUser("test3@example.com");
     NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
-    String sharedUser1Id =
-        UserResourceRestTestClient.auth(sharedUser1Token)
-            .me()
-            .then()
-            .statusCode(200)
-            .extract()
-            .path("id");
-    String sharedUser2Id =
-        UserResourceRestTestClient.auth(sharedUser2Token)
-            .me()
-            .then()
-            .statusCode(200)
-            .extract()
-            .path("id");
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     // and
     SetNotePermissionsRequest request1 =
-        createSetNotePermissionsRequestBuilder()
-            .targetUserId(UUID.fromString(sharedUser1Id))
-            .build();
+        createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
     ownerClient.setPermissions(noteId, toJsonString(request1)).then().statusCode(204);
     // and
     SetNotePermissionsRequest request2 =
         createSetNotePermissionsRequestBuilder()
-            .targetUserId(UUID.fromString(sharedUser2Id))
+            .email("test3@example.com")
             .permissions(Set.of(NotePermission.READ))
             .build();
     ownerClient.setPermissions(noteId, toJsonString(request2)).then().statusCode(204);
@@ -486,12 +436,8 @@ class NoteResourceIT extends BaseIT {
     // and
     NoteShareResponse[] permissions = response.as(NoteShareResponse[].class);
     assertEquals(2, permissions.length);
-    assertTrue(
-        Arrays.stream(permissions)
-            .anyMatch(p -> p.getUserId().toString().equals(sharedUser1Id)));
-    assertTrue(
-        Arrays.stream(permissions)
-            .anyMatch(p -> p.getUserId().toString().equals(sharedUser2Id)));
+    assertTrue(Arrays.stream(permissions).anyMatch(p -> EMAIL_2.equals(p.getEmail())));
+    assertTrue(Arrays.stream(permissions).anyMatch(p -> "test3@example.com".equals(p.getEmail())));
   }
 
   @Test

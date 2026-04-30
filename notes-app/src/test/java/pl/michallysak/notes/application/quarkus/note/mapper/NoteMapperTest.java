@@ -23,6 +23,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteStyleDTO;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
+import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
@@ -274,6 +275,7 @@ class NoteMapperTest {
     // then
     assertNotNull(response);
     assertEquals(share.userId(), response.getUserId());
+    assertNull(response.getEmail());
     assertEquals(share.permissions(), response.getPermissions());
   }
 
@@ -294,6 +296,37 @@ class NoteMapperTest {
     // then
     assertNotNull(response);
     assertEquals(share.userId(), response.getUserId());
+    assertNull(response.getEmail());
+    assertNull(response.getPermissions());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldMapWithEmail() {
+    // given
+    UUID userId = UUID.randomUUID();
+    Email email = Email.of("user@example.com");
+    NoteShare share = new NoteShare(userId, Set.of(NotePermission.EDIT));
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share, email);
+    // then
+    assertNotNull(response);
+    assertEquals(userId, response.getUserId());
+    assertEquals(email.getValue(), response.getEmail());
+    assertEquals(share.permissions(), response.getPermissions());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldMapWithEmail_andNullPermissions() {
+    // given
+    UUID userId = UUID.randomUUID();
+    Email email = Email.of("user@example.com");
+    NoteShare share = new NoteShare(userId, null);
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share, email);
+    // then
+    assertNotNull(response);
+    assertEquals(userId, response.getUserId());
+    assertEquals(email.getValue(), response.getEmail());
     assertNull(response.getPermissions());
   }
 
