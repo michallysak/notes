@@ -1,7 +1,14 @@
 <p-card class="card-container" [pt]="cardPt" (click)="handleCardClick()">
   <ng-template #header>
     <div class="card-header">
-      <h3 class="text-trim" [style.color]="cardTextColor()">{{ note.title }}</h3>
+      <div class="title-row">
+        <h3 class="text-trim" [style.color]="cardTextColor()">{{ note.title }}</h3>
+        @if (isShared) {
+          <span class="shared-badge" pTooltip="{{ 'NOTES.SHARED' | translate }}">
+            <i class="pi pi-users"></i>
+          </span>
+        }
+      </div>
       <p-menu #menu [model]="items" popup="true" [appendTo]="'body'" ></p-menu>
       <div class="controls">
         <p-button

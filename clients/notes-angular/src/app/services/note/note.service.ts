@@ -3,11 +3,13 @@ import { BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import {
   CreateNoteRequest,
+  NotePermission,
   NoteCreatedEventDTO,
   NoteDeletedEventDTO,
   NotesAPIService,
   NoteUpdatedEventDTO,
   NoteUpdateRequest,
+  SetNotePermissionsRequest,
 } from '@notes/notes_service';
 import { Note } from '../../types/note';
 import { NoteEventsService } from './note-events.service';
@@ -94,5 +96,18 @@ export class NoteService {
         this.removeNoteFromSubject(id);
       }),
     );
+  }
+
+  getPermissions(id: string) {
+    return this.notesApi.getPermissions(id);
+  }
+
+  setNotePermissions(id: string, email: string, permissions: NotePermission[] = [NotePermission.READ]) {
+    const body: SetNotePermissionsRequest = { email, permissions };
+    return this.notesApi.setNotePermissions(body, id);
+  }
+
+  removeNoteAccess(id: string, targetUserId: string) {
+    return this.notesApi.removeNoteAccess(id, targetUserId);
   }
 }

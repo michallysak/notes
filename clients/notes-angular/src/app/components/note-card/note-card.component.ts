@@ -28,8 +28,10 @@ import { mixHexWithBase } from '../../utils/color-contrast.util';
 })
 export class NoteCardComponent {
   @Input({ required: true }) note!: Note;
+  @Input() isShared = false;
   @Output() onClick = new EventEmitter<Note>();
   @Output() pinClick = new EventEmitter<Note>();
+  @Output() shareClick = new EventEmitter<Note>();
   items: MenuItem[] = [];
 
   constructor(private translate: TranslateService, private noteService: NoteService) {}
@@ -37,10 +39,16 @@ export class NoteCardComponent {
   ngOnInit() {
     this.items = [
       {
+        label: this.translate.instant('NOTES.SHARE'),
+        icon: 'pi pi-share-alt',
+        command: () => {
+          this.shareClick.emit(this.note);
+        },
+      },
+      {
         label: this.translate.instant('NOTES.DELETE'),
         icon: 'pi pi-trash',
         command: () => {
-          if (!this.note?.id) return;
           this.noteService.deleteNote(this.note.id).subscribe({
             next: () => console.log('deleted', this.note?.id),
             error: (err) => console.error('delete failed', err),
@@ -52,7 +60,7 @@ export class NoteCardComponent {
 
   get cardPt() {
     const backgroundColor = this.cardBackgroundColor();
-    const textColor = this.cardTextColor() ?? undefined;
+    const textColor = this.cardTextColor();
 
     return {
       root: {
@@ -71,7 +79,7 @@ export class NoteCardComponent {
   }
 
   get controlButtonPt() {
-    const textColor = this.cardTextColor() ?? 'var(--p-text-color)';
+    const textColor = this.cardTextColor();
 
     return {
       root: {

@@ -1,11 +1,15 @@
 import { BehaviorSubject, Subject, of, EMPTY } from 'rxjs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NotePermission } from '@notes/notes_service';
 import { NoteService } from './note.service';
 import { Note } from '../../types/note';
 
 describe('NoteService', () => {
   const notesApi = {
     getNotes: vi.fn(),
+    getPermissions: vi.fn(),
+    setNotePermissions: vi.fn(),
+    removeNoteAccess: vi.fn(),
   };
   let noteEvents$: Subject<any>;
   let noteUpdatedEvents$: Subject<any>;
@@ -14,6 +18,9 @@ describe('NoteService', () => {
 
   beforeEach(() => {
     notesApi.getNotes.mockReset();
+    notesApi.getPermissions.mockReset();
+    notesApi.setNotePermissions.mockReset();
+    notesApi.removeNoteAccess.mockReset();
     noteEvents$ = new Subject<any>();
     noteUpdatedEvents$ = new Subject<any>();
     noteDeletedEvents$ = new Subject<any>();
@@ -272,6 +279,39 @@ describe('NoteService', () => {
     expect(latest[1].title).toBe('Updated Second');
     expect(latest[0].title).toBe('First');
     expect(latest[2].title).toBe('Third');
+  });
+
+  it('getPermissions delegates to notesApi.getPermissions', () => {
+    notesApi.getNotes.mockReturnValue(of([]));
+    notesApi.getPermissions.mockReturnValue(of([]));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    service.getPermissions('note-1').subscribe();
+
+    expect(notesApi.getPermissions).toHaveBeenCalledWith('note-1');
+  });
+
+  it('setNotePermissions uses READ default permission', () => {
+    notesApi.getNotes.mockReturnValue(of([]));
+    notesApi.setNotePermissions.mockReturnValue(of({}));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    service.setNotePermissions('note-2', 'user@example.com').subscribe();
+
+    expect(notesApi.setNotePermissions).toHaveBeenCalledWith(
+      { email: 'user@example.com', permissions: [NotePermission.READ] },
+      'note-2',
+    );
+  });
+
+  it('removeNoteAccess delegates to notesApi.removeNoteAccess', () => {
+    notesApi.getNotes.mockReturnValue(of([]));
+    notesApi.removeNoteAccess.mockReturnValue(of({}));
+    const service = new NoteService(notesApi as any, noteEventsService as any);
+
+    service.removeNoteAccess('note-3', 'target-1').subscribe();
+
+    expect(notesApi.removeNoteAccess).toHaveBeenCalledWith('note-3', 'target-1');
   });
 });
 

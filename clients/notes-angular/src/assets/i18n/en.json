@@ -24,10 +24,23 @@
     "CREATE_BUTTON": "Create note",
     "SECTION_PINNED": "Pinned",
     "SECTION_OTHER": "Other",
+    "SHARE": "Share",
+    "SHARED": "Shared",
     "DELETE": "Delete",
     "PIN": "Unpin note",
     "UNPIN": "Unpin note",
     "MORE": "More",
+    "SHARE_DIALOG": {
+      "TITLE": "Share note",
+      "EMAIL_PLACEHOLDER": "User email",
+      "ADD": "Add",
+      "EMPTY": "No shared users yet",
+      "USER_NOT_FOUND": "User does not exist",
+      "PERMISSION": {
+        "READ": "Read",
+        "EDIT": "Edit"
+      }
+    },
     "DIALOG": {
       "UPDATE_TITLE": "Update Note",
       "CREATE_TITLE": "Create Note",

@@ -1,0 +1,62 @@
+.share-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &-form {
+    display: grid;
+    grid-template-columns: 1fr 8rem auto;
+    gap: 0.5rem;
+  }
+
+  &-loading {
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem 0;
+  }
+
+  &-empty {
+    color: var(--p-text-muted-color);
+  }
+
+  &-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  &-user {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-email {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &-permission {
+    font-size: 0.85rem;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.share {
+  &-select {
+    min-width: 8rem;
+  }
+}
+
+
+

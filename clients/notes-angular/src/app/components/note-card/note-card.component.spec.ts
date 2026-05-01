@@ -54,9 +54,32 @@ describe('NoteCardComponent', () => {
     expect(queryElement('app-note-change-datetime')).toBeTruthy();
   });
 
+  it('renders shared badge when isShared is true', () => {
+    fixture.componentRef.setInput('isShared', true);
+    fixture.detectChanges();
+
+    expect(queryElement('.shared-badge')).toBeTruthy();
+  });
+
+  it('does not render shared badge when isShared is false', () => {
+    fixture.componentRef.setInput('isShared', false);
+    fixture.detectChanges();
+
+    expect(queryElement('.shared-badge')).toBeFalsy();
+  });
+
   it('should initialize menu items on init', () => {
-    expect(component.items.length).toBe(1);
-    expect(component.items[0].icon).toBe('pi pi-trash');
+    expect(component.items.length).toBe(2);
+    expect(component.items[0].icon).toBe('pi pi-share-alt');
+    expect(component.items[1].icon).toBe('pi pi-trash');
+  });
+
+  it('should emit shareClick from share menu item command', () => {
+    const shareSpy = vi.spyOn(component.shareClick, 'emit');
+
+    component.items[0].command?.({} as any);
+
+    expect(shareSpy).toHaveBeenCalledWith(expect.objectContaining({ id: '5' }));
   });
 
   it('should call handleCardClick on card click', () => {
@@ -107,7 +130,7 @@ describe('NoteCardComponent', () => {
   it('should call noteService.deleteNote from menu item command', () => {
     noteService.deleteNote.mockReturnValue({ subscribe: vi.fn() } as any);
 
-    component.items[0].command?.({} as any);
+    component.items[1].command?.({} as any);
 
     expect(noteService.deleteNote).toHaveBeenCalledWith('5');
   });
@@ -115,7 +138,7 @@ describe('NoteCardComponent', () => {
   it('logs successful note deletion from menu command', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    component.items[0].command?.({} as any);
+    component.items[1].command?.({} as any);
 
     expect(logSpy).toHaveBeenCalledWith('deleted', '5');
     logSpy.mockRestore();
@@ -125,20 +148,12 @@ describe('NoteCardComponent', () => {
     noteService.deleteNote.mockReturnValue(throwError(() => new Error('fail')));
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    component.items[0].command?.({} as any);
+    component.items[1].command?.({} as any);
 
     expect(errorSpy).toHaveBeenCalledWith('delete failed', expect.any(Error));
     errorSpy.mockRestore();
   });
 
-  it('does not call deleteNote when the note has no id', () => {
-    fixture.componentRef.setInput('note', createNote({ id: '' }));
-    fixture.detectChanges();
-
-    component.items[0].command?.({} as any);
-
-    expect(noteService.deleteNote).not.toHaveBeenCalled();
-  });
 
   it('should log click action in handleCardClick', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);

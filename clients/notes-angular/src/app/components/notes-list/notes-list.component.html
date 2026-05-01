@@ -9,6 +9,14 @@
     </app-note-change-dialog>
   }
 
+  @if (shareNote(); as shareNote) {
+    <app-note-share-dialog [visible]="shareNote.visible"
+                           (visibleChange)="shareDialogClose()"
+                           (sharedStateChanged)="onSharedStateChanged($event)"
+                           [note]="shareNote.visible ? shareNote.note : null">
+    </app-note-share-dialog>
+  }
+
 <div class="notes-list">
 
   @if ({ pinned: pinnedNotes(), other: otherNotes() }; as notes) {
@@ -19,8 +27,9 @@
       }
       <div class="grid">
         @for (note of notes.pinned; track note.id) {
-          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
-                         (pinClick)="onPinClickPropagation($event)"></app-note-card>
+          <app-note-card [note]="note" [isShared]="isShared(note)" (onClick)="noteCardClick($event)"
+                         (pinClick)="onPinClickPropagation($event)"
+                         (shareClick)="noteCardShareClick($event)"></app-note-card>
         }
       </div>
     </div>
@@ -31,8 +40,9 @@
       }
       <div class="grid">
         @for (note of notes.other; track note.id) {
-          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
-                         (pinClick)="onPinClickPropagation($event)"></app-note-card>
+          <app-note-card [note]="note" [isShared]="isShared(note)" (onClick)="noteCardClick($event)"
+                         (pinClick)="onPinClickPropagation($event)"
+                         (shareClick)="noteCardShareClick($event)"></app-note-card>
         }
       </div>
     </div>

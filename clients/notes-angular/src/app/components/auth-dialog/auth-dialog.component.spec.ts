@@ -4,6 +4,8 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { provideRouter } from '@angular/router';
 import { AuthDialogComponent } from './auth-dialog.component';
 import { AuthService } from '../../services/auth/auth.service';
+import { LoginFormComponent } from '../login-form/login-form.component';
+import { RegisterFormComponent } from '../register-form/register-form.component';
 
 describe('AuthDialogComponent', () => {
   let component: AuthDialogComponent;
@@ -91,7 +93,37 @@ describe('AuthDialogComponent', () => {
     component.toggleForm();
     expect(component.isLoginForm()).not.toBe(initialState);
   });
+
+  it('renders login form branch by default', () => {
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(LoginFormComponent))).toBeTruthy();
+    expect(fixture.debugElement.query(By.directive(RegisterFormComponent))).toBeFalsy();
+  });
+
+  it('renders register form branch after toggle', () => {
+    fixture.componentRef.setInput('visible', true);
+    component.toggleForm();
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(LoginFormComponent))).toBeFalsy();
+    expect(fixture.debugElement.query(By.directive(RegisterFormComponent))).toBeTruthy();
+  });
+
+  it('toggles form from child output events', () => {
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    expect(component.isLoginForm()).toBe(true);
+
+    const loginForm = fixture.debugElement.query(By.directive(LoginFormComponent));
+    (loginForm.componentInstance as { toggleRegister: { emit: () => void } }).toggleRegister.emit();
+    fixture.detectChanges();
+    expect(component.isLoginForm()).toBe(false);
+
+    const registerForm = fixture.debugElement.query(By.directive(RegisterFormComponent));
+    (registerForm.componentInstance as { toggleToLogin: { emit: () => void } }).toggleToLogin.emit();
+    fixture.detectChanges();
+    expect(component.isLoginForm()).toBe(true);
+  });
 });
-
-
-

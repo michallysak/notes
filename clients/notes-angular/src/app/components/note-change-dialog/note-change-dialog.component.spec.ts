@@ -380,9 +380,58 @@ describe('NoteChangeDialogComponent', () => {
     expect(component.form.controls.content.value).toBe('Updated Content');
     expect(component.form.controls.color.value).toBeTruthy();
   });
+
+  it('calls onColorInput from color input event binding', () => {
+    const spy = vi.spyOn(component, 'onColorInput');
+    component.visible = true;
+    component.note = sampleNote as any;
+    fixture.detectChanges();
+
+    const colorInput = fixture.debugElement.query(By.css('input[type="color"]'));
+    expect(colorInput).toBeTruthy();
+
+    const input = document.createElement('input');
+    input.value = '#00ff00';
+    const event = new Event('input');
+    Object.defineProperty(event, 'target', { value: input, enumerable: true });
+
+    colorInput.triggerEventHandler('input', event);
+
+    expect(spy).toHaveBeenCalled();
+    expect(component.form.controls.color.value).toBe('#00ff00');
+  });
+
+  it('hides clear color button when color is empty', () => {
+    component.visible = true;
+    component.note = sampleNote as any;
+
+    component.form.controls.color.setValue(null);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.note-color-controls p-button'))).toBeFalsy();
+  });
+
+  it('shows clear color button when color has value', () => {
+    component.visible = true;
+    component.note = sampleNote as any;
+
+    component.form.controls.color.setValue('#ff0000');
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.note-color-controls p-button'))).toBeTruthy();
+  });
+
+  it('calls clearColor from clear button click binding', () => {
+    const clearSpy = vi.spyOn(component, 'clearColor');
+    component.visible = true;
+    component.note = sampleNote as any;
+    component.form.controls.color.setValue('#ff0000');
+    fixture.detectChanges();
+
+    const clearButton = fixture.debugElement.query(By.css('.note-color-controls p-button'));
+    expect(clearButton).toBeTruthy();
+
+    clearButton.triggerEventHandler('onClick', {});
+
+    expect(clearSpy).toHaveBeenCalled();
+    expect(component.form.controls.color.value).toBeNull();
+  });
 });
-
-
-
-
-
