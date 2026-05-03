@@ -10,10 +10,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.model.NotePagedQuery;
 
 @ExtendWith(MockitoExtension.class)
 class PanacheNoteRepositoryTest {
@@ -159,5 +161,16 @@ class PanacheNoteRepositoryTest {
     noteRepository.deleteNotes();
     // then
     verify(noteRepository).deleteAll();
+  }
+
+  @Test
+  void search_shouldThrowUnsupportedOperationException() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    // when
+    Executable executable = () -> noteRepository.search(authorId, query);
+    // then
+    assertThrows(UnsupportedOperationException.class, executable);
   }
 }

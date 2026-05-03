@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static pl.michallysak.notes.note.NoteTestUtils.createNotePagedQuery;
 
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +67,24 @@ class NoteServiceImplTest {
     // then
     assertEquals(1, noteValues.size());
     assertEquals(NoteValue.from(note), noteValues.getFirst());
+  }
+
+  @Test
+  void search_shouldValidateDelegateAndMapValues() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(AUTHOR_ID).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    NotePagedQuery query = createNotePagedQuery(null, 0, 20);
+    when(repository.search(AUTHOR_ID, query)).thenReturn(List.of(note));
+    // when
+    Paged<NoteValue> response = service.search(AUTHOR_ID, query);
+    // then
+    verify(noteValidator).validateNoteQuery(query);
+    verify(repository).search(AUTHOR_ID, query);
+    assertEquals(1, response.data().size());
+    assertEquals(NoteValue.from(note), response.data().getFirst());
+    assertEquals(0, response.page());
+    assertEquals(20, response.size());
   }
 
   @Test

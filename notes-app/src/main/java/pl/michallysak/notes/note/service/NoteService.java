@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.UUID;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePagedQuery;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.Paged;
 import pl.michallysak.notes.note.model.SetNotePermissions;
 
 public interface NoteService {
@@ -13,6 +15,8 @@ public interface NoteService {
   NoteValue createNote(CreateNote createNote);
 
   List<NoteValue> getCreatedNotes(UUID authorId);
+
+  Paged<NoteValue> search(UUID authorId, NotePagedQuery query);
 
   NoteValue getCreatedNote(UUID noteId, UUID authorId) throws NoteNotFoundException;
 

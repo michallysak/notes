@@ -1,12 +1,9 @@
 package pl.michallysak.notes.note.repository;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static pl.michallysak.notes.note.NoteTestUtils.createNotePagedQuery;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -14,8 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
 @ExtendWith(MockitoExtension.class)
@@ -143,6 +139,61 @@ class InMemoryNoteRepositoryTest {
     // then
     assertEquals(2, notes.size());
     assertTrue(notes.stream().allMatch(n -> n.getAuthorId().equals(author1)));
+  }
+
+  @Test
+  void search_shouldReturnPagedNotes_whenIsSharedNull() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    CreateNote createShared = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    CreateNote createPrivate = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note shared = new NoteImpl(createShared, noteValidator);
+    shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
+    Note privateNote = new NoteImpl(createPrivate, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(shared, privateNote);
+    NotePagedQuery query = createNotePagedQuery(null, 0, 1);
+    // when
+    List<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.size());
+  }
+
+  @Test
+  void search_shouldReturnSharedNotes_whenIsSharedTrue() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    CreateNote createShared = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    CreateNote createPrivate = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note shared = new NoteImpl(createShared, noteValidator);
+    shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
+    Note privateNote = new NoteImpl(createPrivate, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(shared, privateNote);
+    NotePagedQuery query = createNotePagedQuery(true, 0, 10);
+    // when
+    List<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(shared.getId(), result.getFirst().getId());
+  }
+
+  @Test
+  void search_shouldReturnPrivateNotes_whenIsSharedFalse() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    CreateNote createShared = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    CreateNote createPrivate = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note shared = new NoteImpl(createShared, noteValidator);
+    shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
+    Note privateNote = new NoteImpl(createPrivate, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(shared, privateNote);
+    NotePagedQuery query = createNotePagedQuery(false, 0, 10);
+    // when
+    List<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.size());
+    assertEquals(privateNote.getId(), result.getFirst().getId());
   }
 
   @Test

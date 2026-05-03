@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.model.NotePagedQuery;
 import pl.michallysak.notes.note.repository.NoteRepository;
 
 @ApplicationScoped
@@ -34,6 +35,11 @@ public class PanacheNoteRepository
   @Override
   public List<Note> findNotesWithAuthor(UUID authorId) {
     return list("author.id", authorId).stream().map(noteMapper::mapToDomain).toList();
+  }
+
+  @Override
+  public List<Note> search(UUID authorId, NotePagedQuery query) {
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override

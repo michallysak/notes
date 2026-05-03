@@ -16,6 +16,7 @@ import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePagedQuery;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
 class NoteValidatorImplTest {
@@ -109,6 +110,57 @@ class NoteValidatorImplTest {
     // then
     ValidationException validationException = assertThrows(ValidationException.class, executable);
     assertEquals(message, validationException.getMessage());
+  }
+
+  @Test
+  void validateNoteQuery_shouldThrow_whenSizeTooLarge() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(101L);
+    String message = "Size must be in range [1, 100]";
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
+    // then
+    ValidationException validationException = assertThrows(ValidationException.class, executable);
+    assertEquals(message, validationException.getMessage());
+  }
+
+  @Test
+  void validateNoteQuery_shouldThrow_whenNegativePage() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(20L);
+    when(query.getPage()).thenReturn(-1L);
+    String message = "Page must be in range [0, 9223372036854775807]";
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
+    // then
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, executable);
+    assertEquals(message, exception.getMessage());
+  }
+
+  @Test
+  void validateNoteQuery_shouldNotThrow_whenValid() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(20L);
+    when(query.getPage()).thenReturn(0L);
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
+    // then
+    assertDoesNotThrow(executable);
+  }
+
+  @Test
+  void validateNoteQuery_shouldNotThrow_whenSortField() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(20L);
+    when(query.getPage()).thenReturn(0L);
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
+    // then
+    assertDoesNotThrow(executable);
   }
 
   @Test

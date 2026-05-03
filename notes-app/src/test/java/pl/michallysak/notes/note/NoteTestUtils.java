@@ -3,9 +3,7 @@ package pl.michallysak.notes.note;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
 public class NoteTestUtils {
@@ -28,5 +26,24 @@ public class NoteTestUtils {
         .created(OffsetDateTime.now())
         .updated(Optional.empty())
         .pinned(true);
+  }
+
+  public static NotePagedQuery createNotePagedQuery(Boolean isShared, long page, long size) {
+    return new NotePagedQuery() {
+      @Override
+      public long getPage() {
+        return page;
+      }
+
+      @Override
+      public long getSize() {
+        return size;
+      }
+
+      @Override
+      public Boolean getIsShared() {
+        return isShared;
+      }
+    };
   }
 }

@@ -1,13 +1,16 @@
 package pl.michallysak.notes.note.validator;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.common.exception.ValidationException;
 import pl.michallysak.notes.common.validator.CommonValidator;
+import pl.michallysak.notes.common.validator.LongRange;
 import pl.michallysak.notes.common.validator.TextRange;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePagedQuery;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
 @RequiredArgsConstructor
@@ -15,6 +18,8 @@ public class NoteValidatorImpl implements NoteValidator {
 
   private static final TextRange TITLE_LENGTH_RANGE = TextRange.of(3, 64);
   private static final TextRange CONTENT_LENGTH_RANGE = TextRange.of(0, 2048);
+  private static final LongRange SEARCH_PAGE_RANGE = LongRange.of(0L, Long.MAX_VALUE);
+  private static final LongRange SEARCH_SIZE_RANGE = LongRange.of(1L, 100L);
 
   private final CommonValidator commonValidator = new CommonValidator();
 
@@ -24,6 +29,19 @@ public class NoteValidatorImpl implements NoteValidator {
     commonValidator.throwOnNull(createNote.authorId(), "AuthorId id cannot be null");
     validateTitle(createNote.title());
     validateContent(createNote.content());
+  }
+
+  @Override
+  public void validateNoteQuery(NotePagedQuery query) throws ValidationException {
+    commonValidator.throwOnNull(query, "NoteQuery cannot be null");
+    commonValidator.throwOnNotInRange(
+        query.getSize(),
+        SEARCH_SIZE_RANGE,
+        "Size must be in range %s".formatted(SEARCH_SIZE_RANGE));
+    commonValidator.throwOnNotInRange(
+        query.getPage(),
+        SEARCH_PAGE_RANGE,
+        "Page must be in range %s".formatted(SEARCH_PAGE_RANGE));
   }
 
   @Override

@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.model.NotePagedQuery;
 
 public class InMemoryNoteRepository implements NoteRepository {
   private final Map<UUID, Note> notes;
@@ -29,6 +30,28 @@ public class InMemoryNoteRepository implements NoteRepository {
   @Override
   public List<Note> findNotesWithAuthor(UUID authorId) {
     return notes.values().stream().filter(note -> note.getAuthorId().equals(authorId)).toList();
+  }
+
+  @Override
+  public List<Note> search(UUID authorId, NotePagedQuery query) {
+    return notes.values().stream()
+        .filter(note -> isOwnedByOrSharedWith(authorId, note))
+        .filter(
+            note -> {
+              if (query.getIsShared() == null) {
+                return true;
+              }
+              boolean isShared = !note.getShares().isEmpty();
+              return query.getIsShared().equals(isShared);
+            })
+        .skip(query.getPage() * query.getSize())
+        .limit(query.getSize())
+        .toList();
+  }
+
+  private boolean isOwnedByOrSharedWith(UUID authorId, Note note) {
+    return note.getAuthorId().equals(authorId) ||
+            note.getShares().stream().anyMatch(share -> share.userId().equals(authorId));
   }
 
   @Override

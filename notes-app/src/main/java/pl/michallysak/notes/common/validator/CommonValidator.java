@@ -17,6 +17,12 @@ public class CommonValidator {
     }
   }
 
+  public void throwOnNotInRange(long value, LongRange range, String message) {
+    if (!range.check(value)) {
+      throw new ValidationException(message);
+    }
+  }
+
   public void throwOnNotMatch(String text, Pattern pattern, String message) {
     if (!pattern.matcher(text).matches()) {
       throw new ValidationException(message);

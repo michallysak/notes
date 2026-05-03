@@ -39,7 +39,7 @@ class CommonValidatorTest {
 
   @ParameterizedTest
   @ValueSource(ints = {1, 2, 3})
-  void throwOnNotInRange_shouldThrow_whenLengthInRange(int length) {
+  void throwOnNotInRange_shouldNotThrow_whenLengthInRange(int length) {
     // given
     TextRange range = TextRange.of(1, 3);
     String text = "X".repeat(length);
@@ -52,13 +52,38 @@ class CommonValidatorTest {
 
   @ParameterizedTest
   @ValueSource(ints = {0, 4})
-  void throwOnNotInRange_shouldNotThrow_whenLengthNotInRange(int length) {
+  void throwOnNotInRange_shouldThrow_whenLengthNotInRange(int length) {
     // given
     String text = "X".repeat(length);
     TextRange range = TextRange.of(1, 3);
     String message = "Text cannot be null";
     // when
     Executable executable = () -> commonValidator.throwOnNotInRange(text, range, message);
+    // then
+    ValidationException validationException = assertThrows(ValidationException.class, executable);
+    assertEquals(message, validationException.getMessage());
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {1L, 2L, 3L})
+  void throwOnNotInRange_shouldNotThrow_whenLongInRange(long value) {
+    // given
+    LongRange range = LongRange.of(1L, 3L);
+    String message = "Value must be in range";
+    // when
+    Executable executable = () -> commonValidator.throwOnNotInRange(value, range, message);
+    // then
+    assertDoesNotThrow(executable);
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {0L, 4L})
+  void throwOnNotInRange_shouldThrow_whenLongNotInRange(long value) {
+    // given
+    LongRange range = LongRange.of(1L, 3L);
+    String message = "Value must be in range";
+    // when
+    Executable executable = () -> commonValidator.throwOnNotInRange(value, range, message);
     // then
     ValidationException validationException = assertThrows(ValidationException.class, executable);
     assertEquals(message, validationException.getMessage());

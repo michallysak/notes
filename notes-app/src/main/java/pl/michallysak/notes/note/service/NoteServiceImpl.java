@@ -11,10 +11,7 @@ import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
 import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
-import pl.michallysak.notes.note.model.SetNotePermissions;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
@@ -41,6 +38,14 @@ public class NoteServiceImpl implements NoteService {
         .peek(note -> note.read(authorId))
         .map(NoteValue::from)
         .toList();
+  }
+
+  @Override
+  public Paged<NoteValue> search(UUID authorId, NotePagedQuery query) {
+    noteValidator.validateNoteQuery(query);
+    List<NoteValue> data =
+        noteRepository.search(authorId, query).stream().map(NoteValue::from).toList();
+    return new Paged<>(data, query.getPage(), query.getSize());
   }
 
   @Override
