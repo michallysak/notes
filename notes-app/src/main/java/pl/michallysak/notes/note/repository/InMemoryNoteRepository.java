@@ -3,11 +3,13 @@ package pl.michallysak.notes.note.repository;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import pl.michallysak.notes.common.SortComparatorFactory;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.NotePagedQuery;
 
 public class InMemoryNoteRepository implements NoteRepository {
   private final Map<UUID, Note> notes;
+  private final SortComparatorFactory<Note> noteComparator = new NoteSortComparatorFactory();
 
   public InMemoryNoteRepository() {
     notes = new HashMap<>();
@@ -34,6 +36,7 @@ public class InMemoryNoteRepository implements NoteRepository {
 
   @Override
   public List<Note> search(UUID authorId, NotePagedQuery query) {
+    Comparator<Note> comparator = noteComparator.createComparator(query.getSort());
     return notes.values().stream()
         .filter(note -> isOwnedByOrSharedWith(authorId, note))
         .filter(
@@ -44,14 +47,15 @@ public class InMemoryNoteRepository implements NoteRepository {
               boolean isShared = !note.getShares().isEmpty();
               return query.getIsShared().equals(isShared);
             })
+        .sorted(comparator)
         .skip(query.getPage() * query.getSize())
         .limit(query.getSize())
         .toList();
   }
 
   private boolean isOwnedByOrSharedWith(UUID authorId, Note note) {
-    return note.getAuthorId().equals(authorId) ||
-            note.getShares().stream().anyMatch(share -> share.userId().equals(authorId));
+    return note.getAuthorId().equals(authorId)
+        || note.getShares().stream().anyMatch(share -> share.userId().equals(authorId));
   }
 
   @Override

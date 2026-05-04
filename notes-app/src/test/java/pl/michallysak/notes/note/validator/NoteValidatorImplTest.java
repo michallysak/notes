@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils.CONTENT_LENGTH_RANGE;
 import static pl.michallysak.notes.note.validator.NoteValidatorImplTestUtils.TITLE_LENGTH_RANGE;
 
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -16,8 +17,10 @@ import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.FieldSort;
 import pl.michallysak.notes.note.model.NotePagedQuery;
 import pl.michallysak.notes.note.model.NoteUpdate;
+import pl.michallysak.notes.note.model.SortDirection;
 
 class NoteValidatorImplTest {
 
@@ -161,6 +164,39 @@ class NoteValidatorImplTest {
     Executable executable = () -> noteValidator.validateNoteQuery(query);
     // then
     assertDoesNotThrow(executable);
+  }
+
+  @Test
+  void validateNoteQuery_shouldThrow_whenInvalidSortField() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(20L);
+    when(query.getPage()).thenReturn(0L);
+    FieldSort invalidFieldSort = new FieldSort("invalidField", SortDirection.ASC);
+    when(query.getSort()).thenReturn(List.of(invalidFieldSort));
+    String expectedMessage = "Invalid sort field: invalidField";
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
+    // then
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, executable);
+    assertEquals(expectedMessage, exception.getMessage());
+  }
+
+  @Test
+  void validateNoteQuery_shouldThrow_whenMultipleSortFieldsWithInvalid() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(20L);
+    when(query.getPage()).thenReturn(0L);
+    FieldSort validFieldSort = new FieldSort("title", SortDirection.ASC);
+    FieldSort invalidFieldSort = new FieldSort("invalidField", SortDirection.DESC);
+    when(query.getSort()).thenReturn(List.of(validFieldSort, invalidFieldSort));
+    String expectedMessage = "Invalid sort field: invalidField";
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
+    // then
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, executable);
+    assertEquals(expectedMessage, exception.getMessage());
   }
 
   @Test
@@ -336,6 +372,19 @@ class NoteValidatorImplTest {
     UUID noteId = note.getId();
     // when
     Executable executable = () -> noteValidator.validateNoteUpdate(noteId, noteUpdate, note);
+    // then
+    assertDoesNotThrow(executable);
+  }
+
+  @Test
+  void validateNoteQuery_shouldNotThrow_whenSortIsNull() {
+    // given
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getSize()).thenReturn(20L);
+    when(query.getPage()).thenReturn(0L);
+    when(query.getSort()).thenReturn(null);
+    // when
+    Executable executable = () -> noteValidator.validateNoteQuery(query);
     // then
     assertDoesNotThrow(executable);
   }

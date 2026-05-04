@@ -10,6 +10,7 @@ import pl.michallysak.notes.common.validator.LongRange;
 import pl.michallysak.notes.common.validator.TextRange;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.FieldSort;
 import pl.michallysak.notes.note.model.NotePagedQuery;
 import pl.michallysak.notes.note.model.NoteUpdate;
 
@@ -18,6 +19,8 @@ public class NoteValidatorImpl implements NoteValidator {
 
   private static final TextRange TITLE_LENGTH_RANGE = TextRange.of(3, 64);
   private static final TextRange CONTENT_LENGTH_RANGE = TextRange.of(0, 2048);
+  private static final Set<String> ALLOWED_SORT_FIELDS =
+      Set.of("created", "updated", "title", "pinned");
   private static final LongRange SEARCH_PAGE_RANGE = LongRange.of(0L, Long.MAX_VALUE);
   private static final LongRange SEARCH_SIZE_RANGE = LongRange.of(1L, 100L);
 
@@ -42,6 +45,13 @@ public class NoteValidatorImpl implements NoteValidator {
         query.getPage(),
         SEARCH_PAGE_RANGE,
         "Page must be in range %s".formatted(SEARCH_PAGE_RANGE));
+    if (query.getSort() != null) {
+      for (FieldSort fieldSort : query.getSort()) {
+        if (!ALLOWED_SORT_FIELDS.contains(fieldSort.field())) {
+          throw new IllegalArgumentException("Invalid sort field: " + fieldSort.field());
+        }
+      }
+    }
   }
 
   @Override

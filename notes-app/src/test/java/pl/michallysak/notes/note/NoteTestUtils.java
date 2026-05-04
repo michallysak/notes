@@ -1,6 +1,7 @@
 package pl.michallysak.notes.note;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import pl.michallysak.notes.note.model.*;
@@ -28,7 +29,8 @@ public class NoteTestUtils {
         .pinned(true);
   }
 
-  public static NotePagedQuery createNotePagedQuery(Boolean isShared, long page, long size) {
+  public static NotePagedQuery createNotePagedQuery(
+      Boolean isShared, long page, long size, List<FieldSort> fieldSorts) {
     return new NotePagedQuery() {
       @Override
       public long getPage() {
@@ -43,6 +45,11 @@ public class NoteTestUtils {
       @Override
       public Boolean getIsShared() {
         return isShared;
+      }
+
+      @Override
+      public List<FieldSort> getSort() {
+        return fieldSorts;
       }
     };
   }
