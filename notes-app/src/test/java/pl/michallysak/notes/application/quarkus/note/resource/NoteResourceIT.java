@@ -102,6 +102,21 @@ class NoteResourceIT extends BaseIT {
   }
 
   @Test
+  void searchNotes_shouldReturnPagedResponse() {
+    // given
+    String token = createUser(EMAIL_1);
+    NoteResourceRestTestClient noteResourceTestClient = NoteResourceRestTestClient.auth(token);
+    CreateNoteRequest createNoteRequest = getCreateNoteRequestBuilder().build();
+    createNote(token, createNoteRequest);
+    // when
+    Response response = noteResourceTestClient.searchNotes(null, 0, 10);
+    // then
+    response.then().statusCode(200);
+    NoteResponse[] noteResponses = response.as(NoteResponse[].class);
+    assertEquals(1, noteResponses.length);
+  }
+
+  @Test
   void getNote_shouldReturn200AndNote() {
     // given
     String token = createUser(EMAIL_1);

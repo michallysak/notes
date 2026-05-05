@@ -119,7 +119,7 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldThrow_whenSizeTooLarge() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(101L);
+    when(query.getSize()).thenReturn(101);
     String message = "Size must be in range [1, 100]";
     // when
     Executable executable = () -> noteValidator.validateNoteQuery(query);
@@ -132,8 +132,8 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldThrow_whenNegativePage() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(20L);
-    when(query.getPage()).thenReturn(-1L);
+    when(query.getSize()).thenReturn(20);
+    when(query.getPage()).thenReturn(-1);
     String message = "Page must be in range [0, 9223372036854775807]";
     // when
     Executable executable = () -> noteValidator.validateNoteQuery(query);
@@ -146,8 +146,8 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldNotThrow_whenValid() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(20L);
-    when(query.getPage()).thenReturn(0L);
+    when(query.getSize()).thenReturn(20);
+    when(query.getPage()).thenReturn(0);
     // when
     Executable executable = () -> noteValidator.validateNoteQuery(query);
     // then
@@ -158,8 +158,8 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldNotThrow_whenSortField() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(20L);
-    when(query.getPage()).thenReturn(0L);
+    when(query.getSize()).thenReturn(20);
+    when(query.getPage()).thenReturn(0);
     // when
     Executable executable = () -> noteValidator.validateNoteQuery(query);
     // then
@@ -170,8 +170,8 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldThrow_whenInvalidSortField() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(20L);
-    when(query.getPage()).thenReturn(0L);
+    when(query.getSize()).thenReturn(20);
+    when(query.getPage()).thenReturn(0);
     FieldSort invalidFieldSort = new FieldSort("invalidField", SortDirection.ASC);
     when(query.getSort()).thenReturn(List.of(invalidFieldSort));
     String expectedMessage = "Invalid sort field: invalidField";
@@ -186,8 +186,8 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldThrow_whenMultipleSortFieldsWithInvalid() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(20L);
-    when(query.getPage()).thenReturn(0L);
+    when(query.getSize()).thenReturn(20);
+    when(query.getPage()).thenReturn(0);
     FieldSort validFieldSort = new FieldSort("title", SortDirection.ASC);
     FieldSort invalidFieldSort = new FieldSort("invalidField", SortDirection.DESC);
     when(query.getSort()).thenReturn(List.of(validFieldSort, invalidFieldSort));
@@ -380,8 +380,8 @@ class NoteValidatorImplTest {
   void validateNoteQuery_shouldNotThrow_whenSortIsNull() {
     // given
     NotePagedQuery query = mock(NotePagedQuery.class);
-    when(query.getSize()).thenReturn(20L);
-    when(query.getPage()).thenReturn(0L);
+    when(query.getSize()).thenReturn(20);
+    when(query.getPage()).thenReturn(0);
     when(query.getSort()).thenReturn(null);
     // when
     Executable executable = () -> noteValidator.validateNoteQuery(query);

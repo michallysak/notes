@@ -10,8 +10,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.application.quarkus.common.SortList;
 import pl.michallysak.notes.application.quarkus.note.controller.NoteController;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
@@ -44,6 +46,20 @@ class NoteResourceTest {
     noteResource.getNotes();
     // then
     verify(noteController).getNotes();
+  }
+
+  @Test
+  void searchNotes_shouldDelegateToController() {
+    // given
+    NoteQueryBean query = new NoteQueryBean(true, 1, 25, SortList.empty());
+    @SuppressWarnings("unchecked")
+    List<NoteResponse> response = mock(List.class);
+    when(noteController.searchNotes(query)).thenReturn(response);
+    // when
+    List<NoteResponse> result = noteResource.searchNotes(query);
+    // then
+    assertEquals(response, result);
+    verify(noteController).searchNotes(query);
   }
 
   @Test

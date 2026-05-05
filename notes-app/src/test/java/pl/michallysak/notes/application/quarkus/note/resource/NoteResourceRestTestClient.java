@@ -51,6 +51,16 @@ public class NoteResourceRestTestClient extends RestTestClient {
     return given().headers(authorizationHeaders).when().get(basePath);
   }
 
+  public Response searchNotes(Boolean isShared, Integer page, Integer size) {
+    return given()
+        .headers(authorizationHeaders)
+        .queryParam("isShared", isShared)
+        .queryParam("page", page)
+        .queryParam("size", size)
+        .when()
+        .get(basePath + "/search");
+  }
+
   public Response deleteNote(String noteId) {
     return given().headers(authorizationHeaders).when().delete(getNotePath(noteId));
   }

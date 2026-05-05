@@ -30,15 +30,15 @@ public class NoteTestUtils {
   }
 
   public static NotePagedQuery createNotePagedQuery(
-      Boolean isShared, long page, long size, List<FieldSort> fieldSorts) {
+      Boolean isShared, int page, int size, List<FieldSort> fieldSorts) {
     return new NotePagedQuery() {
       @Override
-      public long getPage() {
+      public int getPage() {
         return page;
       }
 
       @Override
-      public long getSize() {
+      public int getSize() {
         return size;
       }
 

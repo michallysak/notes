@@ -1,5 +1,6 @@
 package pl.michallysak.notes.note.validator;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -45,11 +46,13 @@ public class NoteValidatorImpl implements NoteValidator {
         query.getPage(),
         SEARCH_PAGE_RANGE,
         "Page must be in range %s".formatted(SEARCH_PAGE_RANGE));
-    if (query.getSort() != null) {
-      for (FieldSort fieldSort : query.getSort()) {
-        if (!ALLOWED_SORT_FIELDS.contains(fieldSort.field())) {
-          throw new IllegalArgumentException("Invalid sort field: " + fieldSort.field());
-        }
+    List<FieldSort> sort = query.getSort();
+    if (sort == null) {
+      return;
+    }
+    for (FieldSort fieldSort : sort) {
+      if (!ALLOWED_SORT_FIELDS.contains(fieldSort.field())) {
+        throw new ValidationException("Invalid sort field: " + fieldSort.field());
       }
     }
   }

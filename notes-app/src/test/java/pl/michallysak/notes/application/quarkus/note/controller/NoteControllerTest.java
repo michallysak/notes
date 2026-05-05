@@ -13,19 +13,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.michallysak.notes.application.quarkus.common.SortList;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.common.Email;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NotePermission;
-import pl.michallysak.notes.note.model.NoteShare;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
-import pl.michallysak.notes.note.model.SetNotePermissions;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.model.UserValue;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
@@ -82,6 +79,24 @@ class NoteControllerTest {
     verify(noteService).getCreatedNotes(AUTHOR_ID);
     verify(noteMapper).mapToNoteResponse(noteValue1);
     verify(noteMapper).mapToNoteResponse(noteValue2);
+  }
+
+  @Test
+  void searchNotes_shouldReturnMappedPagedResponse() {
+    // given
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteResponse response = mock(NoteResponse.class);
+    NoteQueryBean query = new NoteQueryBean(true, 1, 10, SortList.empty());
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteService.search(AUTHOR_ID, query)).thenReturn(new Paged<>(List.of(noteValue), 1, 10));
+    when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
+    // when
+    List<NoteResponse> result = noteController.searchNotes(query);
+    // then
+    assertEquals(1, result.size());
+    assertEquals(response, result.getFirst());
+    verify(noteService).search(AUTHOR_ID, query);
+    verify(noteMapper).mapToNoteResponse(noteValue);
   }
 
   @Test

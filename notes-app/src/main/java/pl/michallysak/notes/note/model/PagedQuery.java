@@ -2,7 +2,7 @@ package pl.michallysak.notes.note.model;
 
 public interface PagedQuery {
 
-  long getPage();
+  int getPage();
 
-  long getSize();
+  int getSize();
 }

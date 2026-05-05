@@ -39,6 +39,12 @@ public class NoteController {
         .toList();
   }
 
+  public List<NoteResponse> searchNotes(NotePagedQuery query) {
+    UUID currentUserId = currentUserProvider.getCurrentUserId();
+    Paged<NoteValue> searchResult = noteService.search(currentUserId, query);
+    return searchResult.data().stream().map(noteMapper::mapToNoteResponse).toList();
+  }
+
   public NoteResponse getNote(UUID id) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     NoteValue noteValue = noteService.getCreatedNote(id, currentUserId);

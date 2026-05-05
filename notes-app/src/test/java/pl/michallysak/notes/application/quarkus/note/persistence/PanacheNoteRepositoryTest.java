@@ -3,6 +3,8 @@ package pl.michallysak.notes.application.quarkus.note.persistence;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.panache.common.Page;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
@@ -10,12 +12,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.model.FieldSort;
 import pl.michallysak.notes.note.model.NotePagedQuery;
+import pl.michallysak.notes.note.model.SortDirection;
 
 @ExtendWith(MockitoExtension.class)
 class PanacheNoteRepositoryTest {
@@ -164,13 +167,162 @@ class PanacheNoteRepositoryTest {
   }
 
   @Test
-  void search_shouldThrowUnsupportedOperationException() {
+  void search_shouldReturnPagedNotes_whenQueryProvided() {
     // given
     UUID authorId = UUID.randomUUID();
     NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getPage()).thenReturn(1);
+    when(query.getSize()).thenReturn(10);
+    when(query.getSort()).thenReturn(List.of());
+    when(query.getIsShared()).thenReturn(null);
+    // and
+    NoteEntity entity1 = new NoteEntity();
+    NoteEntity entity2 = new NoteEntity();
+    Note note1 = mock(Note.class);
+    Note note2 = mock(Note.class);
+    // and
+    PanacheQuery<NoteEntity> panacheQuery = mock(PanacheQuery.class);
+    PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
+    // and
+    doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
+    when(pagedQuery.list()).thenReturn(List.of(entity1, entity2));
+    // and
+    when(noteMapper.mapToDomain(entity1)).thenReturn(note1);
+    when(noteMapper.mapToDomain(entity2)).thenReturn(note2);
+
     // when
-    Executable executable = () -> noteRepository.search(authorId, query);
+    List<Note> notes = noteRepository.search(authorId, query);
+
     // then
-    assertThrows(UnsupportedOperationException.class, executable);
+    assertEquals(2, notes.size());
+    assertEquals(List.of(note1, note2), notes);
+    verify(noteRepository).find("author.id = ?1 order by created desc", authorId);
+  }
+
+  @Test
+  void search_shouldReturnPagedNotes_whenQueryWithSortingAndShared() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getPage()).thenReturn(0);
+    when(query.getSize()).thenReturn(5);
+    when(query.getSort()).thenReturn(List.of(new FieldSort("title", SortDirection.DESC)));
+    when(query.getIsShared()).thenReturn(true);
+    // and
+    NoteEntity entity = new NoteEntity();
+    Note note = mock(Note.class);
+    // and
+    PanacheQuery<NoteEntity> panacheQuery = mock(PanacheQuery.class);
+    PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
+    // and
+    doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
+    when(pagedQuery.list()).thenReturn(List.of(entity));
+    // and
+    when(noteMapper.mapToDomain(entity)).thenReturn(note);
+
+    // when
+    List<Note> notes = noteRepository.search(authorId, query);
+
+    // then
+    assertEquals(1, notes.size());
+    assertEquals(List.of(note), notes);
+    verify(noteRepository)
+        .find("author.id = ?1 and shares is not empty order by title desc", authorId);
+  }
+
+  @Test
+  void search_shouldReturnPagedNotes_whenQueryWithIsSharedFalse() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getPage()).thenReturn(0);
+    when(query.getSize()).thenReturn(10);
+    when(query.getSort()).thenReturn(List.of());
+    when(query.getIsShared()).thenReturn(false);
+    // and
+    NoteEntity entity = new NoteEntity();
+    Note note = mock(Note.class);
+    // and
+    PanacheQuery<NoteEntity> panacheQuery = mock(PanacheQuery.class);
+    PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
+    // and
+    doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
+    when(pagedQuery.list()).thenReturn(List.of(entity));
+
+    when(noteMapper.mapToDomain(entity)).thenReturn(note);
+
+    // when
+    List<Note> notes = noteRepository.search(authorId, query);
+
+    // then
+    assertEquals(1, notes.size());
+    assertEquals(List.of(note), notes);
+    verify(noteRepository)
+        .find("author.id = ?1 and shares is empty order by created desc", authorId);
+  }
+
+  @Test
+  void search_shouldReturnPagedNotes_whenQueryWithSortAsc() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getPage()).thenReturn(0);
+    when(query.getSize()).thenReturn(10);
+    when(query.getSort()).thenReturn(List.of(new FieldSort("title", SortDirection.ASC)));
+    when(query.getIsShared()).thenReturn(null);
+    // and
+    NoteEntity entity = new NoteEntity();
+    Note note = mock(Note.class);
+    // and
+    PanacheQuery<NoteEntity> panacheQuery = mock(PanacheQuery.class);
+    PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
+    // and
+    doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
+    when(pagedQuery.list()).thenReturn(List.of(entity));
+    // and
+    when(noteMapper.mapToDomain(entity)).thenReturn(note);
+
+    // when
+    List<Note> notes = noteRepository.search(authorId, query);
+
+    // then
+    assertEquals(1, notes.size());
+    assertEquals(List.of(note), notes);
+    verify(noteRepository).find("author.id = ?1 order by title", authorId);
+  }
+
+  @Test
+  void search_shouldReturnPagedNotes_whenQueryWithSortNull() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    NotePagedQuery query = mock(NotePagedQuery.class);
+    when(query.getPage()).thenReturn(0);
+    when(query.getSize()).thenReturn(10);
+    when(query.getSort()).thenReturn(null);
+    when(query.getIsShared()).thenReturn(null);
+    // and
+    NoteEntity entity = new NoteEntity();
+    Note note = mock(Note.class);
+    // and
+    PanacheQuery<NoteEntity> panacheQuery = mock(PanacheQuery.class);
+    PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
+    // and
+    doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
+    when(pagedQuery.list()).thenReturn(List.of(entity));
+    // and
+    when(noteMapper.mapToDomain(entity)).thenReturn(note);
+
+    // when
+    List<Note> notes = noteRepository.search(authorId, query);
+
+    // then
+    assertEquals(1, notes.size());
+    assertEquals(List.of(note), notes);
+    verify(noteRepository).find("author.id = ?1 order by created desc", authorId);
   }
 }

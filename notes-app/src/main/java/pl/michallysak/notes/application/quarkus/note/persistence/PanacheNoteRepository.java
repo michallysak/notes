@@ -1,16 +1,21 @@
 package pl.michallysak.notes.application.quarkus.note.persistence;
 
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Typed;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
+import pl.michallysak.notes.note.model.FieldSort;
 import pl.michallysak.notes.note.model.NotePagedQuery;
+import pl.michallysak.notes.note.model.SortDirection;
 import pl.michallysak.notes.note.repository.NoteRepository;
 
 @ApplicationScoped
@@ -39,7 +44,36 @@ public class PanacheNoteRepository
 
   @Override
   public List<Note> search(UUID authorId, NotePagedQuery query) {
-    throw new UnsupportedOperationException("Not supported yet.");
+    PanacheQuery<NoteEntity> panacheQuery = buildQuery(query, authorId);
+    return panacheQuery.page(Page.of(query.getPage(), query.getSize())).list().stream()
+        .map(noteMapper::mapToDomain)
+        .toList();
+  }
+
+  private PanacheQuery<NoteEntity> buildQuery(NotePagedQuery query, UUID authorId) {
+    StringBuilder queryBuilder = new StringBuilder("author.id = ?1");
+    if (Boolean.TRUE.equals(query.getIsShared())) {
+      queryBuilder.append(" and shares is not empty");
+    } else if (Boolean.FALSE.equals(query.getIsShared())) {
+      queryBuilder.append(" and shares is empty");
+    }
+
+    List<FieldSort> fieldSorts = query.getSort();
+    if (fieldSorts != null && !fieldSorts.isEmpty()) {
+      String orderBy =
+          fieldSorts.stream().map(this::formatSortField).collect(Collectors.joining(", "));
+      queryBuilder.append(" order by ").append(orderBy);
+    } else {
+      queryBuilder.append(" order by created desc");
+    }
+
+    String queryText = queryBuilder.toString();
+    return find(queryText, authorId);
+  }
+
+  private String formatSortField(FieldSort fs) {
+    String order = fs.direction() == SortDirection.DESC ? " desc" : "";
+    return fs.field() + order;
   }
 
   @Override
