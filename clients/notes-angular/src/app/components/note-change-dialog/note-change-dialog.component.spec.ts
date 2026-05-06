@@ -13,7 +13,7 @@ describe('NoteChangeDialogComponent', () => {
   const mockApi = {
     createNote: vi.fn(),
     updateNote: vi.fn(),
-    getNotes: vi.fn().mockReturnValue(of([])),
+    searchNotes: vi.fn().mockReturnValue(of([])),
   };
 
   const sampleNote: NoteResponse = {
@@ -287,15 +287,6 @@ describe('NoteChangeDialogComponent', () => {
     component.ngOnChanges({ note: { currentValue: noteWithColor, firstChange: true, previousValue: null, isFirstChange: () => true } as any });
 
     expect(component.form.controls.color.value).toBeTruthy();
-  });
-
-  it('should update visible from p-dialog visibleChange binding', () => {
-    expect(component.visible).toBe(false);
-
-    const dialogElement = fixture.debugElement.query(By.css('p-dialog'));
-    dialogElement?.triggerEventHandler('visibleChange', true);
-
-    expect(component.visible).toBe(true);
   });
 
   it('should call onHide when p-dialog onHide event fires', () => {

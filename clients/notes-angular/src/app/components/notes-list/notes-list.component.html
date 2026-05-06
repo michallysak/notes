@@ -5,7 +5,8 @@
   @if (clickNote(); as clickNote) {
     <app-note-change-dialog [visible]="clickNote.visible"
                             (visibleChange)="noteDialogClose()"
-                            [note]="clickNote.visible ? clickNote.note : null">
+                            [note]="clickNote.visible ? clickNote.note : null"
+                            [readonly]="clickNote.readonly">
     </app-note-change-dialog>
   }
 
@@ -27,7 +28,7 @@
       }
       <div class="grid">
         @for (note of notes.pinned; track note.id) {
-          <app-note-card [note]="note" [isShared]="isShared(note)" (onClick)="noteCardClick($event)"
+          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
                          (pinClick)="onPinClickPropagation($event)"
                          (shareClick)="noteCardShareClick($event)"></app-note-card>
         }
@@ -40,7 +41,7 @@
       }
       <div class="grid">
         @for (note of notes.other; track note.id) {
-          <app-note-card [note]="note" [isShared]="isShared(note)" (onClick)="noteCardClick($event)"
+          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
                          (pinClick)="onPinClickPropagation($event)"
                          (shareClick)="noteCardShareClick($event)"></app-note-card>
         }

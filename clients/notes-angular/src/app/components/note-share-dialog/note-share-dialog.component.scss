@@ -53,6 +53,12 @@
 }
 
 .share {
+  &-row {
+    display: flex;
+  }
+  &-user {
+    flex: 1;
+  }
   &-select {
     min-width: 8rem;
   }

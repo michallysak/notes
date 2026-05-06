@@ -45,8 +45,9 @@ type NoteForm = {
   styleUrls: ['./note-change-dialog.component.scss'],
 })
 export class NoteChangeDialogComponent {
-  @Input({ required: true }) visible = false;
-  @Input({ required: true }) note: NoteResponse | null = null;
+  @Input({ required: true }) visible!: boolean;
+  @Input({ required: true }) note!: NoteResponse | null;
+  @Input({ required: true }) readonly!: boolean;
   @Output() visibleChange = new EventEmitter<boolean>();
 
   form: FormGroup<NoteForm>;
@@ -72,6 +73,9 @@ export class NoteChangeDialogComponent {
     });
 
     this.form.valueChanges.pipe(debounceTime(this.saveDebounce)).subscribe(() => {
+      if (this.readonly) {
+        return;
+      }
       if (!this.form.dirty) {
         return;
       }
@@ -96,6 +100,14 @@ export class NoteChangeDialogComponent {
       const vis = changes['visible'].currentValue as boolean;
       if (vis) {
         this.syncDialogState(this.note);
+      }
+    }
+
+    if (changes['readonly']) {
+      if (this.readonly) {
+        this.form.disable();
+      } else {
+        this.form.enable();
       }
     }
   }
@@ -200,7 +212,7 @@ export class NoteChangeDialogComponent {
   private save() {
     this.notSaved.set(false);
     this.saved.set(false);
-    if (this.form.invalid || this.saving()) {
+    if (this.form.invalid || this.saving() || this.readonly) {
       return;
     }
 

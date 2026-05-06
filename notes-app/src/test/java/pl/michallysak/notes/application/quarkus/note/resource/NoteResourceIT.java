@@ -38,6 +38,7 @@ class NoteResourceIT extends BaseIT {
     NoteResponse noteResponse = response.as(NoteResponse.class);
     assertEquals(createNoteRequest.getTitle(), noteResponse.getTitle());
     assertEquals(createNoteRequest.getContent(), noteResponse.getContent());
+    assertEquals(getUserId(token), noteResponse.getAuthorId());
     assertNotNull(noteResponse.getId());
     assertNotNull(noteResponse.getCreated());
     assertNull(noteResponse.getUpdated());
@@ -84,6 +85,7 @@ class NoteResourceIT extends BaseIT {
     // and
     NoteResponse noteResponse = noteResponses[0];
     assertEquals(noteId, noteResponse.getId().toString());
+    assertEquals(getUserId(token), noteResponse.getAuthorId());
     assertEquals(createNoteRequest.getTitle(), noteResponse.getTitle());
     assertEquals(createNoteRequest.getContent(), noteResponse.getContent());
     assertNotNull(noteResponse.getCreated());
@@ -130,6 +132,7 @@ class NoteResourceIT extends BaseIT {
     // and
     NoteResponse note = response.as(NoteResponse.class);
     assertEquals(noteId, note.getId().toString());
+    assertEquals(getUserId(token), note.getAuthorId());
     assertEquals(createNoteRequest.getTitle(), note.getTitle());
     assertEquals(createNoteRequest.getContent(), note.getContent());
     assertNotNull(note.getCreated());
@@ -177,6 +180,7 @@ class NoteResourceIT extends BaseIT {
     response.then().statusCode(200);
     // and
     NoteResponse noteResponse = response.as(NoteResponse.class);
+    assertEquals(getUserId(token), noteResponse.getAuthorId());
     assertEquals(noteUpdateRequest.getTitle(), noteResponse.getTitle());
     assertEquals(noteUpdateRequest.getContent(), noteResponse.getContent());
     assertNotNull(noteResponse.getId());

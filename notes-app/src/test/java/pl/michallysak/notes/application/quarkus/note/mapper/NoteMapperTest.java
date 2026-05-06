@@ -128,6 +128,7 @@ class NoteMapperTest {
     NoteResponse noteResponse = noteMapper.mapToNoteResponse(value);
     // then
     assertEquals(value.id(), noteResponse.getId());
+    assertEquals(value.authorId(), noteResponse.getAuthorId());
     assertEquals(value.title(), noteResponse.getTitle());
     assertEquals(value.content(), noteResponse.getContent());
     assertEquals(value.created(), noteResponse.getCreated());

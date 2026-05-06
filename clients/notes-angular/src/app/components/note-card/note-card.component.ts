@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, effect, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -10,6 +10,9 @@ import { MenuItem } from 'primeng/api';
 import { Note } from '../../types/note';
 import { NoteService } from '../../services/note/note.service';
 import { mixHexWithBase } from '../../utils/color-contrast.util';
+import { AuthService } from '../../services/auth/auth.service';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { UserResponse } from '@notes/notes_service';
 
 @Component({
   selector: 'app-note-card',
@@ -28,13 +31,27 @@ import { mixHexWithBase } from '../../utils/color-contrast.util';
 })
 export class NoteCardComponent {
   @Input({ required: true }) note!: Note;
-  @Input() isShared = false;
   @Output() onClick = new EventEmitter<Note>();
   @Output() pinClick = new EventEmitter<Note>();
   @Output() shareClick = new EventEmitter<Note>();
   items: MenuItem[] = [];
 
-  constructor(private translate: TranslateService, private noteService: NoteService) {}
+  isAuthor = signal(false);
+  currentUser: Signal<UserResponse | null | undefined>;
+
+  constructor(
+    private translate: TranslateService,
+    private noteService: NoteService,
+    private authService: AuthService,
+  ) {
+    this.currentUser = toSignal(this.authService.currentUser$);
+
+    effect(() => {
+      const user = this.currentUser();
+      this.isAuthor.set(!!(user && user.id === this.note.authorId));
+    });
+  }
+
 
   ngOnInit() {
     this.items = [

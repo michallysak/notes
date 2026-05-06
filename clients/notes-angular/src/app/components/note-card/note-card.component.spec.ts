@@ -1,33 +1,40 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideTranslateService } from '@ngx-translate/core';
-import { EMPTY, of, throwError } from 'rxjs';
+import { BehaviorSubject, EMPTY, of, throwError } from 'rxjs';
 import { NoteCardComponent } from './note-card.component';
 import { NoteEventsService } from '../../services/note/note-events.service';
 import { NoteService } from '../../services/note/note.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { Note } from '../../types/note';
 
 describe('NoteCardComponent', () => {
   let component: NoteCardComponent;
   let fixture: ComponentFixture<NoteCardComponent>;
   const noteService = {
-    deleteNote: vi.fn().mockReturnValue(of(undefined)),
+    deleteNote: vi.fn(),
+  };
+  const authService = {
+    currentUser$: new BehaviorSubject<{ id: string } | null>({ id: 'auth-1' }),
   };
 
-  const createNote = (overrides: Partial<Note> = {}): Note =>
-    ({
-      id: '5',
-      title: 'My note',
-      content: 'Some content',
-      pinned: false,
-      created: new Date('2026-01-01T10:00:00Z'),
-      updated: undefined,
-      ...overrides,
-    });
+  const createNote = (overrides: Partial<Note> = {}): Note => ({
+    id: '1',
+    authorId: 'auth-1',
+    title: 'Title',
+    content: 'Content',
+    created: new Date().toISOString() as any,
+    updated: new Date().toISOString() as any,
+    pinned: false,
+    shared: false,
+    canEdit: true,
+    ...overrides,
+  });
 
   beforeEach(async () => {
     noteService.deleteNote.mockReset();
     noteService.deleteNote.mockReturnValue(of(undefined));
+    authService.currentUser$.next({ id: 'auth-1' });
 
     await TestBed.configureTestingModule({
       imports: [NoteCardComponent],
@@ -35,13 +42,15 @@ describe('NoteCardComponent', () => {
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
         { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
         { provide: NoteService, useValue: noteService },
+        { provide: AuthService, useValue: authService },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(NoteCardComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('note', createNote());
+    fixture.componentRef.setInput('note', createNote({ title: 'My note', content: 'Some content', id: '5', authorId: 'auth-1' }));
     fixture.detectChanges();
+    await fixture.whenStable();
   });
 
   const queryElement = (selector: string) => fixture.debugElement.query(By.css(selector));
@@ -54,18 +63,42 @@ describe('NoteCardComponent', () => {
     expect(queryElement('app-note-change-datetime')).toBeTruthy();
   });
 
-  it('renders shared badge when isShared is true', () => {
-    fixture.componentRef.setInput('isShared', true);
+  it('renders shared badge when shared is true', async () => {
+    fixture.componentRef.setInput('note', createNote({ shared: true }));
     fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(queryElement('.shared-badge')).toBeTruthy();
   });
 
-  it('does not render shared badge when isShared is false', () => {
-    fixture.componentRef.setInput('isShared', false);
+  it('does not render shared badge when shared is false', async () => {
+    fixture.componentRef.setInput('note', createNote({ shared: false }));
     fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(queryElement('.shared-badge')).toBeFalsy();
+  });
+
+  it('renders controls and menu when isAuthor is true', async () => {
+    const note = createNote({ authorId: 'auth-1' });
+    fixture.componentRef.setInput('note', note);
+    authService.currentUser$.next({ id: 'auth-1' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(queryElement('.controls')).toBeTruthy();
+    expect(queryElement('p-menu')).toBeTruthy();
+  });
+
+  it('does not render controls and menu when isAuthor is false', async () => {
+    const note = createNote({ authorId: 'auth-1' });
+    fixture.componentRef.setInput('note', note);
+    authService.currentUser$.next({ id: 'other-user' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(queryElement('.controls')).toBeFalsy();
+    expect(queryElement('p-menu')).toBeFalsy();
   });
 
   it('should initialize menu items on init', () => {
@@ -85,28 +118,30 @@ describe('NoteCardComponent', () => {
   it('should call handleCardClick on card click', () => {
     const clickSpy = vi.spyOn(component, 'handleCardClick');
 
-    queryElement('p-card').triggerEventHandler('click', {});
+    const cardDe = queryElement('p-card');
+    cardDe.triggerEventHandler('click', new MouseEvent('click'));
 
     expect(clickSpy).toHaveBeenCalled();
   });
 
   it('should call onPinClick from pin button click binding', () => {
     const pinClickSpy = vi.spyOn(component, 'onPinClick');
-    const event = { stopPropagation: vi.fn() } as unknown as Event;
+    const event = new MouseEvent('click');
+    vi.spyOn(event, 'stopPropagation');
 
-    fixture.debugElement.queryAll(By.css('p-button'))[0].triggerEventHandler('onClick', event);
+    component.onPinClick(event);
 
     expect(pinClickSpy).toHaveBeenCalledWith(event);
   });
 
   it('should call onMenuClick from menu button click binding', () => {
     const menuClickSpy = vi.spyOn(component, 'onMenuClick');
-    const event = { stopPropagation: vi.fn() } as unknown as Event;
+    const event = new MouseEvent('click');
+    const menu = { toggle: vi.fn() };
 
-    fixture.debugElement.queryAll(By.css('p-button'))[1].triggerEventHandler('onClick', event);
+    component.onMenuClick(event, menu);
 
-    expect(menuClickSpy).toHaveBeenCalled();
-    expect(menuClickSpy.mock.calls[0][0]).toBe(event);
+    expect(menuClickSpy).toHaveBeenCalledWith(event, menu);
   });
 
   it('should stop event propagation on pin click', () => {
@@ -125,6 +160,40 @@ describe('NoteCardComponent', () => {
 
     expect(stopPropagation).toHaveBeenCalled();
     expect(menu.toggle).toHaveBeenCalledWith(event);
+  });
+
+  it('calls handleCardClick when the p-card is clicked', () => {
+    const handleSpy = vi.spyOn(component, 'handleCardClick');
+    queryElement('p-card').triggerEventHandler('click', new MouseEvent('click'));
+    expect(handleSpy).toHaveBeenCalled();
+  });
+
+  it('calls onPinClick when the pin button is clicked', async () => {
+    const note = createNote({ authorId: 'auth-1' });
+    fixture.componentRef.setInput('note', note);
+    authService.currentUser$.next({ id: 'auth-1' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const onPinSpy = vi.spyOn(component, 'onPinClick');
+    const pinBtn = fixture.debugElement.query(By.css('div.controls p-button:first-child'));
+    expect(pinBtn).toBeTruthy();
+    pinBtn.triggerEventHandler('onClick', new MouseEvent('click'));
+    expect(onPinSpy).toHaveBeenCalled();
+  });
+
+  it('calls onMenuClick when the menu button is clicked', async () => {
+    const note = createNote({ authorId: 'auth-1' });
+    fixture.componentRef.setInput('note', note);
+    authService.currentUser$.next({ id: 'auth-1' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const onMenuSpy = vi.spyOn(component, 'onMenuClick');
+    const menuBtn = fixture.debugElement.query(By.css('div.controls p-button:last-child'));
+    expect(menuBtn).toBeTruthy();
+    menuBtn.triggerEventHandler('onClick', new MouseEvent('click'));
+    expect(onMenuSpy).toHaveBeenCalled();
   });
 
   it('should call noteService.deleteNote from menu item command', () => {

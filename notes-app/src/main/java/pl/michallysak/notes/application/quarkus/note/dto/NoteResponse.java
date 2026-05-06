@@ -20,6 +20,12 @@ public class NoteResponse {
       examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
   private UUID id;
 
+  @Schema(
+      required = true,
+      description = "Author id",
+      examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
+  private UUID authorId;
+
   @Schema(required = true, description = "Title of the note", examples = "Shopping List")
   private String title;
 

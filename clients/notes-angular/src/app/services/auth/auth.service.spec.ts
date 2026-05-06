@@ -141,6 +141,14 @@ describe('AuthService', () => {
       expect(latestUser).toEqual(user);
     });
 
+    it('returns correctly from getCurrentUserValue', () => {
+      const service = createService();
+      const user = { id: 'u1', email: 'u1@ex.com' } as any;
+      service['currentUserSubject'].next(user);
+
+      expect(service.getCurrentUserValue()).toEqual(user);
+    });
+
     it('emits logged state transitions during authentication', async () => {
       const { request, service } = testAuthenticationFlow('login');
       const states: boolean[] = [];
@@ -154,5 +162,4 @@ describe('AuthService', () => {
     });
   });
 });
-
 

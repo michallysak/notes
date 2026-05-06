@@ -8,15 +8,25 @@ import { of } from 'rxjs';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideRouter } from '@angular/router';
 import { NoteEventsService } from '../../services/note/note-events.service';
+import { NoteService } from '../../services/note/note.service';
 
 describe('NotesPage', () => {
   let component: NotesPage;
   let fixture: ComponentFixture<NotesPage>;
-  let loggedSubject: BehaviorSubject<boolean>;
 
   const authService = {
     logged$: new BehaviorSubject(false),
+    currentUser$: new BehaviorSubject(null),
     login: vi.fn(),
+  };
+
+  const noteService = {
+    notes$: of([]),
+    getCurrentUserValue: vi.fn(),
+    refreshPermissions: vi.fn(),
+    updateNote: vi.fn(),
+    createNote: vi.fn(),
+    deleteNote: vi.fn(),
   };
 
   const notesApiService = {
@@ -24,18 +34,19 @@ describe('NotesPage', () => {
   };
 
   beforeEach(async () => {
-    loggedSubject = new BehaviorSubject(false);
-    authService.logged$ = loggedSubject;
+    noteService.getCurrentUserValue.mockReturnValue({ id: 'u1' });
+    noteService.notes$ = of([]);
+
+    notesApiService.getNotes.mockClear();
+    notesApiService.getNotes.mockReturnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [NotesPage],
       providers: [
         provideRouter([]),
-        provideTranslateService({
-          lang: 'en',
-          fallbackLang: 'en',
-        }),
+        provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
         { provide: AuthService, useValue: authService },
+        { provide: NoteService, useValue: noteService },
         { provide: NotesAPIService, useValue: notesApiService },
         { provide: NoteEventsService, useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } },
       ],
@@ -60,7 +71,7 @@ describe('NotesPage', () => {
   });
 
   it('should show notes list when user is logged in', () => {
-    loggedSubject.next(true);
+    authService.logged$.next(true);
     fixture.detectChanges();
 
     expect(component.logged()).toBe(true);

@@ -46,6 +46,10 @@ export class AuthService {
     this.currentUserSubject.next(null);
   }
 
+  public getCurrentUserValue() {
+    return this.currentUserSubject.value;
+  }
+
   login(loginUserRequest: LoginUserRequest): Observable<User> {
     return this.authenticateWithToken(this.usersApi.loginUser(loginUserRequest));
   }
@@ -64,9 +68,3 @@ export class AuthService {
     );
   }
 }
-
-
-
-
-
-

@@ -37,7 +37,7 @@
     </div>
 
     <form [formGroup]="form">
-      @if (activeNote()) {
+      @if (activeNote() && !readonly) {
         <div class="note-color-row">
           <label class="note-color-label" for="note-color">{{ 'NOTES.DIALOG.COLOR' | translate }}</label>
           <div class="note-color-controls">
@@ -47,6 +47,7 @@
               type="color"
               [value]="colorPickerValue()"
               (input)="onColorInput($event)"
+              [disabled]="readonly"
             />
             @if (form.controls.color.value) {
               <p-button type="button" variant="text" size="small" [label]="'NOTES.DIALOG.CLEAR_COLOR' | translate"
@@ -68,6 +69,7 @@
           formControlName="title"
           autocomplete="off"
           fluid
+          [readonly]="readonly"
         />
         <label
           for="title"
@@ -98,6 +100,7 @@
               [autoResize]="true"
               formControlName="content"
               fluid
+              [readonly]="readonly"
             ></textarea>
         <label
           for="content"

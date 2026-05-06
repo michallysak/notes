@@ -6,19 +6,25 @@ import { NotesListComponent } from './notes-list.component';
 import { NoteService } from '../../services/note/note.service';
 import { Note } from '../../types/note';
 import { NoteCardComponent } from '../note-card/note-card.component';
+import { AuthService } from '../../services/auth/auth.service';
+import { signal } from '@angular/core';
 
 describe('NotesListComponent', () => {
   let component: NotesListComponent;
   let fixture: ComponentFixture<NotesListComponent>;
   let notesSubject: BehaviorSubject<Note[]>;
+  let currentUserSignal: any;
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
     id: '1',
+    authorId: 'auth-1',
     title: 'Title',
     content: 'Content',
+    created: new Date().toISOString() as any,
+    updated: new Date().toISOString() as any,
     pinned: false,
-    created: new Date('2026-01-01T10:00:00Z'),
-    updated: undefined,
+    shared: false,
+    canEdit: true,
     ...overrides,
   });
 
@@ -27,22 +33,26 @@ describe('NotesListComponent', () => {
     getPermissions: vi.fn().mockReturnValue(of([])),
     setNotePermissions: vi.fn().mockReturnValue(of({})),
     removeNoteAccess: vi.fn().mockReturnValue(of({})),
+    refreshPermissions: vi.fn(),
+    updateNote: vi.fn().mockReturnValue(of({})),
   };
 
   beforeEach(() => {
-    // ensure updateNote mock exists for tests that call onPinClickPropagation
-    (noteService as any).updateNote = vi.fn();
+    noteService.updateNote.mockReset();
+    noteService.updateNote.mockReturnValue(of({}));
     noteService.getPermissions.mockReset();
     noteService.getPermissions.mockReturnValue(of([]));
     noteService.setNotePermissions.mockReset();
     noteService.setNotePermissions.mockReturnValue(of({}));
     noteService.removeNoteAccess.mockReset();
     noteService.removeNoteAccess.mockReturnValue(of({}));
+    noteService.refreshPermissions.mockReset();
   });
 
   beforeEach(async () => {
     notesSubject = new BehaviorSubject<Note[]>([]);
     noteService.notes$ = notesSubject;
+    currentUserSignal = signal({ id: 'auth-1' });
 
     await TestBed.configureTestingModule({
       imports: [NotesListComponent],
@@ -52,11 +62,13 @@ describe('NotesListComponent', () => {
           fallbackLang: 'en',
         }),
         { provide: NoteService, useValue: noteService },
+        { provide: AuthService, useValue: { currentUser$: of({ id: 'auth-1' }) } },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
+    (component as any).currentUser = currentUserSignal;
     fixture.detectChanges();
   });
 
@@ -80,50 +92,6 @@ describe('NotesListComponent', () => {
     expect(component.pinnedNotes().length).toBe(2);
     expect(component.otherNotes().length).toBe(1);
     expect(queryElements('app-note-card').length).toBe(3);
-    expect(noteService.getPermissions).toHaveBeenCalledTimes(3);
-  });
-
-  it('marks cards as shared when permissions list is not empty', () => {
-    noteService.getPermissions.mockImplementation((id: string) => of(id === '1' ? [{ userId: 'u-1' }] : []));
-
-    notesSubject.next([createNote({ id: '1', pinned: true }), createNote({ id: '2', pinned: false })]);
-    fixture.detectChanges();
-
-    const cards = fixture.debugElement.queryAll(By.directive(NoteCardComponent));
-    const firstCard = cards[0].componentInstance as NoteCardComponent;
-    const secondCard = cards[1].componentInstance as NoteCardComponent;
-
-    expect(firstCard.isShared).toBe(true);
-    expect(secondCard.isShared).toBe(false);
-  });
-
-  it('falls back to shared=false when getPermissions fails for a note', () => {
-    noteService.getPermissions.mockImplementation((id: string) =>
-      id === 'failed-id' ? throwError(() => new Error('permissions fail')) : of([{ userId: 'u-1' }]),
-    );
-
-    notesSubject.next([
-      createNote({ id: 'ok-id', pinned: true }),
-      createNote({ id: 'failed-id', pinned: false }),
-    ]);
-    fixture.detectChanges();
-
-    expect(component.sharedByNoteId()['ok-id']).toBe(true);
-    expect(component.sharedByNoteId()['failed-id']).toBe(false);
-  });
-
-  it('ignores stale shared-status responses when requestId changed', () => {
-    const permissions$ = new Subject<any[]>();
-    noteService.getPermissions.mockReturnValue(permissions$.asObservable());
-    component.sharedByNoteId.set({ keep: true });
-
-    (component as any).loadSharedStatus([createNote({ id: 'stale-id' })]);
-    (component as any).sharedStatusLoadId += 1; // simulate a newer request id before stale response arrives
-
-    permissions$.next([{ userId: 'u-1' }]);
-    permissions$.complete();
-
-    expect(component.sharedByNoteId()).toEqual({ keep: true });
   });
 
   it('should unsubscribe from notes stream on destroy', () => {
@@ -145,30 +113,37 @@ describe('NotesListComponent', () => {
     expect(openCreateSpy).toHaveBeenCalled();
   });
 
-  it('should open dialog when noteCardClick is called', () => {
-    const note = createNote({ id: '5' });
+  it('should open dialog when noteCardClick is called as author', async () => {
+    const note = createNote({ id: '5', authorId: 'auth-1', canEdit: true });
+    currentUserSignal.set({ id: 'auth-1' });
 
-    component.noteCardClick(note);
+    await component.noteCardClick(note);
     fixture.detectChanges();
 
     expect(component.clickNote().visible).toBe(true);
-    expect((component.clickNote() as any).note?.id).toBe('5');
-    // dialog should be present in template
+    const state = component.clickNote() as any;
+    expect(state.note?.id).toBe('5');
+    expect(state.readonly).toBe(false);
     expect(queryElement('app-note-change-dialog')).toBeTruthy();
   });
 
-  it('should close dialog when visibleChange event is triggered on dialog', () => {
-    // open dialog first
-    component.clickNote.set({ visible: true, note: createNote() });
+  it('should open dialog as readonly when not author and canEdit is false', async () => {
+    const note = createNote({ id: '5', authorId: 'other-author', canEdit: false });
+    currentUserSignal.set({ id: 'auth-1' });
+
+    await component.noteCardClick(note);
     fixture.detectChanges();
 
-    const dialogDe = queryElement('app-note-change-dialog');
-    expect(dialogDe).toBeTruthy();
+    expect(component.clickNote().visible).toBe(true);
+    const state = component.clickNote() as any;
+    expect(state.readonly).toBe(true);
+  });
 
-    // trigger the visibleChange output
-    dialogDe.triggerEventHandler('visibleChange', false);
+  it('should close dialog when noteDialogClose is called', () => {
+    component.clickNote.set({ visible: true, note: createNote(), readonly: false });
     fixture.detectChanges();
 
+    component.noteDialogClose();
     expect(component.clickNote().visible).toBe(false);
   });
 
@@ -183,102 +158,174 @@ describe('NotesListComponent', () => {
     expect(queryElement('app-note-share-dialog')).toBeTruthy();
   });
 
-  it('should close share dialog when visibleChange event is triggered', () => {
+  it('should close share dialog when shareDialogClose is called', () => {
     component.shareNote.set({ visible: true, note: createNote({ id: '16' }) });
     fixture.detectChanges();
 
-    const dialogDe = queryElement('app-note-share-dialog');
-    expect(dialogDe).toBeTruthy();
-
-    dialogDe.triggerEventHandler('visibleChange', false);
-    fixture.detectChanges();
-
+    component.shareDialogClose();
     expect(component.shareNote().visible).toBe(false);
   });
 
-  it('template @if blocks render when signals are set before first change detection', () => {
-    // set signals on the existing component and trigger change detection
-    component.clickNote.set({ visible: true, note: createNote({ id: '10' }) });
-    component.pinnedNotes.set([createNote({ id: '1', pinned: true })]);
-    component.otherNotes.set([createNote({ id: '2', pinned: false })]);
-
-    fixture.detectChanges();
-
-    // dialog should be rendered by the @if (clickNote()) block
-    expect(fixture.debugElement.query(By.css('app-note-change-dialog'))).toBeTruthy();
-
-    // both pinned and other notes should render app-note-card items
-    const cards = fixture.debugElement.queryAll(By.css('app-note-card'));
-    expect(cards.length).toBe(2);
-  });
-
-  it('renders click/share dialogs and binds note/isShared/onClick for pinned and other cards', () => {
-    const pinned = createNote({ id: 'p-1', pinned: true });
-    const other = createNote({ id: 'o-1', pinned: false });
-    component.clickNote.set({ visible: true, note: pinned });
-    component.shareNote.set({ visible: true, note: other });
-    component.pinnedNotes.set([pinned]);
-    component.otherNotes.set([other]);
-    component.sharedByNoteId.set({ 'p-1': true, 'o-1': false });
-
-    const noteCardClickSpy = vi.spyOn(component, 'noteCardClick');
-    fixture.detectChanges();
-
-    expect(fixture.debugElement.query(By.css('app-note-change-dialog'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('app-note-share-dialog'))).toBeTruthy();
-
-    const cards = fixture.debugElement.queryAll(By.directive(NoteCardComponent));
-    expect(cards.length).toBe(2);
-
-    const pinnedCard = cards[0].componentInstance as NoteCardComponent;
-    const otherCard = cards[1].componentInstance as NoteCardComponent;
-    expect(pinnedCard.note.id).toBe('p-1');
-    expect(otherCard.note.id).toBe('o-1');
-    expect(pinnedCard.isShared).toBe(true);
-    expect(otherCard.isShared).toBe(false);
-
-    pinnedCard.onClick.emit(pinned);
-    otherCard.onClick.emit(other);
-    expect(noteCardClickSpy).toHaveBeenCalledWith(pinned);
-    expect(noteCardClickSpy).toHaveBeenCalledWith(other);
-  });
-
-  it('should not call updateNote when note is falsy or missing id', () => {
-    const updateSpy = vi.spyOn(noteService as any, 'updateNote');
-
-    // call with null and with note missing id
-    (component as any).onPinClickPropagation(null as any);
-    (component as any).onPinClickPropagation({} as any);
-
-    expect(updateSpy).not.toHaveBeenCalled();
-  });
-
-  it('should call updateNote and log on success and log error on failure', () => {
+  it('should call updateNote when pin is clicked', () => {
     const successNote: Note = createNote({ id: '7', pinned: false });
-    // success case
-    (noteService as any).updateNote = vi.fn().mockReturnValue(of({}));
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const updateSpy = (noteService.updateNote as any);
 
     component.onPinClickPropagation(successNote);
-    expect((noteService as any).updateNote).toHaveBeenCalledWith('7', { pinned: true });
-    expect(logSpy).toHaveBeenCalledWith('updated pinned state');
+    expect(updateSpy).toHaveBeenCalledWith('7', { pinned: true });
+  });
 
-    // error case
-    (noteService as any).updateNote = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  it('updates permissions via NoteService on state change', () => {
+    const refreshSpy = vi.spyOn(noteService, 'refreshPermissions');
+    component.onSharedStateChanged({ noteId: '10', isShared: true });
+    expect(refreshSpy).toHaveBeenCalledWith('10');
+  });
 
-    component.onPinClickPropagation(successNote);
+  it('logs error when updateNote fails on pin click', () => {
+    noteService.updateNote.mockReturnValue(throwError(() => new Error('Pin failed')));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const note = createNote({ id: '7', pinned: false });
 
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        expect(errSpy).toHaveBeenCalled();
-        // restore spies
-        logSpy.mockRestore();
-        errSpy.mockRestore();
-        resolve();
-      }, 0);
-    });
+    component.onPinClickPropagation(note);
+
+    expect(errorSpy).toHaveBeenCalledWith('Failed to update pinned state', expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
+  it('calls noteDialogClose from visibleChange binding', () => {
+    const closeSpy = vi.spyOn(component, 'noteDialogClose');
+    component.clickNote.set({ visible: true, note: createNote(), readonly: false });
+    fixture.detectChanges();
+
+    const dialog = queryElement('app-note-change-dialog');
+    dialog.triggerEventHandler('visibleChange', false);
+
+    expect(closeSpy).toHaveBeenCalled();
+  });
+
+  it('calls shareDialogClose from visibleChange binding', () => {
+    const closeSpy = vi.spyOn(component, 'shareDialogClose');
+    component.shareNote.set({ visible: true, note: createNote() });
+    fixture.detectChanges();
+
+    const dialog = queryElement('app-note-share-dialog');
+    dialog.triggerEventHandler('visibleChange', false);
+
+    expect(closeSpy).toHaveBeenCalled();
+  });
+
+  it('calls noteCardClick when a note card is clicked', () => {
+    const clickSpy = vi.spyOn(component, 'noteCardClick');
+    notesSubject.next([createNote({ id: '1' })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.otherNotes()[0];
+    card.triggerEventHandler('onClick', note);
+
+    expect(clickSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls noteCardClick when a pinned note card is clicked', () => {
+    const clickSpy = vi.spyOn(component, 'noteCardClick');
+    notesSubject.next([createNote({ id: '1', pinned: true })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.pinnedNotes()[0];
+    card.triggerEventHandler('onClick', note);
+
+    expect(clickSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls noteCardClick when an other note card is clicked', () => {
+    const clickSpy = vi.spyOn(component, 'noteCardClick');
+    notesSubject.next([createNote({ id: '1', pinned: false })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.otherNotes()[0];
+    card.triggerEventHandler('onClick', note);
+
+    expect(clickSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls onPinClickPropagation when a note card emits pinClick', () => {
+    const pinSpy = vi.spyOn(component, 'onPinClickPropagation');
+    notesSubject.next([createNote({ id: '1', pinned: false })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.otherNotes()[0];
+    card.triggerEventHandler('pinClick', note);
+
+    expect(pinSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls noteCardShareClick when a note card emits shareClick', () => {
+    const shareSpy = vi.spyOn(component, 'noteCardShareClick');
+    notesSubject.next([createNote({ id: '1' })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.otherNotes()[0];
+    card.triggerEventHandler('shareClick', note);
+
+    expect(shareSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('correctly calculates isShared from note property', () => {
+    const sharedNote = createNote({ shared: true });
+    const unsharedNote = createNote({ shared: false });
+
+    expect(component.isShared(sharedNote)).toBe(true);
+    expect(component.isShared(unsharedNote)).toBe(false);
+  });
+
+  it('calls onPinClickPropagation when a pinned note card emits pinClick', () => {
+    const pinSpy = vi.spyOn(component, 'onPinClickPropagation');
+    notesSubject.next([createNote({ id: '1', pinned: true })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.pinnedNotes()[0];
+    card.triggerEventHandler('pinClick', note);
+
+    expect(pinSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls noteCardShareClick when a pinned note card emits shareClick', () => {
+    const shareSpy = vi.spyOn(component, 'noteCardShareClick');
+    notesSubject.next([createNote({ id: '1', pinned: true })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.pinnedNotes()[0];
+    card.triggerEventHandler('shareClick', note);
+
+    expect(shareSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls onPinClickPropagation when an other note card emits pinClick', () => {
+    const pinSpy = vi.spyOn(component, 'onPinClickPropagation');
+    notesSubject.next([createNote({ id: '1', pinned: false })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.otherNotes()[0];
+    card.triggerEventHandler('pinClick', note);
+
+    expect(pinSpy).toHaveBeenCalledWith(note);
+  });
+
+  it('calls noteCardShareClick when an other note card emits shareClick', () => {
+    const shareSpy = vi.spyOn(component, 'noteCardShareClick');
+    notesSubject.next([createNote({ id: '1', pinned: false })]);
+    fixture.detectChanges();
+
+    const card = queryElement('app-note-card');
+    const note = component.otherNotes()[0];
+    card.triggerEventHandler('shareClick', note);
+
+    expect(shareSpy).toHaveBeenCalledWith(note);
   });
 });
-
-

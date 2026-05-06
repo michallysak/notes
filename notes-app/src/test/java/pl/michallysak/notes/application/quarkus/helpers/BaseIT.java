@@ -5,6 +5,7 @@ import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.resource.NoteResourceRestTestClient;
@@ -55,5 +56,11 @@ public class BaseIT {
         .statusCode(201)
         .extract()
         .path("id");
+  }
+
+  protected UUID getUserId(String token) {
+    String id =
+        UserResourceRestTestClient.auth(token).me().then().statusCode(200).extract().path("id");
+    return UUID.fromString(id);
   }
 }

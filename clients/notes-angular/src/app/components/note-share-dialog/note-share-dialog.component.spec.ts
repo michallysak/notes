@@ -20,11 +20,14 @@ describe('NoteShareDialogComponent', () => {
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
     id: '1',
+    authorId: 'auth-1',
     title: 'Title',
     content: 'Content',
+    created: new Date().toISOString() as any,
+    updated: new Date().toISOString() as any,
     pinned: false,
-    created: new Date('2026-01-01T10:00:00Z'),
-    updated: undefined,
+    shared: false,
+    canEdit: true,
     ...overrides,
   });
 
@@ -407,3 +410,5 @@ describe('NoteShareDialogComponent', () => {
     expect(onRemoveSpy).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u-remove' }));
   });
 });
+
+
