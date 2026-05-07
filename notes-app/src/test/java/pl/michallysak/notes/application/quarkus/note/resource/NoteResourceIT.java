@@ -434,7 +434,7 @@ class NoteResourceIT extends BaseIT {
     // given
     String ownerToken = createUser(EMAIL_1);
     createUser(EMAIL_2);
-    createUser("test3@example.com");
+    createUser(EMAIL_3);
     NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
     String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
     // and
@@ -444,7 +444,7 @@ class NoteResourceIT extends BaseIT {
     // and
     SetNotePermissionsRequest request2 =
         createSetNotePermissionsRequestBuilder()
-            .email("test3@example.com")
+            .email(EMAIL_3)
             .permissions(Set.of(NotePermission.READ))
             .build();
     ownerClient.setPermissions(noteId, toJsonString(request2)).then().statusCode(204);
@@ -456,7 +456,7 @@ class NoteResourceIT extends BaseIT {
     NoteShareResponse[] permissions = response.as(NoteShareResponse[].class);
     assertEquals(2, permissions.length);
     assertTrue(Arrays.stream(permissions).anyMatch(p -> EMAIL_2.equals(p.getEmail())));
-    assertTrue(Arrays.stream(permissions).anyMatch(p -> "test3@example.com".equals(p.getEmail())));
+    assertTrue(Arrays.stream(permissions).anyMatch(p -> EMAIL_3.equals(p.getEmail())));
   }
 
   @Test
@@ -480,5 +480,49 @@ class NoteResourceIT extends BaseIT {
     Response response = noteResourceTestClient.getPermissions(randomId);
     // then
     response.then().statusCode(401);
+  }
+
+  @Test
+  void getPermissions_shouldReturnOnlyOwnPermission_whenSharedUser() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String sharedUserToken = createUser(EMAIL_2);
+    createUser(EMAIL_3);
+    NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
+    NoteResourceRestTestClient sharedUserClient = NoteResourceRestTestClient.auth(sharedUserToken);
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    // and share with user2 and user3
+    SetNotePermissionsRequest request1 =
+        createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
+    ownerClient.setPermissions(noteId, toJsonString(request1)).then().statusCode(204);
+    SetNotePermissionsRequest request2 =
+        createSetNotePermissionsRequestBuilder()
+            .email(EMAIL_3)
+            .permissions(Set.of(NotePermission.READ))
+            .build();
+    ownerClient.setPermissions(noteId, toJsonString(request2)).then().statusCode(204);
+    // when shared user gets permissions
+    Response response = sharedUserClient.getPermissions(noteId);
+    // then
+    response.then().statusCode(200);
+    NoteShareResponse[] permissions = response.as(NoteShareResponse[].class);
+    assertEquals(1, permissions.length);
+    assertEquals(EMAIL_2, permissions[0].getEmail());
+    assertTrue(permissions[0].getPermissions().contains(NotePermission.READ));
+  }
+
+  @Test
+  void getPermissions_shouldReturn403_whenUserNotSharedAndNotAuthor() {
+    // given
+    String ownerToken = createUser(EMAIL_1);
+    String nonSharedUserToken = createUser(EMAIL_2);
+    NoteResourceRestTestClient ownerClient = NoteResourceRestTestClient.auth(ownerToken);
+    NoteResourceRestTestClient nonSharedClient =
+        NoteResourceRestTestClient.auth(nonSharedUserToken);
+    String noteId = createNote(ownerToken, getCreateNoteRequestBuilder().build());
+    // when non-shared user tries to get permissions
+    Response response = nonSharedClient.getPermissions(noteId);
+    // then
+    response.then().statusCode(403);
   }
 }

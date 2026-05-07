@@ -2,6 +2,7 @@ package pl.michallysak.notes.note.service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.note.domain.Note;
@@ -26,7 +27,7 @@ public class NoteServiceImpl implements NoteService {
   public NoteValue createNote(CreateNote createNote) {
     Note note = new NoteImpl(createNote, noteValidator);
     noteRepository.saveNote(note);
-    NoteValue noteValue = NoteValue.from(note);
+    NoteValue noteValue = NoteValue.from(note, note.getAuthorId());
     NoteCreatedEvent noteCreatedEvent = NoteCreatedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteCreatedEvent));
     return noteValue;
@@ -36,15 +37,17 @@ public class NoteServiceImpl implements NoteService {
   public List<NoteValue> getCreatedNotes(UUID authorId) {
     return noteRepository.findNotesWithAuthor(authorId).stream()
         .peek(note -> note.read(authorId))
-        .map(NoteValue::from)
+        .map(NoteValue::fromAuthor)
         .toList();
   }
 
   @Override
-  public Paged<NoteValue> search(UUID authorId, NotePagedQuery query) {
+  public Paged<NoteValue> search(UUID actingUserId, NotePagedQuery query) {
     noteValidator.validateNoteQuery(query);
     List<NoteValue> data =
-        noteRepository.search(authorId, query).stream().map(NoteValue::from).toList();
+        noteRepository.search(actingUserId, query).stream()
+            .map(note -> NoteValue.from(note, actingUserId))
+            .toList();
     return new Paged<>(data, query.getPage(), query.getSize());
   }
 
@@ -52,7 +55,7 @@ public class NoteServiceImpl implements NoteService {
   public NoteValue getCreatedNote(UUID noteId, UUID authorId) throws NoteNotFoundException {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.read(authorId);
-    return NoteValue.from(note);
+    return NoteValue.fromAuthor(note);
   }
 
   @Override
@@ -60,7 +63,7 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.update(noteUpdate);
     noteRepository.saveNote(note);
-    NoteValue noteValue = NoteValue.from(note);
+    NoteValue noteValue = NoteValue.from(note, noteUpdate.actingUserId());
     NoteUpdatedEvent noteUpdatedEvent = NoteUpdatedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteUpdatedEvent));
     return noteValue;
@@ -71,7 +74,7 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.delete(actingUserId);
     noteRepository.deleteNoteWithId(noteId);
-    NoteValue noteValue = NoteValue.from(note);
+    NoteValue noteValue = NoteValue.from(note, actingUserId);
     NoteDeletedEvent noteDeletedEvent = NoteDeletedEvent.from(noteValue);
     eventPublisher.publish(Collections.singletonList(noteDeletedEvent));
   }
@@ -90,5 +93,13 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.removeAccess(actingUserId, targetUserId);
     noteRepository.saveNote(note);
+  }
+
+  @Override
+  public Set<NoteShare> getPermissions(UUID noteId, UUID actingUserId)
+      throws NoteNotFoundException {
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    note.read(actingUserId);
+    return note.getShares(actingUserId);
   }
 }

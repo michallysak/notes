@@ -2,6 +2,7 @@ package pl.michallysak.notes.application.quarkus.note.controller;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
@@ -80,8 +81,8 @@ public class NoteController {
 
   public List<NoteShareResponse> getPermissions(UUID id) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
-    NoteValue noteValue = noteService.getCreatedNote(id, currentUserId);
-    return noteValue.shares().stream().map(this::mapToNoteShareResponse).toList();
+    Set<NoteShare> shares = noteService.getPermissions(id, currentUserId);
+    return shares.stream().map(this::mapToNoteShareResponse).toList();
   }
 
   private NoteShareResponse mapToNoteShareResponse(NoteShare noteShare) {

@@ -35,27 +35,28 @@ public class InMemoryNoteRepository implements NoteRepository {
   }
 
   @Override
-  public List<Note> search(UUID authorId, NotePagedQuery query) {
+  public List<Note> search(UUID actingUserId, NotePagedQuery query) {
     Comparator<Note> comparator = noteComparator.createComparator(query.getSort());
     return notes.values().stream()
-        .filter(note -> isOwnedByOrSharedWith(authorId, note))
+        .filter(note -> isOwnedByOrSharedWith(actingUserId, note))
         .filter(
             note -> {
               if (query.getIsShared() == null) {
                 return true;
               }
-              boolean isShared = !note.getShares().isEmpty();
+              boolean isShared = !note.getShares(actingUserId).isEmpty();
               return query.getIsShared().equals(isShared);
             })
         .sorted(comparator)
-        .skip(query.getPage() * query.getSize())
+        .skip((long) query.getPage() * query.getSize())
         .limit(query.getSize())
         .toList();
   }
 
-  private boolean isOwnedByOrSharedWith(UUID authorId, Note note) {
-    return note.getAuthorId().equals(authorId)
-        || note.getShares().stream().anyMatch(share -> share.userId().equals(authorId));
+  private boolean isOwnedByOrSharedWith(UUID actingUserId, Note note) {
+    return note.getAuthorId().equals(actingUserId)
+        || note.getShares(actingUserId).stream()
+            .anyMatch(share -> share.userId().equals(actingUserId));
   }
 
   @Override

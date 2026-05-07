@@ -255,8 +255,9 @@ class NoteImplTest {
     assertEquals(noteValue.updated(), note.getUpdated());
     assertEquals(noteValue.pinned(), note.isPinned());
     assertEquals(noteValue.style(), note.getStyle());
-    assertNotNull(note.getShares());
-    assertTrue(note.getShares().isEmpty());
+    Set<NoteShare> shares = note.getShares(authorId);
+    assertNotNull(shares);
+    assertTrue(shares.isEmpty());
   }
 
   @Test
@@ -278,9 +279,10 @@ class NoteImplTest {
     assertEquals(noteValue.updated(), note.getUpdated());
     assertEquals(noteValue.pinned(), note.isPinned());
     assertEquals(noteValue.style(), note.getStyle());
-    assertEquals(1, note.getShares().size());
+    Set<NoteShare> shares1 = note.getShares(authorId);
+    assertEquals(1, shares1.size());
     assertTrue(
-        note.getShares().stream()
+        shares1.stream()
             .anyMatch(
                 s ->
                     s.userId().equals(sharedUserId)
@@ -297,9 +299,9 @@ class NoteImplTest {
     // when
     note.setPermissions(note.getAuthorId(), targetUserId, permissions);
     // then
-    assertEquals(1, note.getShares().size());
+    assertEquals(1, note.getShares(note.getAuthorId()).size());
     assertTrue(
-        note.getShares().stream()
+        note.getShares(note.getAuthorId()).stream()
             .anyMatch(s -> s.userId().equals(targetUserId) && s.permissions().equals(permissions)));
   }
 
@@ -319,13 +321,13 @@ class NoteImplTest {
     // when
     note.setPermissions(authorId, targetUserId, newPermissions);
     // then
-    assertEquals(1, note.getShares().size());
+    assertEquals(1, note.getShares(authorId).size());
     assertTrue(
-        note.getShares().stream()
+        note.getShares(authorId).stream()
             .anyMatch(
                 s -> s.userId().equals(targetUserId) && s.permissions().equals(newPermissions)));
     assertFalse(
-        note.getShares().stream()
+        note.getShares(authorId).stream()
             .anyMatch(
                 s ->
                     s.userId().equals(targetUserId)
@@ -365,9 +367,9 @@ class NoteImplTest {
     // when
     note.removeAccess(authorId, removedUserId);
     // then
-    assertEquals(1, note.getShares().size());
-    assertTrue(note.getShares().stream().anyMatch(s -> s.userId().equals(remainingUserId)));
-    assertFalse(note.getShares().stream().anyMatch(s -> s.userId().equals(removedUserId)));
+    assertEquals(1, note.getShares(authorId).size());
+    assertTrue(note.getShares(authorId).stream().anyMatch(s -> s.userId().equals(remainingUserId)));
+    assertFalse(note.getShares(authorId).stream().anyMatch(s -> s.userId().equals(removedUserId)));
   }
 
   @Test
@@ -460,5 +462,57 @@ class NoteImplTest {
         () -> note.setPermissions(note.getAuthorId(), targetUserId, permissions);
     // then
     assertThrows(IllegalArgumentException.class, executable);
+  }
+
+  @Test
+  void getShares_shouldReturnAllShares_whenActingUserIsAuthor() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID sharedUserId1 = UUID.randomUUID();
+    UUID sharedUserId2 = UUID.randomUUID();
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    note.setPermissions(authorId, sharedUserId1, Set.of(NotePermission.READ));
+    note.setPermissions(authorId, sharedUserId2, Set.of(NotePermission.EDIT));
+    // when
+    Set<NoteShare> visibleShares = note.getShares(authorId);
+    // then
+    assertEquals(2, visibleShares.size());
+    assertTrue(visibleShares.stream().anyMatch(s -> s.userId().equals(sharedUserId1)));
+    assertTrue(visibleShares.stream().anyMatch(s -> s.userId().equals(sharedUserId2)));
+  }
+
+  @Test
+  void getShares_shouldReturnOnlyCurrentUserShare_whenActingUserIsNotAuthor() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID sharedUserId1 = UUID.randomUUID();
+    UUID sharedUserId2 = UUID.randomUUID();
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    note.setPermissions(authorId, sharedUserId1, Set.of(NotePermission.READ));
+    note.setPermissions(authorId, sharedUserId2, Set.of(NotePermission.EDIT));
+    // when
+    Set<NoteShare> visibleShares = note.getShares(sharedUserId1);
+    // then
+    assertEquals(1, visibleShares.size());
+    NoteShare share = visibleShares.iterator().next();
+    assertEquals(sharedUserId1, share.userId());
+    assertEquals(Set.of(NotePermission.READ), share.permissions());
+  }
+
+  @Test
+  void getShares_shouldReturnEmptySet_whenActingUserIsNotAuthorAndNotShared() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID sharedUserId = UUID.randomUUID();
+    UUID otherUserId = UUID.randomUUID();
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    note.setPermissions(authorId, sharedUserId, Set.of(NotePermission.READ));
+    // when
+    Set<NoteShare> visibleShares = note.getShares(otherUserId);
+    // then
+    assertTrue(visibleShares.isEmpty());
   }
 }

@@ -18,7 +18,12 @@ public record NoteValue(
     boolean pinned,
     NoteStyle style,
     Set<NoteShare> shares) {
-  public static NoteValue from(Note note) {
+
+  public static NoteValue fromAuthor(Note note) {
+    return from(note, note.getAuthorId());
+  }
+
+  public static NoteValue from(Note note, UUID actingUserId) {
     return NoteValue.builder()
         .id(note.getId())
         .authorId(note.getAuthorId())
@@ -28,7 +33,7 @@ public record NoteValue(
         .pinned(note.isPinned())
         .updated(note.getUpdated())
         .style(note.getStyle())
-        .shares(note.getShares())
+        .shares(note.getShares(actingUserId))
         .build();
   }
 }

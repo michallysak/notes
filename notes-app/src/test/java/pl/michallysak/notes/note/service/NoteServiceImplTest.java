@@ -66,7 +66,7 @@ class NoteServiceImplTest {
     List<NoteValue> noteValues = service.getCreatedNotes(AUTHOR_ID);
     // then
     assertEquals(1, noteValues.size());
-    assertEquals(NoteValue.from(note), noteValues.getFirst());
+    assertEquals(NoteValue.fromAuthor(note), noteValues.getFirst());
   }
 
   @Test
@@ -82,7 +82,7 @@ class NoteServiceImplTest {
     verify(noteValidator).validateNoteQuery(query);
     verify(repository).search(AUTHOR_ID, query);
     assertEquals(1, response.data().size());
-    assertEquals(NoteValue.from(note), response.data().getFirst());
+    assertEquals(NoteValue.fromAuthor(note), response.data().getFirst());
     assertEquals(0, response.page());
     assertEquals(20, response.size());
   }
@@ -97,7 +97,7 @@ class NoteServiceImplTest {
     // when
     NoteValue noteValue = service.getCreatedNote(id, AUTHOR_ID);
     // then
-    assertEquals(NoteValue.from(note), noteValue);
+    assertEquals(NoteValue.fromAuthor(note), noteValue);
   }
 
   @Test
@@ -129,7 +129,7 @@ class NoteServiceImplTest {
     verify(repository).saveNote(note);
     verify(eventPublisher)
         .publish(argThat(events -> events.stream().anyMatch(e -> e instanceof NoteUpdatedEvent)));
-    assertEquals(NoteValue.from(note), noteValue);
+    assertEquals(NoteValue.fromAuthor(note), noteValue);
   }
 
   @Test
@@ -210,6 +210,35 @@ class NoteServiceImplTest {
     when(repository.findNoteWithId(noteId)).thenReturn(Optional.empty());
     // when
     Executable executable = () -> service.removeAccess(noteId, AUTHOR_ID, targetUserId);
+    // then
+    assertThrows(NoteNotFoundException.class, executable);
+  }
+
+  @Test
+  void getPermissions_shouldReturnVisibleShares() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    Note note = mock(Note.class);
+    Set<NoteShare> expectedShares = Set.of(new NoteShare(userId, Set.of(NotePermission.READ)));
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.of(note));
+    when(note.getShares(userId)).thenReturn(expectedShares);
+    // when
+    Set<NoteShare> result = service.getPermissions(noteId, userId);
+    // then
+    assertEquals(expectedShares, result);
+    verify(note).read(userId);
+    verify(note).getShares(userId);
+  }
+
+  @Test
+  void getPermissions_shouldThrow_whenNoteNotFound() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.empty());
+    // when
+    Executable executable = () -> service.getPermissions(noteId, userId);
     // then
     assertThrows(NoteNotFoundException.class, executable);
   }

@@ -186,22 +186,20 @@ class NoteControllerTest {
   }
 
   @Test
-  void getPermissions_shouldReturnMappedShares() {
+  void getPermissions_shouldReturnMappedShares_whenAuthor() {
     // given
     UUID noteId = UUID.randomUUID();
     UUID sharedUserId = UUID.randomUUID();
     Email sharedUserEmail = Email.of("shared@example.com");
     NoteShare noteShare = new NoteShare(sharedUserId, Set.of(NotePermission.READ));
-    NoteValue noteValue = mock(NoteValue.class);
     NoteShareResponse mappedResponse =
         NoteShareResponse.builder()
             .userId(sharedUserId)
             .email(sharedUserEmail.getValue())
             .permissions(Set.of(NotePermission.READ))
             .build();
-    when(noteValue.shares()).thenReturn(Set.of(noteShare));
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
-    when(noteService.getCreatedNote(noteId, AUTHOR_ID)).thenReturn(noteValue);
+    when(noteService.getPermissions(noteId, AUTHOR_ID)).thenReturn(Set.of(noteShare));
     when(noteMapper.mapToNoteShareResponse(noteShare, sharedUserEmail)).thenReturn(mappedResponse);
     when(userService.getUser(sharedUserId))
         .thenReturn(UserValue.builder().id(sharedUserId).email(sharedUserEmail).build());
@@ -212,8 +210,39 @@ class NoteControllerTest {
     assertEquals(sharedUserId, result.getFirst().getUserId());
     assertEquals(sharedUserEmail.getValue(), result.getFirst().getEmail());
     assertEquals(Set.of(NotePermission.READ), result.getFirst().getPermissions());
-    verify(noteService).getCreatedNote(noteId, AUTHOR_ID);
+    verify(noteService).getPermissions(noteId, AUTHOR_ID);
     verify(noteMapper).mapToNoteShareResponse(noteShare, sharedUserEmail);
     verify(userService).getUser(sharedUserId);
+  }
+
+  @Test
+  void getPermissions_shouldReturnOnlyCurrentUserShare_whenNotAuthor() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID currentUserId = UUID.randomUUID();
+    Email currentUserEmail = Email.of("current@example.com");
+    NoteShare currentUserShare = new NoteShare(currentUserId, Set.of(NotePermission.READ));
+    NoteShareResponse mappedResponse =
+        NoteShareResponse.builder()
+            .userId(currentUserId)
+            .email(currentUserEmail.getValue())
+            .permissions(Set.of(NotePermission.READ))
+            .build();
+    when(currentUserProvider.getCurrentUserId()).thenReturn(currentUserId);
+    when(noteService.getPermissions(noteId, currentUserId)).thenReturn(Set.of(currentUserShare));
+    when(noteMapper.mapToNoteShareResponse(currentUserShare, currentUserEmail))
+        .thenReturn(mappedResponse);
+    when(userService.getUser(currentUserId))
+        .thenReturn(UserValue.builder().id(currentUserId).email(currentUserEmail).build());
+    // when
+    List<NoteShareResponse> result = noteController.getPermissions(noteId);
+    // then
+    assertEquals(1, result.size());
+    assertEquals(currentUserId, result.getFirst().getUserId());
+    assertEquals(currentUserEmail.getValue(), result.getFirst().getEmail());
+    assertEquals(Set.of(NotePermission.READ), result.getFirst().getPermissions());
+    verify(noteService).getPermissions(noteId, currentUserId);
+    verify(noteMapper).mapToNoteShareResponse(currentUserShare, currentUserEmail);
+    verify(userService).getUser(currentUserId);
   }
 }

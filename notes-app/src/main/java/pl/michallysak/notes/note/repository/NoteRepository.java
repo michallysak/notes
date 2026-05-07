@@ -14,7 +14,7 @@ public interface NoteRepository {
 
   List<Note> findNotesWithAuthor(UUID authorId);
 
-  List<Note> search(UUID authorId, NotePagedQuery query);
+  List<Note> search(UUID actingUserId, NotePagedQuery query);
 
   Optional<Note> findNoteWithId(UUID id);
 

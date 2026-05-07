@@ -229,7 +229,9 @@ class PanacheNoteRepositoryTest {
     assertEquals(1, notes.size());
     assertEquals(List.of(note), notes);
     verify(noteRepository)
-        .find("author.id = ?1 and shares is not empty order by title desc", authorId);
+        .find(
+            "(author.id = ?1 or exists (select s from shares s where s.userId = ?1)) and shares is not empty order by title desc",
+            authorId);
   }
 
   @Test

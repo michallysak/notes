@@ -208,7 +208,7 @@ class NoteMapperTest {
     assertEquals(note.getCreated(), noteEntity.getCreated());
     assertEquals(note.getUpdated().orElse(null), noteEntity.getUpdated());
     assertEquals(note.isPinned(), noteEntity.isPinned());
-    assertEquals(note.getShares(), noteEntity.getShares());
+    assertEquals(note.getShares(createNote.authorId()), noteEntity.getShares());
   }
 
   @Test
@@ -260,9 +260,10 @@ class NoteMapperTest {
     assertEquals(Optional.of(updated), note.getUpdated());
     assertTrue(note.isPinned());
     // and
-    assertNotNull(note.getShares());
-    assertEquals(1, note.getShares().size());
-    NoteShare share = note.getShares().iterator().next();
+    Set<NoteShare> shares = note.getShares(authorId);
+    assertNotNull(shares);
+    assertEquals(1, shares.size());
+    NoteShare share = shares.iterator().next();
     assertEquals(sharedUserId, share.userId());
     assertEquals(Set.of(NotePermission.READ), share.permissions());
   }
@@ -329,6 +330,46 @@ class NoteMapperTest {
     assertEquals(userId, response.getUserId());
     assertEquals(email.getValue(), response.getEmail());
     assertNull(response.getPermissions());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldMapWithEmail_andNullNoteShare() {
+    // given
+    Email email = Email.of("user@example.com");
+    NoteShare share = null;
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share, email);
+    // then
+    assertNotNull(response);
+    assertNull(response.getUserId());
+    assertNull(response.getPermissions());
+    assertEquals(email.getValue(), response.getEmail());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldMapWithEmail_andNullEmail() {
+    // given
+    UUID userId = UUID.randomUUID();
+    NoteShare share = new NoteShare(userId, Set.of(NotePermission.EDIT));
+    Email email = null;
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share, email);
+    // then
+    assertNotNull(response);
+    assertEquals(userId, response.getUserId());
+    assertEquals(Set.of(NotePermission.EDIT), response.getPermissions());
+    assertNull(response.getEmail());
+  }
+
+  @Test
+  void mapToNoteShareResponse_shouldReturnNull_whenBothNull() {
+    // given
+    NoteShare share = null;
+    Email email = null;
+    // when
+    NoteShareResponse response = noteMapper.mapToNoteShareResponse(share, email);
+    // then
+    assertNull(response);
   }
 
   @Test
@@ -425,7 +466,7 @@ class NoteMapperTest {
     // given
     NoteShareEntity entity = new NoteShareEntity();
     // when
-    NoteShare mapped = ((NoteMapperImpl) noteMapper).noteShareEntityToDomainNoteShare(entity);
+    NoteShare mapped = noteMapper.noteShareEntityToDomainNoteShare(entity);
     // then
     assertNull(mapped);
   }
@@ -433,7 +474,7 @@ class NoteMapperTest {
   @Test
   void noteShareToDomainNoteShareEntity_shouldReturnNull_whenShareNull() {
     // when
-    NoteShareEntity entity = ((NoteMapperImpl) noteMapper).noteShareToDomainNoteShareEntity(null);
+    NoteShareEntity entity = noteMapper.noteShareToDomainNoteShareEntity(null);
     // then
     assertNull(entity);
   }
@@ -468,5 +509,44 @@ class NoteMapperTest {
     // then
     assertNotNull(noteStyleDTO);
     assertEquals(noteStyle.color(), noteStyleDTO.getColor());
+  }
+
+  @Test
+  void noteShareEntityToDomainNoteShare_shouldReturnNull_whenUserIdNull() {
+    // given
+    NoteShareEntity entity = new NoteShareEntity();
+    UserEntity user = new UserEntity();
+    user.setId(null);
+    entity.setUser(user);
+    entity.setPermissions(Set.of(NotePermission.READ));
+    // when
+    NoteShare mapped = ((NoteMapperImpl) noteMapper).noteShareEntityToDomainNoteShare(entity);
+    // then
+    assertNull(mapped);
+  }
+
+  @Test
+  void noteShareEntityToDomainNoteShare_shouldReturnNull_whenEntityNull() {
+    // when
+    NoteShare mapped = ((NoteMapperImpl) noteMapper).noteShareEntityToDomainNoteShare(null);
+    // then
+    assertNull(mapped);
+  }
+
+  @Test
+  void noteSharesToDomainNoteShareEntities_shouldReturnNull_whenSharesNull() {
+    // when
+    Set<NoteShareEntity> entities =
+        ((NoteMapperImpl) noteMapper).noteSharesToDomainNoteShareEntities(null);
+    // then
+    assertNull(entities);
+  }
+
+  @Test
+  void userIdToUserEntity_shouldReturnNull_whenUserIdNull() {
+    // when
+    UserEntity userEntity = ((NoteMapperImpl) noteMapper).userIdToUserEntity(null);
+    // then
+    assertNull(userEntity);
   }
 }

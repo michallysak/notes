@@ -23,7 +23,7 @@ class NoteValueTest {
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote, noteValidator);
     // when
-    NoteValue value = NoteValue.from(note);
+    NoteValue value = NoteValue.from(note, note.getAuthorId());
     // then
     assertEquals(note.getId(), value.id());
     assertEquals(note.getAuthorId(), value.authorId());
@@ -32,6 +32,6 @@ class NoteValueTest {
     assertEquals(note.getCreated(), value.created());
     assertEquals(note.getUpdated(), value.updated());
     assertEquals(note.isPinned(), value.pinned());
-    assertEquals(note.getShares(), value.shares());
+    assertEquals(note.getShares(note.getAuthorId()), value.shares());
   }
 }

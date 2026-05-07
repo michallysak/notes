@@ -19,6 +19,7 @@ public class BaseIT {
 
   protected static final String EMAIL_1 = "user1@test.pl";
   protected static final String EMAIL_2 = "user2@test.pl";
+  protected static final String EMAIL_3 = "user3@test.pl";
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   static {

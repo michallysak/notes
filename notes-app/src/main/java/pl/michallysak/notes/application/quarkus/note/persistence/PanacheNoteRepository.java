@@ -43,19 +43,22 @@ public class PanacheNoteRepository
   }
 
   @Override
-  public List<Note> search(UUID authorId, NotePagedQuery query) {
-    PanacheQuery<NoteEntity> panacheQuery = buildQuery(query, authorId);
+  public List<Note> search(UUID actingUserId, NotePagedQuery query) {
+    PanacheQuery<NoteEntity> panacheQuery = buildQuery(actingUserId, query);
     return panacheQuery.page(Page.of(query.getPage(), query.getSize())).list().stream()
         .map(noteMapper::mapToDomain)
         .toList();
   }
 
-  private PanacheQuery<NoteEntity> buildQuery(NotePagedQuery query, UUID authorId) {
-    StringBuilder queryBuilder = new StringBuilder("author.id = ?1");
+  private PanacheQuery<NoteEntity> buildQuery(UUID actingUserId, NotePagedQuery query) {
+    StringBuilder queryBuilder = new StringBuilder();
     if (Boolean.TRUE.equals(query.getIsShared())) {
-      queryBuilder.append(" and shares is not empty");
+      queryBuilder.append(
+          "(author.id = ?1 or exists (select s from shares s where s.userId = ?1)) and shares is not empty");
     } else if (Boolean.FALSE.equals(query.getIsShared())) {
-      queryBuilder.append(" and shares is empty");
+      queryBuilder.append("author.id = ?1 and shares is empty");
+    } else {
+      queryBuilder.append("author.id = ?1");
     }
 
     List<FieldSort> fieldSorts = query.getSort();
@@ -68,7 +71,7 @@ public class PanacheNoteRepository
     }
 
     String queryText = queryBuilder.toString();
-    return find(queryText, authorId);
+    return find(queryText, actingUserId);
   }
 
   private String formatSortField(FieldSort fs) {

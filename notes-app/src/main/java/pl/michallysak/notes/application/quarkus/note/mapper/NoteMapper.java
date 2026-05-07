@@ -4,7 +4,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Setter;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -50,6 +52,9 @@ public abstract class NoteMapper {
 
   @Mapping(target = "author", expression = "java(new UserEntity())")
   @Mapping(target = "author.id", source = "authorId")
+  @Mapping(
+      target = "shares",
+      expression = "java(noteSharesToDomainNoteShareEntities(note.getShares(note.getAuthorId())))")
   public abstract NoteEntity mapToEntity(Note note);
 
   @Mapping(target = "authorId", source = "author.id")
@@ -82,6 +87,13 @@ public abstract class NoteMapper {
   @Mapping(target = "note", ignore = true)
   @Mapping(target = "user", source = "userId")
   protected abstract NoteShareEntity noteShareToDomainNoteShareEntity(NoteShare noteShare);
+
+  protected Set<NoteShareEntity> noteSharesToDomainNoteShareEntities(Set<NoteShare> shares) {
+    if (shares == null) {
+      return null;
+    }
+    return shares.stream().map(this::noteShareToDomainNoteShareEntity).collect(Collectors.toSet());
+  }
 
   protected UserEntity userIdToUserEntity(UUID userId) {
     if (userId == null) {

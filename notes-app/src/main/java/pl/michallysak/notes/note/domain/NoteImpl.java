@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.ToString;
 import pl.michallysak.notes.note.exception.NoteAccessException;
@@ -24,11 +25,6 @@ public class NoteImpl implements Note {
   private NoteStyle style;
   private final NoteValidator noteValidator;
   private final Set<NoteShare> shares = new HashSet<>();
-
-  @Override
-  public Set<NoteShare> getShares() {
-    return Set.copyOf(shares);
-  }
 
   public NoteImpl(CreateNote createNote, NoteValidator noteValidator) {
     this.noteValidator = noteValidator;
@@ -121,6 +117,17 @@ public class NoteImpl implements Note {
   public void removeAccess(UUID actingUserId, UUID targetUserId) {
     checkOwnership(actingUserId);
     shares.removeIf(s -> s.userId().equals(targetUserId));
+  }
+
+  @Override
+  public Set<NoteShare> getShares(UUID actingUserId) {
+    if (authorId.equals(actingUserId)) {
+      return Set.copyOf(shares);
+    } else {
+      return shares.stream()
+          .filter(noteShare -> noteShare.userId().equals(actingUserId))
+          .collect(Collectors.toSet());
+    }
   }
 
   private void checkOwnership(UUID actingUserId) {
