@@ -26,10 +26,12 @@ export class NoteService {
     private auth: AuthService,
     noteEventsService: NoteEventsService,
   ) {
-    this.notesApi.searchNotes().subscribe((noteResponse) => {
-      const notes = noteResponse.map(res => this.mapToNote(res));
-      this.notesSubject.next(notes);
-      this.loadPermissionsForNotes(notes);
+    this.auth.logged$.subscribe((isLogged) => {
+      if (isLogged) {
+        this.loadNotes();
+      } else {
+        this.clearNotes();
+      }
     });
 
     noteEventsService.noteEvents$.subscribe((value: NoteCreatedEventDTO) => {
@@ -75,6 +77,18 @@ export class NoteService {
   private removeNoteFromSubject(id: string) {
     const current = this.notesSubject.value;
     this.notesSubject.next(current.filter((n) => n.id !== id));
+  }
+
+  loadNotes() {
+    this.notesApi.searchNotes().subscribe((noteResponse) => {
+      const notes = noteResponse.map((res) => this.mapToNote(res));
+      this.notesSubject.next(notes);
+      this.loadPermissionsForNotes(notes);
+    });
+  }
+
+  clearNotes() {
+    this.notesSubject.next([]);
   }
 
   private loadPermissionsForNotes(notes: Note[]) {
