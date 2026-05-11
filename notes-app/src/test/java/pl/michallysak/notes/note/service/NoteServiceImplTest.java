@@ -74,7 +74,7 @@ class NoteServiceImplTest {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(AUTHOR_ID).build();
     Note note = new NoteImpl(createNote, noteValidator);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 20, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 20, null);
     when(repository.search(AUTHOR_ID, query)).thenReturn(List.of(note));
     // when
     Paged<NoteValue> response = service.search(AUTHOR_ID, query);

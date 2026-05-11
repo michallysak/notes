@@ -21,6 +21,9 @@ public class NoteQueryBean implements NotePagedQuery {
   @QueryParam("isShared")
   private Boolean isShared;
 
+  @QueryParam("isPinned")
+  private Boolean isPinned;
+
   @QueryParam("page")
   @DefaultValue("0")
   private int page;

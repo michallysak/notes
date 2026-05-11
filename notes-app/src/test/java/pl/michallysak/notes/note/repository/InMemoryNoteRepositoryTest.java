@@ -152,7 +152,7 @@ class InMemoryNoteRepositoryTest {
     shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
     Note privateNote = new NoteImpl(createPrivate, noteValidator);
     NoteRepository noteRepository = createNoteRepository(shared, privateNote);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 1, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 1, null);
     // when
     List<Note> result = noteRepository.search(authorId, query);
     // then
@@ -170,7 +170,7 @@ class InMemoryNoteRepositoryTest {
     shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
     Note privateNote = new NoteImpl(createPrivate, noteValidator);
     NoteRepository noteRepository = createNoteRepository(shared, privateNote);
-    NotePagedQuery query = createNotePagedQuery(true, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(true, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(authorId, query);
     // then
@@ -188,7 +188,7 @@ class InMemoryNoteRepositoryTest {
     shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
     Note privateNote = new NoteImpl(createPrivate, noteValidator);
     NoteRepository noteRepository = createNoteRepository(shared, privateNote);
-    NotePagedQuery query = createNotePagedQuery(false, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(false, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(authorId, query);
     // then
@@ -208,7 +208,7 @@ class InMemoryNoteRepositoryTest {
     Note shared = new NoteImpl(createShared, noteValidator);
     shared.setPermissions(shared.getAuthorId(), authorId, Set.of(NotePermission.READ));
     NoteRepository noteRepository = createNoteRepository(owned, shared);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(authorId, query);
     // then
@@ -240,7 +240,7 @@ class InMemoryNoteRepositoryTest {
     Note shared = new NoteImpl(createShared, noteValidator);
     shared.setPermissions(sharerId, accessingUserId, Set.of(NotePermission.READ));
     NoteRepository noteRepository = createNoteRepository(shared);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(accessingUserId, query);
     // then
@@ -255,7 +255,7 @@ class InMemoryNoteRepositoryTest {
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
     Note note = new NoteImpl(createNote, noteValidator);
     NoteRepository noteRepository = createNoteRepository(note);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(authorId, query);
     // then
@@ -272,7 +272,7 @@ class InMemoryNoteRepositoryTest {
     Note note = new NoteImpl(createNote, noteValidator);
     note.setPermissions(sharerId, accessingUserId, Set.of(NotePermission.READ));
     NoteRepository noteRepository = createNoteRepository(note);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(accessingUserId, query);
     // then
@@ -290,7 +290,7 @@ class InMemoryNoteRepositoryTest {
     Note note = new NoteImpl(createNote, noteValidator);
     note.setPermissions(sharerId, accessingUserId, Set.of(NotePermission.READ));
     NoteRepository noteRepository = createNoteRepository(note);
-    NotePagedQuery query = createNotePagedQuery(null, 0, 10, null);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
     List<Note> result = noteRepository.search(otherUserId, query);
     // then

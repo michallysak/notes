@@ -86,7 +86,7 @@ class NoteControllerTest {
     // given
     NoteValue noteValue = mock(NoteValue.class);
     NoteResponse response = mock(NoteResponse.class);
-    NoteQueryBean query = new NoteQueryBean(true, 1, 10, SortList.empty());
+    NoteQueryBean query = new NoteQueryBean(true, null, 1, 10, SortList.empty());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.search(AUTHOR_ID, query)).thenReturn(new Paged<>(List.of(noteValue), 1, 10));
     when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);

@@ -47,6 +47,13 @@ public class InMemoryNoteRepository implements NoteRepository {
               boolean isShared = !note.getShares(actingUserId).isEmpty();
               return query.getIsShared().equals(isShared);
             })
+        .filter(
+            note -> {
+              if (query.getIsPinned() == null) {
+                return true;
+              }
+              return query.getIsPinned().equals(note.isPinned());
+            })
         .sorted(comparator)
         .skip((long) query.getPage() * query.getSize())
         .limit(query.getSize())

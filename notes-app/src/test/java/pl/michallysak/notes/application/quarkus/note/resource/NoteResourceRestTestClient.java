@@ -51,10 +51,11 @@ public class NoteResourceRestTestClient extends RestTestClient {
     return given().headers(authorizationHeaders).when().get(basePath);
   }
 
-  public Response searchNotes(Boolean isShared, Integer page, Integer size) {
+  public Response searchNotes(Boolean isShared, Boolean isPinned, Integer page, Integer size) {
     return given()
         .headers(authorizationHeaders)
         .queryParam("isShared", isShared)
+        .queryParam("isPinned", isPinned)
         .queryParam("page", page)
         .queryParam("size", size)
         .when()

@@ -51,7 +51,7 @@ class NoteResourceTest {
   @Test
   void searchNotes_shouldDelegateToController() {
     // given
-    NoteQueryBean query = new NoteQueryBean(true, 1, 25, SortList.empty());
+    NoteQueryBean query = new NoteQueryBean(true, null, 1, 25, SortList.empty());
     @SuppressWarnings("unchecked")
     List<NoteResponse> response = mock(List.class);
     when(noteController.searchNotes(query)).thenReturn(response);

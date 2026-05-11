@@ -111,7 +111,7 @@ class NoteResourceIT extends BaseIT {
     CreateNoteRequest createNoteRequest = getCreateNoteRequestBuilder().build();
     createNote(token, createNoteRequest);
     // when
-    Response response = noteResourceTestClient.searchNotes(null, 0, 10);
+    Response response = noteResourceTestClient.searchNotes(null, null, 0, 10);
     // then
     response.then().statusCode(200);
     NoteResponse[] noteResponses = response.as(NoteResponse[].class);

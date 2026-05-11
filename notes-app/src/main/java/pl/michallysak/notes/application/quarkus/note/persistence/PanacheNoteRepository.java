@@ -61,6 +61,10 @@ public class PanacheNoteRepository
       queryBuilder.append("author.id = ?1");
     }
 
+    if (query.getIsPinned() != null) {
+      queryBuilder.append(" and pinned = ?2");
+    }
+
     List<FieldSort> fieldSorts = query.getSort();
     if (fieldSorts != null && !fieldSorts.isEmpty()) {
       String orderBy =
@@ -71,7 +75,11 @@ public class PanacheNoteRepository
     }
 
     String queryText = queryBuilder.toString();
-    return find(queryText, actingUserId);
+    if (query.getIsPinned() != null) {
+      return find(queryText, actingUserId, query.getIsPinned());
+    } else {
+      return find(queryText, actingUserId);
+    }
   }
 
   private String formatSortField(FieldSort fs) {

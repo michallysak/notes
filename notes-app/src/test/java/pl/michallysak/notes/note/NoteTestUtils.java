@@ -30,7 +30,7 @@ public class NoteTestUtils {
   }
 
   public static NotePagedQuery createNotePagedQuery(
-      Boolean isShared, int page, int size, List<FieldSort> fieldSorts) {
+      Boolean isShared, Boolean isPinned, int page, int size, List<FieldSort> fieldSorts) {
     return new NotePagedQuery() {
       @Override
       public int getPage() {
@@ -45,6 +45,11 @@ public class NoteTestUtils {
       @Override
       public Boolean getIsShared() {
         return isShared;
+      }
+
+      @Override
+      public Boolean getIsPinned() {
+        return isPinned;
       }
 
       @Override
