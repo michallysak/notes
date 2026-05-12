@@ -12,6 +12,7 @@ import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.model.*;
+import pl.michallysak.notes.note.model.Paged;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
 @ExtendWith(MockitoExtension.class)
@@ -154,9 +155,10 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(shared, privateNote);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 1, null);
     // when
-    List<Note> result = noteRepository.search(authorId, query);
+    Paged<Note> result = noteRepository.search(authorId, query);
     // then
-    assertEquals(1, result.size());
+    assertEquals(1, result.data().size());
+    assertEquals(2, result.total());
   }
 
   @Test
@@ -172,9 +174,11 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(shared, privateNote);
     NotePagedQuery query = createNotePagedQuery(true, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(authorId, query);
+    Paged<Note> result = noteRepository.search(authorId, query);
     // then
-    assertEquals(shared.getId(), result.getFirst().getId());
+    assertEquals(1, result.data().size());
+    assertEquals(shared.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
   }
 
   @Test
@@ -190,10 +194,11 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(shared, privateNote);
     NotePagedQuery query = createNotePagedQuery(false, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(authorId, query);
+    Paged<Note> result = noteRepository.search(authorId, query);
     // then
-    assertEquals(1, result.size());
-    assertEquals(privateNote.getId(), result.getFirst().getId());
+    assertEquals(1, result.data().size());
+    assertEquals(privateNote.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
   }
 
   @Test
@@ -210,11 +215,12 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(owned, shared);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(authorId, query);
+    Paged<Note> result = noteRepository.search(authorId, query);
     // then
-    assertEquals(2, result.size());
-    assertTrue(result.stream().anyMatch(n -> n.getId().equals(owned.getId())));
-    assertTrue(result.stream().anyMatch(n -> n.getId().equals(shared.getId())));
+    assertEquals(2, result.data().size());
+    assertEquals(2, result.total());
+    assertTrue(result.data().stream().anyMatch(n -> n.getId().equals(owned.getId())));
+    assertTrue(result.data().stream().anyMatch(n -> n.getId().equals(shared.getId())));
   }
 
   @Test
@@ -242,10 +248,11 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(shared);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(accessingUserId, query);
+    Paged<Note> result = noteRepository.search(accessingUserId, query);
     // then
-    assertEquals(1, result.size());
-    assertEquals(shared.getId(), result.getFirst().getId());
+    assertEquals(1, result.data().size());
+    assertEquals(shared.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
   }
 
   @Test
@@ -257,10 +264,11 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(note);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(authorId, query);
+    Paged<Note> result = noteRepository.search(authorId, query);
     // then
-    assertEquals(1, result.size());
-    assertEquals(note.getId(), result.getFirst().getId());
+    assertEquals(1, result.data().size());
+    assertEquals(note.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
   }
 
   @Test
@@ -274,10 +282,11 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(note);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(accessingUserId, query);
+    Paged<Note> result = noteRepository.search(accessingUserId, query);
     // then
-    assertEquals(1, result.size());
-    assertEquals(note.getId(), result.getFirst().getId());
+    assertEquals(1, result.data().size());
+    assertEquals(note.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
   }
 
   @Test
@@ -292,9 +301,10 @@ class InMemoryNoteRepositoryTest {
     NoteRepository noteRepository = createNoteRepository(note);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null);
     // when
-    List<Note> result = noteRepository.search(otherUserId, query);
+    Paged<Note> result = noteRepository.search(otherUserId, query);
     // then
-    assertTrue(result.isEmpty());
+    assertTrue(result.data().isEmpty());
+    assertEquals(0, result.total());
   }
 
   private NoteRepository createNoteRepository(Note... notes) {

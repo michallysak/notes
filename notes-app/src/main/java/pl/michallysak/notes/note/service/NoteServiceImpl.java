@@ -44,11 +44,10 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Paged<NoteValue> search(UUID actingUserId, NotePagedQuery query) {
     noteValidator.validateNoteQuery(query);
+    Paged<Note> pagedNotes = noteRepository.search(actingUserId, query);
     List<NoteValue> data =
-        noteRepository.search(actingUserId, query).stream()
-            .map(note -> NoteValue.from(note, actingUserId))
-            .toList();
-    return new Paged<>(data, query.getPage(), query.getSize());
+        pagedNotes.data().stream().map(note -> NoteValue.from(note, actingUserId)).toList();
+    return new Paged<>(data, pagedNotes.page(), pagedNotes.size(), pagedNotes.total());
   }
 
   @Override

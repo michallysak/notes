@@ -15,6 +15,7 @@ import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.FieldSort;
 import pl.michallysak.notes.note.model.NotePagedQuery;
+import pl.michallysak.notes.note.model.Paged;
 import pl.michallysak.notes.note.model.SortDirection;
 import pl.michallysak.notes.note.repository.NoteRepository;
 
@@ -43,11 +44,14 @@ public class PanacheNoteRepository
   }
 
   @Override
-  public List<Note> search(UUID actingUserId, NotePagedQuery query) {
+  public Paged<Note> search(UUID actingUserId, NotePagedQuery query) {
     PanacheQuery<NoteEntity> panacheQuery = buildQuery(actingUserId, query);
-    return panacheQuery.page(Page.of(query.getPage(), query.getSize())).list().stream()
-        .map(noteMapper::mapToDomain)
-        .toList();
+    long total = panacheQuery.count();
+    List<Note> notes =
+        panacheQuery.page(Page.of(query.getPage(), query.getSize())).list().stream()
+            .map(noteMapper::mapToDomain)
+            .toList();
+    return new Paged<>(notes, query.getPage(), query.getSize(), total);
   }
 
   private PanacheQuery<NoteEntity> buildQuery(UUID actingUserId, NotePagedQuery query) {

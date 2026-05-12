@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.NotePagedQuery;
+import pl.michallysak.notes.note.model.Paged;
 
 public interface NoteRepository {
 
@@ -14,7 +15,7 @@ public interface NoteRepository {
 
   List<Note> findNotesWithAuthor(UUID authorId);
 
-  List<Note> search(UUID actingUserId, NotePagedQuery query);
+  Paged<Note> search(UUID actingUserId, NotePagedQuery query);
 
   Optional<Note> findNoteWithId(UUID id);
 

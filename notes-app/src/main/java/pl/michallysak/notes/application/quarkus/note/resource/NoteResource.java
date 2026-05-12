@@ -23,6 +23,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 
 @Tag(name = "Notes API", description = "Operations on notes")
@@ -73,12 +74,8 @@ public class NoteResource {
       summary = "Search notes",
       operationId = "searchNotes",
       description = "Retrieves a paged list of notes with optional shared filter")
-  @APIResponse(
-      responseCode = "200",
-      description = "Paged notes response",
-      content =
-          @Content(schema = @Schema(implementation = NoteResponse.class, type = SchemaType.ARRAY)))
-  public List<NoteResponse> searchNotes(@BeanParam NoteQueryBean query) {
+  @APIResponse(responseCode = "200", description = "Paged notes response")
+  public PagedResponse<NoteResponse> searchNotes(@BeanParam NoteQueryBean query) {
     return noteController.searchNotes(query);
   }
 

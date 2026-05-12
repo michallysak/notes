@@ -19,6 +19,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.common.Email;
@@ -88,13 +89,17 @@ class NoteControllerTest {
     NoteResponse response = mock(NoteResponse.class);
     NoteQueryBean query = new NoteQueryBean(true, null, 1, 10, SortList.empty());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
-    when(noteService.search(AUTHOR_ID, query)).thenReturn(new Paged<>(List.of(noteValue), 1, 10));
+    when(noteService.search(AUTHOR_ID, query))
+        .thenReturn(new Paged<>(List.of(noteValue), 1, 10, 20));
     when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
     // when
-    List<NoteResponse> result = noteController.searchNotes(query);
+    PagedResponse<NoteResponse> result = noteController.searchNotes(query);
     // then
-    assertEquals(1, result.size());
-    assertEquals(response, result.getFirst());
+    assertEquals(1, result.getData().size());
+    assertEquals(response, result.getData().getFirst());
+    assertEquals(1, result.getPage());
+    assertEquals(10, result.getSize());
+    assertEquals(20, result.getTotal());
     verify(noteService).search(AUTHOR_ID, query);
     verify(noteMapper).mapToNoteResponse(noteValue);
   }

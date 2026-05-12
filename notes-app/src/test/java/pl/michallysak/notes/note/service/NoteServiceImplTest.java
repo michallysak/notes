@@ -75,7 +75,7 @@ class NoteServiceImplTest {
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(AUTHOR_ID).build();
     Note note = new NoteImpl(createNote, noteValidator);
     NotePagedQuery query = createNotePagedQuery(null, null, 0, 20, null);
-    when(repository.search(AUTHOR_ID, query)).thenReturn(List.of(note));
+    when(repository.search(AUTHOR_ID, query)).thenReturn(new Paged<>(List.of(note), 0, 20, 1));
     // when
     Paged<NoteValue> response = service.search(AUTHOR_ID, query);
     // then
@@ -85,6 +85,7 @@ class NoteServiceImplTest {
     assertEquals(NoteValue.fromAuthor(note), response.data().getFirst());
     assertEquals(0, response.page());
     assertEquals(20, response.size());
+    assertEquals(1, response.total());
   }
 
   @Test

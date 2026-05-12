@@ -18,6 +18,7 @@ import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.FieldSort;
 import pl.michallysak.notes.note.model.NotePagedQuery;
+import pl.michallysak.notes.note.model.Paged;
 import pl.michallysak.notes.note.model.SortDirection;
 
 @ExtendWith(MockitoExtension.class)
@@ -186,6 +187,7 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.count()).thenReturn(20L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity1, entity2));
     // and
@@ -193,11 +195,12 @@ class PanacheNoteRepositoryTest {
     when(noteMapper.mapToDomain(entity2)).thenReturn(note2);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(2, notes.size());
-    assertEquals(List.of(note1, note2), notes);
+    assertEquals(2, page.data().size());
+    assertEquals(List.of(note1, note2), page.data());
+    assertEquals(20, page.total());
     verify(noteRepository).find("author.id = ?1 order by created desc", authorId);
   }
 
@@ -219,17 +222,19 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.count()).thenReturn(5L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity));
     // and
     when(noteMapper.mapToDomain(entity)).thenReturn(note);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(1, notes.size());
-    assertEquals(List.of(note), notes);
+    assertEquals(1, page.data().size());
+    assertEquals(List.of(note), page.data());
+    assertEquals(5, page.total());
     verify(noteRepository)
         .find(
             "(author.id = ?1 or exists (select s from shares s where s.userId = ?1)) and shares is not empty order by title desc",
@@ -254,17 +259,19 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.count()).thenReturn(1L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity));
 
     when(noteMapper.mapToDomain(entity)).thenReturn(note);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(1, notes.size());
-    assertEquals(List.of(note), notes);
+    assertEquals(1, page.data().size());
+    assertEquals(List.of(note), page.data());
+    assertEquals(1, page.total());
     verify(noteRepository)
         .find("author.id = ?1 and shares is empty order by created desc", authorId);
   }
@@ -287,17 +294,19 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.count()).thenReturn(1L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity));
     // and
     when(noteMapper.mapToDomain(entity)).thenReturn(note);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(1, notes.size());
-    assertEquals(List.of(note), notes);
+    assertEquals(1, page.data().size());
+    assertEquals(List.of(note), page.data());
+    assertEquals(1, page.total());
     verify(noteRepository).find("author.id = ?1 order by title", authorId);
   }
 
@@ -319,17 +328,19 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId));
+    when(panacheQuery.count()).thenReturn(1L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity));
     // and
     when(noteMapper.mapToDomain(entity)).thenReturn(note);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(1, notes.size());
-    assertEquals(List.of(note), notes);
+    assertEquals(1, page.data().size());
+    assertEquals(List.of(note), page.data());
+    assertEquals(1, page.total());
     verify(noteRepository).find("author.id = ?1 order by created desc", authorId);
   }
 
@@ -351,17 +362,19 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId), eq(true));
+    when(panacheQuery.count()).thenReturn(1L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity));
     // and
     when(noteMapper.mapToDomain(entity)).thenReturn(note);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(1, notes.size());
-    assertEquals(List.of(note), notes);
+    assertEquals(1, page.data().size());
+    assertEquals(List.of(note), page.data());
+    assertEquals(1, page.total());
     verify(noteRepository)
         .find("author.id = ?1 and pinned = ?2 order by created desc", authorId, true);
   }
@@ -384,17 +397,19 @@ class PanacheNoteRepositoryTest {
     PanacheQuery<NoteEntity> pagedQuery = mock(PanacheQuery.class);
     // and
     doReturn(panacheQuery).when(noteRepository).find(anyString(), eq(authorId), eq(false));
+    when(panacheQuery.count()).thenReturn(1L);
     when(panacheQuery.page(any(Page.class))).thenReturn(pagedQuery);
     when(pagedQuery.list()).thenReturn(List.of(entity));
     // and
     when(noteMapper.mapToDomain(entity)).thenReturn(note);
 
     // when
-    List<Note> notes = noteRepository.search(authorId, query);
+    Paged<Note> page = noteRepository.search(authorId, query);
 
     // then
-    assertEquals(1, notes.size());
-    assertEquals(List.of(note), notes);
+    assertEquals(1, page.data().size());
+    assertEquals(List.of(note), page.data());
+    assertEquals(1, page.total());
     verify(noteRepository)
         .find("author.id = ?1 and pinned = ?2 order by created desc", authorId, false);
   }

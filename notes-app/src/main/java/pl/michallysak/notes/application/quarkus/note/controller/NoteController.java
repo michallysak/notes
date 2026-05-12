@@ -9,6 +9,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.common.Email;
@@ -40,10 +41,13 @@ public class NoteController {
         .toList();
   }
 
-  public List<NoteResponse> searchNotes(NotePagedQuery query) {
+  public PagedResponse<NoteResponse> searchNotes(NotePagedQuery query) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     Paged<NoteValue> searchResult = noteService.search(currentUserId, query);
-    return searchResult.data().stream().map(noteMapper::mapToNoteResponse).toList();
+    List<NoteResponse> data =
+        searchResult.data().stream().map(noteMapper::mapToNoteResponse).toList();
+    return new PagedResponse<>(
+        data, searchResult.page(), searchResult.size(), searchResult.total());
   }
 
   public NoteResponse getNote(UUID id) {

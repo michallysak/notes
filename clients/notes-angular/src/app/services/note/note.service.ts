@@ -81,7 +81,7 @@ export class NoteService {
 
   loadNotes() {
     this.notesApi.searchNotes().subscribe((noteResponse) => {
-      const notes = noteResponse.map((res) => this.mapToNote(res));
+      const notes = noteResponse.data.map((res) => this.mapToNote(res));
       this.notesSubject.next(notes);
       this.loadPermissionsForNotes(notes);
     });

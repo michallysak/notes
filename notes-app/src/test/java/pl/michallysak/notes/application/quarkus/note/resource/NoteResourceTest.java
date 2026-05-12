@@ -17,6 +17,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,11 +53,11 @@ class NoteResourceTest {
   void searchNotes_shouldDelegateToController() {
     // given
     NoteQueryBean query = new NoteQueryBean(true, null, 1, 25, SortList.empty());
-    @SuppressWarnings("unchecked")
-    List<NoteResponse> response = mock(List.class);
+    PagedResponse<NoteResponse> response =
+        PagedResponse.<NoteResponse>builder().data(List.of()).page(1).size(25).total(0).build();
     when(noteController.searchNotes(query)).thenReturn(response);
     // when
-    List<NoteResponse> result = noteResource.searchNotes(query);
+    PagedResponse<NoteResponse> result = noteResource.searchNotes(query);
     // then
     assertEquals(response, result);
     verify(noteController).searchNotes(query);

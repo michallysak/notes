@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import pl.michallysak.notes.common.SortComparatorFactory;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.model.NotePagedQuery;
+import pl.michallysak.notes.note.model.Paged;
 
 public class InMemoryNoteRepository implements NoteRepository {
   private final Map<UUID, Note> notes;
@@ -35,29 +36,37 @@ public class InMemoryNoteRepository implements NoteRepository {
   }
 
   @Override
-  public List<Note> search(UUID actingUserId, NotePagedQuery query) {
+  public Paged<Note> search(UUID actingUserId, NotePagedQuery query) {
     Comparator<Note> comparator = noteComparator.createComparator(query.getSort());
-    return notes.values().stream()
-        .filter(note -> isOwnedByOrSharedWith(actingUserId, note))
-        .filter(
-            note -> {
-              if (query.getIsShared() == null) {
-                return true;
-              }
-              boolean isShared = !note.getShares(actingUserId).isEmpty();
-              return query.getIsShared().equals(isShared);
-            })
-        .filter(
-            note -> {
-              if (query.getIsPinned() == null) {
-                return true;
-              }
-              return query.getIsPinned().equals(note.isPinned());
-            })
-        .sorted(comparator)
-        .skip((long) query.getPage() * query.getSize())
-        .limit(query.getSize())
-        .toList();
+    List<Note> filtered =
+        notes.values().stream()
+            .filter(note -> isOwnedByOrSharedWith(actingUserId, note))
+            .filter(
+                note -> {
+                  if (query.getIsShared() == null) {
+                    return true;
+                  }
+                  boolean isShared = !note.getShares(actingUserId).isEmpty();
+                  return query.getIsShared().equals(isShared);
+                })
+            .filter(
+                note -> {
+                  if (query.getIsPinned() == null) {
+                    return true;
+                  }
+                  return query.getIsPinned().equals(note.isPinned());
+                })
+            .sorted(comparator)
+            .toList();
+
+    long total = filtered.size();
+    List<Note> paged =
+        filtered.stream()
+            .skip((long) query.getPage() * query.getSize())
+            .limit(query.getSize())
+            .toList();
+
+    return new Paged<>(paged, query.getPage(), query.getSize(), total);
   }
 
   private boolean isOwnedByOrSharedWith(UUID actingUserId, Note note) {

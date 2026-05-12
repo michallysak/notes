@@ -7,6 +7,7 @@ import static pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUt
 import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import java.util.Arrays;
 import java.util.Set;
@@ -17,6 +18,7 @@ import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
 import pl.michallysak.notes.application.quarkus.user.resource.UserResourceRestTestClient;
 import pl.michallysak.notes.note.model.NotePermission;
@@ -114,8 +116,11 @@ class NoteResourceIT extends BaseIT {
     Response response = noteResourceTestClient.searchNotes(null, null, 0, 10);
     // then
     response.then().statusCode(200);
-    NoteResponse[] noteResponses = response.as(NoteResponse[].class);
-    assertEquals(1, noteResponses.length);
+    PagedResponse<NoteResponse> pagedResponse = response.as(new TypeRef<>() {});
+    assertEquals(1, pagedResponse.getData().size());
+    assertEquals(0, pagedResponse.getPage());
+    assertEquals(10, pagedResponse.getSize());
+    assertEquals(1, pagedResponse.getTotal());
   }
 
   @Test
