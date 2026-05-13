@@ -1,8 +1,7 @@
-import { Component, OnDestroy, OnInit, Signal, signal } from '@angular/core';
+import { Component, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NoteService } from '../../services/note/note.service';
 import { NoteCardComponent } from '../note-card/note-card.component';
-import { Observable, Subscription } from 'rxjs';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -12,9 +11,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Note } from '../../types/note';
 import { NoteChangeDialogComponent } from '../note-change-dialog/note-change-dialog.component';
-import { NoteUpdateRequest, UserResponse } from '@notes/notes_service';
+import { NoteUpdateRequest } from '@notes/notes_service';
 import { NoteShareDialogComponent } from '../note-share-dialog/note-share-dialog.component';
-import { AuthService } from '../../services/auth/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 type ChangeNoteDialogStatus =
@@ -41,21 +39,18 @@ type ShareNoteDialogStatus = { visible: false } | ({ visible: true } & { note: N
   styleUrls: ['./notes-list.component.scss'],
   templateUrl: './notes-list.component.html',
 })
-export class NotesListComponent implements OnInit, OnDestroy {
-  private notes$: Observable<Note[]>;
-  private notesSubscription: Subscription | null = null;
-  pinnedNotes = signal<Note[]>([]);
-  otherNotes = signal<Note[]>([]);
+export class NotesListComponent {
+  pinnedNotesSection: Signal<any>;
+  otherNotesSection: Signal<any>;
+  sharedNotesSection: Signal<any>;
+
   clickNote = signal<ChangeNoteDialogStatus>({ visible: false, readonly: false });
   shareNote = signal<ShareNoteDialogStatus>({ visible: false });
-  currentUser: Signal<UserResponse | null | undefined>;
 
-  constructor(
-    private noteService: NoteService,
-    private auth: AuthService,
-  ) {
-    this.notes$ = this.noteService.notes$;
-    this.currentUser = toSignal(this.auth.currentUser$);
+  constructor(private noteService: NoteService) {
+    this.pinnedNotesSection = toSignal(this.noteService.pinnedSection);
+    this.otherNotesSection = toSignal(this.noteService.otherSection);
+    this.sharedNotesSection = toSignal(this.noteService.sharedSection);
   }
 
   onPinClickPropagation(note: Note) {
@@ -65,16 +60,6 @@ export class NotesListComponent implements OnInit, OnDestroy {
       next: () => console.log('updated pinned state'),
       error: (err: any) => console.error('Failed to update pinned state', err),
     });
-  }
-
-  ngOnInit(): void {
-    this.notesSubscription = this.notes$.subscribe((list) => {
-      this.pinnedNotes.set(list.filter((n) => n.pinned));
-      this.otherNotes.set(list.filter((n) => !n.pinned));
-    });
-  }
-  ngOnDestroy(): void {
-    this.notesSubscription?.unsubscribe();
   }
 
   openCreate() {
@@ -105,5 +90,28 @@ export class NotesListComponent implements OnInit, OnDestroy {
 
   isShared(note: Note): boolean {
     return note.shared;
+  }
+
+  get sections() {
+    return [
+      {
+        id: 'pinned',
+        titleKey: 'NOTES.SECTION_PINNED',
+        signal: this.pinnedNotesSection,
+        loadMore: () => this.noteService.loadMorePinned(),
+      },
+      {
+        id: 'other',
+        titleKey: 'NOTES.SECTION_OTHER',
+        signal: this.otherNotesSection,
+        loadMore: () => this.noteService.loadMoreOther(),
+      },
+      {
+        id: 'shared',
+        titleKey: 'NOTES.SECTION_SHARED',
+        signal: this.sharedNotesSection,
+        loadMore: () => this.noteService.loadMoreShared(),
+      },
+    ];
   }
 }

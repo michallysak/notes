@@ -3,15 +3,19 @@ package pl.michallysak.notes.application.quarkus.common;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jboss.logging.Logger;
 import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePermission;
 import pl.michallysak.notes.note.model.NoteStyle;
 import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.SetNotePermissions;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
 import pl.michallysak.notes.user.model.EmailPasswordLogin;
@@ -22,6 +26,9 @@ import pl.michallysak.notes.user.service.UserService;
 @ApplicationScoped
 @RequiredArgsConstructor
 public class StartupBean {
+  private static final int STARTUP_NOTES_COUNT = 30;
+  private static final int SHARED_PER_GROUP_COUNT = 5;
+
   private final Logger logger;
   private final UserRepository userRepository;
   private final UserService userService;
@@ -31,6 +38,7 @@ public class StartupBean {
     Email email = Email.of("admin@test.pl");
     Password password = Password.of("Admin123!");
     UserValue user = getUserValue(email, password);
+    UserValue sharedUser = getUserValue(Email.of("user@test.pl"), Password.of("User123!"));
 
     AuthToken login = userService.login(new EmailPasswordLogin(email, password));
     logger.info("Login Successful: " + login);
@@ -39,15 +47,44 @@ public class StartupBean {
       return;
     }
 
-    NoteValue first = noteService.createNote(getCreateNote(user, "first"));
-    logger.info("Created first note: " + first);
-    NoteValue second = noteService.createNote(getCreateNote(user, "second"));
-    logger.info("Created second note: " + second);
-    NoteStyle noteStyle = NoteStyle.builder().color("#b03a3a").build();
-    NoteUpdate noteUpdate =
-        NoteUpdate.builder().pinned(true).actingUserId(user.id()).style(noteStyle).build();
-    NoteValue noteValue = noteService.updateNote(second.id(), noteUpdate);
-    logger.info("Updated second note: " + noteValue);
+    createStartupNotes(user, sharedUser);
+  }
+
+  private void createStartupNotes(UserValue owner, UserValue sharedUser) {
+    int sharedPinnedCount = 0;
+    int sharedUnpinnedCount = 0;
+
+    for (int i = 1; i <= STARTUP_NOTES_COUNT; i++) {
+      boolean isPinned = i <= STARTUP_NOTES_COUNT / 2;
+      NoteValue created = noteService.createNote(getCreateNote(owner, String.valueOf(i)));
+      logger.info("Created note: " + created);
+
+      if (isPinned) {
+        NoteUpdate noteUpdate =
+            NoteUpdate.builder()
+                .pinned(true)
+                .actingUserId(owner.id())
+                .style(NoteStyle.builder().color("#b03a3a").build())
+                .build();
+        NoteValue updated = noteService.updateNote(created.id(), noteUpdate);
+        logger.info("Pinned note: " + updated);
+      }
+
+      if (isPinned && sharedPinnedCount < SHARED_PER_GROUP_COUNT) {
+        shareNoteWithUser(created.id(), owner.id(), sharedUser.id());
+        sharedPinnedCount++;
+      } else if (!isPinned && sharedUnpinnedCount < SHARED_PER_GROUP_COUNT) {
+        shareNoteWithUser(created.id(), owner.id(), sharedUser.id());
+        sharedUnpinnedCount++;
+      }
+    }
+  }
+
+  private void shareNoteWithUser(UUID noteId, UUID actingUserId, UUID targetUserId) {
+    SetNotePermissions permissions =
+        new SetNotePermissions(targetUserId, Set.of(NotePermission.READ));
+    noteService.setPermissions(noteId, actingUserId, permissions);
+    logger.info("Shared note %s with %s".formatted(noteId, targetUserId));
   }
 
   private UserValue getUserValue(Email email, Password password) {

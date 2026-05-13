@@ -24,6 +24,7 @@
     "CREATE_BUTTON": "Create note",
     "SECTION_PINNED": "Pinned",
     "SECTION_OTHER": "Other",
+    "SECTION_SHARED": "Shared with you",
     "SHARE": "Share",
     "SHARED": "Shared",
     "DELETE": "Delete",

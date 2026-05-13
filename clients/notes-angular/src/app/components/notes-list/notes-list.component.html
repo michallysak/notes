@@ -19,39 +19,26 @@
   }
 
 <div class="notes-list">
-
-  @if ({ pinned: pinnedNotes(), other: otherNotes() }; as notes) {
-
+  @for (section of sections; track section.id) {
     <div>
-      @if (notes.pinned.length != 0) {
-        <h4>{{ 'NOTES.SECTION_PINNED' | translate }}</h4>
+      @if (section.signal()?.data?.length) {
+        <h4>{{ section.titleKey | translate }}</h4>
       }
       <div class="grid">
-        @for (note of notes.pinned; track note.id) {
+        @for (note of section.signal()?.data; track note.id) {
           <app-note-card [note]="note" (onClick)="noteCardClick($event)"
                          (pinClick)="onPinClickPropagation($event)"
                          (shareClick)="noteCardShareClick($event)"></app-note-card>
         }
       </div>
-    </div>
-
-    <div>
-      @if (notes.other.length != 0 && notes.pinned.length != 0) {
-        <h4>{{ 'NOTES.SECTION_OTHER' | translate }}</h4>
+      @if (section.signal()?.hasMore) {
+        <p-button (onClick)="section.loadMore()" label="Load more" class="load-more-btn"></p-button>
       }
-      <div class="grid">
-        @for (note of notes.other; track note.id) {
-          <app-note-card [note]="note" (onClick)="noteCardClick($event)"
-                         (pinClick)="onPinClickPropagation($event)"
-                         (shareClick)="noteCardShareClick($event)"></app-note-card>
-        }
-      </div>
     </div>
+  }
 
-
-    @if (notes.other.length == 0 && notes.pinned.length == 0) {
-      <h4>{{ 'NOTES.NO_NOTES' | translate }}</h4>
-    }
+  @if (!pinnedNotesSection()?.data?.length && !otherNotesSection()?.data?.length && !sharedNotesSection()?.data?.length) {
+    <h4>{{ 'NOTES.NO_NOTES' | translate }}</h4>
   }
 </div>
 

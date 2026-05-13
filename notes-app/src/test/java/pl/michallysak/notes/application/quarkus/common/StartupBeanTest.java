@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 import io.quarkus.runtime.StartupEvent;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.auth.model.AuthToken;
 import pl.michallysak.notes.auth.model.Password;
 import pl.michallysak.notes.common.Email;
+import pl.michallysak.notes.note.model.CreateNote;
+import pl.michallysak.notes.note.model.NotePermission;
+import pl.michallysak.notes.note.model.NoteUpdate;
 import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.user.model.EmailPasswordCreateUser;
@@ -32,80 +36,89 @@ class StartupBeanTest {
   @InjectMocks StartupBean startupBean;
 
   @Test
-  void onStart_shouldCreateAndLoginUser_andLogInfo() {
+  void onStart_shouldCreateNotesPinHalfAndShareFivePerGroup() {
     // given
-    Email email = Email.of("admin@test.pl");
-    Password password = Password.of("Admin123!");
-    UserValue user = mock(UserValue.class);
-    when(user.id()).thenReturn(UUID.randomUUID());
+    Email adminEmail = Email.of("admin@test.pl");
+    Password adminPassword = Password.of("Admin123!");
+    UUID adminUserId = UUID.randomUUID();
+    UUID sharedUserId = UUID.randomUUID();
+
+    UserValue adminUser = mock(UserValue.class);
+    when(adminUser.id()).thenReturn(adminUserId);
+    UserValue sharedUser = mock(UserValue.class);
+    when(sharedUser.id()).thenReturn(sharedUserId);
+
     when(userRepository.findUserWithEmail(any(Email.class))).thenReturn(Optional.empty());
-    when(userService.createUser(any(EmailPasswordCreateUser.class))).thenReturn(user);
+    when(userService.createUser(any(EmailPasswordCreateUser.class)))
+        .thenReturn(adminUser, sharedUser);
     when(userService.login(any(EmailPasswordLogin.class))).thenReturn(mock(AuthToken.class));
-    when(noteService.getCreatedNotes(any(UUID.class))).thenReturn(List.of());
-    // and
-    NoteValue firstNote = mock(NoteValue.class);
-    NoteValue secondNote = mock(NoteValue.class);
-    NoteValue updatedNote = mock(NoteValue.class);
-    UUID secondNoteId = UUID.randomUUID();
-    when(secondNote.id()).thenReturn(secondNoteId);
-    when(noteService.createNote(
-            argThat(
-                note ->
-                    note != null
-                        && note.title().contains("first")
-                        && note.content().contains("first")
-                        && note.authorId().equals(user.id()))))
-        .thenReturn(firstNote);
-    when(noteService.createNote(
-            argThat(
-                note ->
-                    note != null
-                        && note.title().contains("second")
-                        && note.content().contains("second")
-                        && note.authorId().equals(user.id()))))
-        .thenReturn(secondNote);
-    when(noteService.updateNote(any(), any())).thenReturn(updatedNote);
+    when(noteService.getCreatedNotes(eq(adminUserId))).thenReturn(List.of());
+
+    when(noteService.createNote(any(CreateNote.class)))
+        .thenAnswer(
+            invocation -> {
+              UUID noteId = UUID.randomUUID();
+              return NoteValue.builder().id(noteId).build();
+            });
+    when(noteService.updateNote(any(UUID.class), any(NoteUpdate.class)))
+        .thenAnswer(invocation -> NoteValue.builder().id(invocation.getArgument(0)).build());
 
     // when
     startupBean.onStart(mock(StartupEvent.class));
 
     // then
     verify(userService)
-        .createUser(argThat(arg -> arg.email().equals(email) && arg.password().equals(password)));
+        .createUser(
+            argThat(arg -> arg.email().equals(adminEmail) && arg.password().equals(adminPassword)));
     verify(userService)
-        .login(argThat(arg -> arg.email().equals(email) && arg.password().equals(password)));
-    verify(noteService)
-        .createNote(
+        .createUser(
             argThat(
-                note ->
-                    note.title().equals("Note first")
-                        && note.content().contains("first")
-                        && note.authorId().equals(user.id())));
-    verify(noteService)
-        .createNote(
+                arg ->
+                    arg.email().equals(Email.of("user@test.pl"))
+                        && arg.password().equals(Password.of("User123!"))));
+    verify(noteService).getCreatedNotes(eq(adminUserId));
+    verify(userService)
+        .login(
+            argThat(arg -> arg.email().equals(adminEmail) && arg.password().equals(adminPassword)));
+
+    verify(noteService, times(30))
+        .createNote(argThat(note -> note != null && note.authorId().equals(adminUserId)));
+    verify(noteService, times(15))
+        .updateNote(
+            any(UUID.class),
             argThat(
-                note ->
-                    note.title().equals("Note second")
-                        && note.content().contains("second")
-                        && note.authorId().equals(user.id())));
-    verify(noteService)
-        .updateNote(eq(secondNoteId), argThat(update -> Boolean.TRUE.equals(update.pinned())));
-    verify(logger).info(contains("Created default user:"));
+                update ->
+                    Boolean.TRUE.equals(update.pinned())
+                        && update.actingUserId().equals(adminUserId)));
+    verify(noteService, times(10))
+        .setPermissions(
+            any(UUID.class),
+            eq(adminUserId),
+            argThat(
+                request ->
+                    request.targetUserId().equals(sharedUserId)
+                        && request.permissions().equals(Set.of(NotePermission.READ))));
+
+    verify(logger, times(2)).info(contains("Created default user:"));
     verify(logger).info(contains("Login Successful:"));
-    verify(logger).info(contains("Created first note:"));
-    verify(logger).info(contains("Created second note:"));
-    verify(logger).info(contains("Updated second note:"));
+    verify(logger, atLeast(30)).info(contains("Created note:"));
+    verify(logger, atLeast(15)).info(contains("Pinned note:"));
+    verify(logger, atLeast(10)).info(contains("Shared note"));
   }
 
   @Test
   void onStart_shouldSkipNoteCreation_whenNotesAlreadyExist() {
     // given
-    UserValue user = mock(UserValue.class);
-    when(user.id()).thenReturn(UUID.randomUUID());
+    UUID adminUserId = UUID.randomUUID();
+    UserValue adminUser = mock(UserValue.class);
+    when(adminUser.id()).thenReturn(adminUserId);
+    UserValue sharedUser = mock(UserValue.class);
+
     when(userRepository.findUserWithEmail(any(Email.class))).thenReturn(Optional.empty());
-    when(userService.createUser(any(EmailPasswordCreateUser.class))).thenReturn(user);
+    when(userService.createUser(any(EmailPasswordCreateUser.class)))
+        .thenReturn(adminUser, sharedUser);
     when(userService.login(any(EmailPasswordLogin.class))).thenReturn(mock(AuthToken.class));
-    when(noteService.getCreatedNotes(any(UUID.class))).thenReturn(List.of(mock(NoteValue.class)));
+    when(noteService.getCreatedNotes(eq(adminUserId))).thenReturn(List.of(mock(NoteValue.class)));
 
     // when
     startupBean.onStart(mock(StartupEvent.class));
@@ -113,5 +126,6 @@ class StartupBeanTest {
     // then
     verify(noteService, never()).createNote(any());
     verify(noteService, never()).updateNote(any(), any());
+    verify(noteService, never()).setPermissions(any(), any(), any());
   }
 }

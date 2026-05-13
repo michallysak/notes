@@ -33,9 +33,25 @@ describe('NotesPage', () => {
     getNotes: vi.fn().mockReturnValue(of([])),
   };
 
+  let authServiceSpy: any;
+  let routerSpy: any;
+  let noteServiceSpy: any;
+
   beforeEach(async () => {
-    noteService.getCurrentUserValue.mockReturnValue({ id: 'u1' });
-    noteService.notes$ = of([]);
+    noteServiceSpy = {
+      pinnedSection: of({ data: [], page: 0, hasMore: false, loading: false }),
+      otherSection: of({ data: [], page: 0, hasMore: false, loading: false }),
+      sharedSection: of({ data: [], page: 0, hasMore: false, loading: false }),
+    };
+
+    authServiceSpy = {
+      logged$: new BehaviorSubject(false),
+      currentUser$: new BehaviorSubject(null),
+      login: vi.fn(),
+    };
+
+    noteServiceSpy.getCurrentUserValue = vi.fn().mockReturnValue({ id: 'u1' });
+    noteServiceSpy.notes$ = of([]);
 
     notesApiService.getNotes.mockClear();
     notesApiService.getNotes.mockReturnValue(of([]));
@@ -45,8 +61,8 @@ describe('NotesPage', () => {
       providers: [
         provideRouter([]),
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
-        { provide: AuthService, useValue: authService },
-        { provide: NoteService, useValue: noteService },
+        { provide: AuthService, useValue: authServiceSpy },
+        { provide: NoteService, useValue: noteServiceSpy },
         { provide: NotesAPIService, useValue: notesApiService },
         { provide: NoteEventsService, useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } },
       ],
@@ -71,7 +87,7 @@ describe('NotesPage', () => {
   });
 
   it('should show notes list when user is logged in', () => {
-    authService.logged$.next(true);
+    authServiceSpy.logged$.next(true);
     fixture.detectChanges();
 
     expect(component.logged()).toBe(true);

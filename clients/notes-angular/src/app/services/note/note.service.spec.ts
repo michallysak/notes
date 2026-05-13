@@ -25,7 +25,7 @@ describe('NoteService', () => {
 
   beforeEach(() => {
     notesApi = {
-      searchNotes: vi.fn(),
+      searchNotes: vi.fn().mockReturnValue(of({ data: [] })),
       getPermissions: vi.fn().mockReturnValue(of([])),
       updateNote: vi.fn(),
       createNote: vi.fn(),
@@ -38,14 +38,43 @@ describe('NoteService', () => {
       noteUpdatedEvents$: new Subject(),
       noteDeletedEvents$: new Subject(),
     };
+
     authService = {
-      getCurrentUserValue: vi.fn().mockReturnValue({ id: 'auth-1' }),
-      logged$: new BehaviorSubject(true),
+      logged$: new BehaviorSubject<boolean>(false),
+      getCurrentUserValue: vi.fn(),
     };
 
-    notesApi.searchNotes.mockReturnValue(of([])); // Default fallback
+    service = new NoteService(notesApi, authService, noteEventsService);
+  });
 
-    service = new NoteService(notesApi as any, authService as any, noteEventsService as any);
+  describe('fetchSection behaviour', () => {
+    it('does not send request if hasMore is false', () => {
+      service.pinnedSection.next({ data: [], page: 0, hasMore: false });
+      service.loadMorePinned();
+      expect(notesApi.searchNotes).not.toHaveBeenCalled();
+    });
+
+    it('does not send request if loading is true', () => {
+      service.pinnedSection.next({ data: [], page: 0, hasMore: true, loading: true });
+      service.loadMorePinned();
+      expect(notesApi.searchNotes).not.toHaveBeenCalled();
+    });
+  });
+
+  it('createNote updates internal subject via server response', () => {
+    const createdNote = createNote({ id: '2', title: 'New Note' });
+    (notesApi.createNote as any).mockReturnValue(of(createdNote));
+
+    let notesList: Note[] = [];
+    service.notes$.subscribe((notes) => (notesList = notes));
+
+    return new Promise<void>((resolve) => {
+      service.createNote({ title: 'New Note' } as any).subscribe(() => {
+        expect(notesList.length).toBe(1);
+        expect(notesList[0].id).toBe('2');
+        resolve();
+      });
+    });
   });
 
   it('loads notes when logged$ is true', () => {
@@ -94,27 +123,20 @@ describe('NoteService', () => {
     expect(latestNotes[0].id).toBe('1');
   });
 
-  it('updateNote should add note when not present (idx === -1)', () => {
-    const notesSubject = new BehaviorSubject<any>({ data: [createNote({ id: '1' })] });
-    notesApi.searchNotes.mockReturnValue(notesSubject);
-    authService.logged$ = of(true);
-    const service = new NoteService(notesApi as any, authService as any, noteEventsService as any);
+  it('upsertNoteInSubject adds shared note to sharedSection directly', () => {
+    // testing private upsertNoteInSubject correctly routes to sharedSection
+    const sharedNote = createNote({ id: 'shared-2', shared: true });
+    (service as any).upsertNoteInSubject(sharedNote);
+    const data = service.sharedSection.value.data;
+    expect(data.find((n: Note) => n.id === 'shared-2')).toBeTruthy();
+  });
 
-    const newNote = createNote({ id: '2', title: 'New' });
-    // mock updateNote to return the new note
-    (notesApi as any).updateNote = vi.fn().mockReturnValue(of(newNote));
-
-    let latest: Note[] = [];
-    service.notes$.subscribe((n) => (latest = n));
-
-    return new Promise<void>((resolve) => {
-      service.updateNote('2', { title: 'New' } as any).subscribe(() => {
-        expect((notesApi as any).updateNote).toHaveBeenCalledWith({ title: 'New' }, '2');
-        // new note should be prepended
-        expect(latest[0].id).toBe('2');
-        resolve();
-      });
-    });
+  it('upsertNoteInSubject adds pinned note to pinnedSection directly', () => {
+    // testing private upsertNoteInSubject correctly routes to pinnedSection
+    const pinnedNote = createNote({ id: 'pinned-2', pinned: true });
+    (service as any).upsertNoteInSubject(pinnedNote);
+    const data = service.pinnedSection.value.data;
+    expect(data.find((n: Note) => n.id === 'pinned-2')).toBeTruthy();
   });
 
   it('updateNote should replace existing note when present (idx !== -1)', () => {
@@ -381,6 +403,9 @@ describe('NoteService', () => {
   it('updates permissions for a note correctly', () => {
     const noteId = '123';
     notesApi.getPermissions.mockReturnValue(of([{ userId: 'auth-1', permissions: [NotePermission.EDIT] }]));
+    notesApi.searchNotes.mockReturnValue(new BehaviorSubject<any>({ data: [] })); // provide mock
+
+    authService.getCurrentUserValue = vi.fn().mockReturnValue({ id: 'auth-1' });
 
     // initially unshared
     (service as any).notesSubject.next([createNote({ id: noteId, shared: false, canEdit: false })]);

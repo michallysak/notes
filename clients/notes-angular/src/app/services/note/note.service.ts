@@ -16,10 +16,23 @@ import { Note } from '../../types/note';
 import { NoteEventsService } from './note-events.service';
 import { AuthService } from '../auth/auth.service';
 
+export interface NotesSection {
+  data: Note[];
+  page: number;
+  hasMore: boolean;
+  loading?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class NoteService {
   private notesSubject = new BehaviorSubject<Note[]>([]);
   public notes$ = this.notesSubject.asObservable();
+
+  public pinnedSection = new BehaviorSubject<NotesSection>({ data: [], page: 0, hasMore: true });
+  public otherSection = new BehaviorSubject<NotesSection>({ data: [], page: 0, hasMore: true });
+  public sharedSection = new BehaviorSubject<NotesSection>({ data: [], page: 0, hasMore: true });
+
+  private readonly pageSize = 5;
 
   constructor(
     private notesApi: NotesAPIService,
@@ -57,17 +70,85 @@ export class NoteService {
     });
   }
 
+  loadMorePinned() {
+    this.fetchSection(this.pinnedSection, true, false, undefined);
+  }
+
+  loadMoreOther() {
+    this.fetchSection(this.otherSection, false, false, undefined);
+  }
+
+  loadMoreShared() {
+    const currentUserId = this.auth.getCurrentUserValue()?.id;
+    this.fetchSection(this.sharedSection, false, true, (n) => n.authorId !== currentUserId);
+  }
+
+  private fetchSection(section: BehaviorSubject<NotesSection>, isPinned: boolean, isShared: boolean, filterFn?: (n: Note) => boolean) {
+    const current = section.value;
+    if (!current.hasMore || current.loading) return;
+
+    section.next({ ...current, loading: true });
+
+    this.notesApi.searchNotes(isPinned, isShared, current.page, this.pageSize).subscribe(res => {
+      let data = res?.data || [];
+      let mappedData = data.map(n => this.mapToNote(n));
+      if (filterFn) {
+        mappedData = mappedData.filter(filterFn);
+      }
+      this.loadPermissionsForNotes(mappedData);
+
+      section.next({
+        data: [...current.data, ...mappedData],
+        page: current.page + 1,
+        hasMore: (res?.data?.length || 0) >= this.pageSize,
+        loading: false
+      });
+      this.syncAllNotes();
+    });
+  }
+
+  private syncAllNotes() {
+    const all = [
+      ...this.pinnedSection.value.data,
+      ...this.otherSection.value.data,
+      ...this.sharedSection.value.data
+    ];
+    const unique = Array.from(new Map(all.map(item => [item.id, item])).values());
+    this.notesSubject.next(unique);
+  }
+
+  private upsertNoteInSection(section: BehaviorSubject<NotesSection>, value: Note) {
+    const current = section.value;
+    const idx = current.data.findIndex(({ id }) => id === value.id);
+    if (idx !== -1) {
+      const nextData = [...current.data];
+      nextData[idx] = { ...nextData[idx], ...value };
+      section.next({ ...current, data: nextData });
+    }
+  }
+
   private upsertNoteInSubject(value: Note) {
     const current = this.notesSubject.value;
     const idx = current.findIndex(({ id }) => id === value.id);
     if (idx === -1) {
       this.notesSubject.next([value, ...current]);
+      if (value.shared) {
+        this.sharedSection.next({ ...this.sharedSection.value, data: [value, ...this.sharedSection.value.data] });
+      } else if (value.pinned) {
+        this.pinnedSection.next({ ...this.pinnedSection.value, data: [value, ...this.pinnedSection.value.data] });
+      } else {
+        this.otherSection.next({ ...this.otherSection.value, data: [value, ...this.otherSection.value.data] });
+      }
       return;
     }
 
     const next = [...current];
     next[idx] = { ...next[idx], ...value };
     this.notesSubject.next(next);
+
+    this.upsertNoteInSection(this.pinnedSection, next[idx]);
+    this.upsertNoteInSection(this.otherSection, next[idx]);
+    this.upsertNoteInSection(this.sharedSection, next[idx]);
 
     if (value.id) {
       this.loadPermissionsForNote(value.id);
@@ -77,18 +158,28 @@ export class NoteService {
   private removeNoteFromSubject(id: string) {
     const current = this.notesSubject.value;
     this.notesSubject.next(current.filter((n) => n.id !== id));
+
+    const removeFn = (sec: BehaviorSubject<NotesSection>) => {
+      sec.next({ ...sec.value, data: sec.value.data.filter(n => n.id !== id) });
+    };
+    [this.pinnedSection, this.otherSection, this.sharedSection].forEach(removeFn);
   }
 
   loadNotes() {
-    this.notesApi.searchNotes().subscribe((noteResponse) => {
-      const notes = noteResponse.data.map((res) => this.mapToNote(res));
-      this.notesSubject.next(notes);
-      this.loadPermissionsForNotes(notes);
-    });
+    this.clearNotes();
+
+    // Load initial page for each section
+    this.loadMorePinned();
+    this.loadMoreOther();
+    this.loadMoreShared();
   }
 
   clearNotes() {
     this.notesSubject.next([]);
+    const reset = { data: [], page: 0, hasMore: true };
+    this.pinnedSection.next(reset);
+    this.otherSection.next(reset);
+    this.sharedSection.next(reset);
   }
 
   private loadPermissionsForNotes(notes: Note[]) {
