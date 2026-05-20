@@ -71,19 +71,21 @@ export class NoteService {
   }
 
   loadMorePinned() {
-    this.fetchSection(this.pinnedSection, true, false, undefined);
+    const currentUserId = this.auth.getCurrentUserValue()?.id;
+    this.fetchSection(this.pinnedSection, true, undefined, (n) => n.authorId === currentUserId);
   }
 
   loadMoreOther() {
-    this.fetchSection(this.otherSection, false, false, undefined);
+    const currentUserId = this.auth.getCurrentUserValue()?.id;
+    this.fetchSection(this.otherSection, false, undefined, (n) => n.authorId === currentUserId);
   }
 
   loadMoreShared() {
     const currentUserId = this.auth.getCurrentUserValue()?.id;
-    this.fetchSection(this.sharedSection, false, true, (n) => n.authorId !== currentUserId);
+    this.fetchSection(this.sharedSection, undefined, true, (n) => n.authorId !== currentUserId);
   }
 
-  private fetchSection(section: BehaviorSubject<NotesSection>, isPinned: boolean, isShared: boolean, filterFn?: (n: Note) => boolean) {
+  private fetchSection(section: BehaviorSubject<NotesSection>, isPinned: boolean | undefined, isShared: boolean | undefined, filterFn?: (n: Note) => boolean) {
     const current = section.value;
     if (!current.hasMore || current.loading) return;
 
@@ -132,12 +134,17 @@ export class NoteService {
     const idx = current.findIndex(({ id }) => id === value.id);
     if (idx === -1) {
       this.notesSubject.next([value, ...current]);
-      if (value.shared) {
+      const currentUserId = this.auth.getCurrentUserValue()?.id;
+      if (value.authorId !== currentUserId) {
         this.sharedSection.next({ ...this.sharedSection.value, data: [value, ...this.sharedSection.value.data] });
       } else if (value.pinned) {
         this.pinnedSection.next({ ...this.pinnedSection.value, data: [value, ...this.pinnedSection.value.data] });
       } else {
         this.otherSection.next({ ...this.otherSection.value, data: [value, ...this.otherSection.value.data] });
+      }
+
+      if (value.id) {
+        this.loadPermissionsForNote(value.id);
       }
       return;
     }
@@ -193,6 +200,15 @@ export class NoteService {
         return update ? { ...n, ...update } : n;
       });
       this.notesSubject.next(next);
+
+      updates.forEach((update) => {
+        const note = next.find((n) => n.id === update.id);
+        if (note) {
+          this.upsertNoteInSection(this.pinnedSection, note);
+          this.upsertNoteInSection(this.otherSection, note);
+          this.upsertNoteInSection(this.sharedSection, note);
+        }
+      });
     });
   }
 
@@ -201,6 +217,13 @@ export class NoteService {
       const current = this.notesSubject.value;
       const next = current.map((n) => (n.id === id ? { ...n, ...update } : n));
       this.notesSubject.next(next);
+
+      const note = next.find((n) => n.id === update.id);
+      if (note) {
+        this.upsertNoteInSection(this.pinnedSection, note);
+        this.upsertNoteInSection(this.otherSection, note);
+        this.upsertNoteInSection(this.sharedSection, note);
+      }
     });
   }
 

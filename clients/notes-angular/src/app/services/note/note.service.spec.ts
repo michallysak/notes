@@ -133,7 +133,7 @@ describe('NoteService', () => {
 
   it('upsertNoteInSubject adds pinned note to pinnedSection directly', () => {
     // testing private upsertNoteInSubject correctly routes to pinnedSection
-    const pinnedNote = createNote({ id: 'pinned-2', pinned: true });
+    const pinnedNote = { id: 'pinned-2', title: 'test', content: 'test', pinned: true } as Note;
     (service as any).upsertNoteInSubject(pinnedNote);
     const data = service.pinnedSection.value.data;
     expect(data.find((n: Note) => n.id === 'pinned-2')).toBeTruthy();

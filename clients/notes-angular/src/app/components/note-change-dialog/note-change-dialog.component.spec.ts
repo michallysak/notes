@@ -5,6 +5,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { NoteChangeDialogComponent } from './note-change-dialog.component';
 import { NotesAPIService, NoteResponse } from '@notes/notes_service';
 import { NoteEventsService } from '../../services/note/note-events.service';
+import { NoteService } from '../../services/note/note.service';
 
 describe('NoteChangeDialogComponent', () => {
   let component: NoteChangeDialogComponent;
@@ -90,7 +91,8 @@ describe('NoteChangeDialogComponent', () => {
   it('should call createNote on save when note is null', async () => {
     vi.useFakeTimers();
     const res = { ...sampleNote, id: '11' } as NoteResponse;
-    mockApi.createNote.mockReturnValue(of(res));
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'createNote').mockReturnValue(of(res as any));
 
     component.note = null;
     component.form.setValue({ title: 'New', content: 'Body', color: null });
@@ -99,14 +101,15 @@ describe('NoteChangeDialogComponent', () => {
     (component as any).save();
     vi.advanceTimersByTime(1000);
     // no further change detection required for state assertions
-    expect(mockApi.createNote).toHaveBeenCalledWith({ title: 'New', content: 'Body' });
+    expect(noteServiceMock.createNote).toHaveBeenCalledWith({ title: 'New', content: 'Body' });
     expect(component.lastSavedNote()?.id).toBe('11');
     vi.useRealTimers();
   });
 
   it('should call updateNote on save when note exists', async () => {
     vi.useFakeTimers();
-    mockApi.updateNote.mockReturnValue(of(sampleNote));
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'updateNote').mockReturnValue(of(sampleNote as any));
     component.note = sampleNote as any;
     // title must be long enough to pass validators (minLength 3)
     component.form.setValue({ title: 'Title', content: 'C1', color: null });
@@ -114,13 +117,14 @@ describe('NoteChangeDialogComponent', () => {
     (component as any).save();
     vi.advanceTimersByTime(1000);
 
-    expect(mockApi.updateNote).toHaveBeenCalledWith({ title: 'Title', content: 'C1', style: { color: null } }, '10');
+    expect(noteServiceMock.updateNote).toHaveBeenCalledWith('10', { title: 'Title', content: 'C1', style: { color: null } });
     vi.useRealTimers();
   });
 
   it('should set notSaved on save error', async () => {
     vi.useFakeTimers();
-    mockApi.createNote.mockReturnValue(throwError(() => new Error('fail')));
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'createNote').mockReturnValue(throwError(() => new Error('fail')));
 
     component.note = null;
     // title must satisfy validators so save() proceeds
@@ -162,16 +166,23 @@ describe('NoteChangeDialogComponent', () => {
   });
 
   it('does not save when a request is already in progress', () => {
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'createNote');
+    vi.spyOn(noteServiceMock, 'updateNote');
+
     component.saving.set(true);
     component.form.setValue({ title: 'Valid title', content: 'Body', color: null });
 
     (component as any).save();
 
-    expect(mockApi.createNote).not.toHaveBeenCalled();
-    expect(mockApi.updateNote).not.toHaveBeenCalled();
+    expect(noteServiceMock.createNote).not.toHaveBeenCalled();
+    expect(noteServiceMock.updateNote).not.toHaveBeenCalled();
   });
 
   it('does not create a note when form values are undefined', () => {
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'createNote');
+
     component.note = null;
     Object.defineProperty(component.form, 'value', {
       configurable: true,
@@ -180,12 +191,13 @@ describe('NoteChangeDialogComponent', () => {
 
     (component as any).save();
 
-    expect(mockApi.createNote).not.toHaveBeenCalled();
+    expect(noteServiceMock.createNote).not.toHaveBeenCalled();
   });
 
   it('sets notSaved on update error', () => {
     vi.useFakeTimers();
-    mockApi.updateNote.mockReturnValue(throwError(() => new Error('update fail')));
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'updateNote').mockReturnValue(throwError(() => new Error('update fail')));
     component.note = sampleNote as any;
     component.form.setValue({ title: 'Title', content: 'C1', color: null });
 
@@ -267,16 +279,17 @@ describe('NoteChangeDialogComponent', () => {
 
   it('should call updateNote with color property when saving note with color', async () => {
     vi.useFakeTimers();
-    mockApi.updateNote.mockReturnValue(of(sampleNote));
+    const noteServiceMock = TestBed.inject(NoteService);
+    vi.spyOn(noteServiceMock, 'updateNote').mockReturnValue(of(sampleNote as any));
     component.note = sampleNote as any;
     component.form.setValue({ title: 'Title', content: 'C1', color: '#ff0000' });
 
     (component as any).save();
     vi.advanceTimersByTime(1000);
 
-    expect(mockApi.updateNote).toHaveBeenCalled();
-    const updateCall = mockApi.updateNote.mock.calls[0];
-    expect(updateCall[0]).toHaveProperty('style');
+    expect(noteServiceMock.updateNote).toHaveBeenCalled();
+    const updateCall = vi.mocked(noteServiceMock.updateNote).mock.calls[0];
+    expect(updateCall[1]).toHaveProperty('style');
     vi.useRealTimers();
   });
 
