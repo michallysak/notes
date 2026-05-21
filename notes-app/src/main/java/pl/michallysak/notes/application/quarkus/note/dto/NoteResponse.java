@@ -1,6 +1,7 @@
 package pl.michallysak.notes.application.quarkus.note.dto;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,4 +47,9 @@ public class NoteResponse {
 
   @Schema(description = "Style of the note")
   private NoteStyleDTO style;
+
+  @Schema(
+      required = true,
+      description = "List of users with access to the note and their permissions")
+  private List<NoteShareResponse> shares;
 }

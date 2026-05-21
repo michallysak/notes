@@ -134,6 +134,38 @@ class NoteMapperTest {
     assertEquals(value.created(), noteResponse.getCreated());
     assertEquals(value.pinned(), noteResponse.isPinned());
     assertEquals(updated.orElse(null), noteResponse.getUpdated());
+    assertNull(noteResponse.getShares());
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideNoteValues")
+  void toNoteResponse_shouldMapCorrectly_withShares(
+      @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<OffsetDateTime> updated) {
+    // given
+    UUID userId = UUID.randomUUID();
+    NoteShare share = new NoteShare(userId, Set.of(NotePermission.READ, NotePermission.EDIT));
+    NoteValue value =
+        NoteTestUtils.createNoteValueBuilder().updated(updated).shares(Set.of(share)).build();
+    Email email = Email.of("user@example.com");
+    NoteShareResponse shareResponse = noteMapper.mapToNoteShareResponse(share, email);
+    // when
+    NoteResponse noteResponse =
+        noteMapper.mapToNoteResponse(value, java.util.List.of(shareResponse));
+    // then
+    assertEquals(value.id(), noteResponse.getId());
+    assertEquals(value.authorId(), noteResponse.getAuthorId());
+    assertEquals(value.title(), noteResponse.getTitle());
+    assertEquals(value.content(), noteResponse.getContent());
+    assertEquals(value.created(), noteResponse.getCreated());
+    assertEquals(value.pinned(), noteResponse.isPinned());
+    assertEquals(updated.orElse(null), noteResponse.getUpdated());
+    assertNotNull(noteResponse.getShares());
+    assertEquals(1, noteResponse.getShares().size());
+    assertEquals(userId, noteResponse.getShares().getFirst().getUserId());
+    assertEquals("user@example.com", noteResponse.getShares().getFirst().getEmail());
+    assertEquals(
+        Set.of(NotePermission.READ, NotePermission.EDIT),
+        noteResponse.getShares().getFirst().getPermissions());
   }
 
   public static Stream<Arguments> provideNoteValues() {

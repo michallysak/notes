@@ -31,21 +31,21 @@ public class NoteController {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     CreateNote createNote = noteMapper.mapToCreateNote(request, currentUserId);
     NoteValue noteValue = noteService.createNote(createNote);
-    return noteMapper.mapToNoteResponse(noteValue);
+    List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
+    return noteMapper.mapToNoteResponse(noteValue, shares);
   }
 
   public List<NoteResponse> getNotes() {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     return noteService.getCreatedNotes(currentUserId).stream()
-        .map(noteMapper::mapToNoteResponse)
+        .map(this::noteValueToResponse)
         .toList();
   }
 
   public PagedResponse<NoteResponse> searchNotes(NotePagedQuery query) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     Paged<NoteValue> searchResult = noteService.search(currentUserId, query);
-    List<NoteResponse> data =
-        searchResult.data().stream().map(noteMapper::mapToNoteResponse).toList();
+    List<NoteResponse> data = searchResult.data().stream().map(this::noteValueToResponse).toList();
     return new PagedResponse<>(
         data, searchResult.page(), searchResult.size(), searchResult.total());
   }
@@ -53,14 +53,16 @@ public class NoteController {
   public NoteResponse getNote(UUID id) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     NoteValue noteValue = noteService.getCreatedNote(id, currentUserId);
-    return noteMapper.mapToNoteResponse(noteValue);
+    List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
+    return noteMapper.mapToNoteResponse(noteValue, shares);
   }
 
   public NoteResponse updateNote(UUID id, NoteUpdateRequest request) {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, currentUserId);
     NoteValue noteValue = noteService.updateNote(id, noteUpdate);
-    return noteMapper.mapToNoteResponse(noteValue);
+    List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
+    return noteMapper.mapToNoteResponse(noteValue, shares);
   }
 
   public void deleteNote(UUID id) {
@@ -92,5 +94,17 @@ public class NoteController {
   private NoteShareResponse mapToNoteShareResponse(NoteShare noteShare) {
     Email email = userService.getUser(noteShare.userId()).email();
     return noteMapper.mapToNoteShareResponse(noteShare, email);
+  }
+
+  private List<NoteShareResponse> mapNoteSharesToResponse(Set<NoteShare> shares) {
+    if (shares == null || shares.isEmpty()) {
+      return List.of();
+    }
+    return shares.stream().map(this::mapToNoteShareResponse).toList();
+  }
+
+  private NoteResponse noteValueToResponse(NoteValue noteValue) {
+    List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
+    return noteMapper.mapToNoteResponse(noteValue, shares);
   }
 }

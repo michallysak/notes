@@ -3,6 +3,7 @@ package pl.michallysak.notes.application.quarkus.note.mapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -40,7 +41,12 @@ public abstract class NoteMapper {
   public abstract NoteUpdate mapToNoteUpdate(
       NoteUpdateRequest noteUpdateRequest, UUID actingUserId);
 
+  @Mapping(target = "shares", ignore = true)
   public abstract NoteResponse mapToNoteResponse(NoteValue noteValue);
+
+  @Mapping(target = "shares", source = "shares")
+  public abstract NoteResponse mapToNoteResponse(
+      NoteValue noteValue, List<NoteShareResponse> shares);
 
   @Mapping(target = "email", ignore = true)
   public abstract NoteShareResponse mapToNoteShareResponse(NoteShare noteShare);

@@ -45,18 +45,19 @@ class NoteControllerTest {
     CreateNote createNote = mock(CreateNote.class);
     NoteValue noteValue = mock(NoteValue.class);
     NoteResponse response = mock(NoteResponse.class);
+    when(noteValue.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteMapper.mapToCreateNote(any(CreateNoteRequest.class), eq(AUTHOR_ID)))
         .thenReturn(createNote);
     when(noteService.createNote(createNote)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
     // when
     NoteResponse result = noteController.createNote(request);
     // then
     assertEquals(response, result);
     verify(noteMapper).mapToCreateNote(request, AUTHOR_ID);
     verify(noteService).createNote(createNote);
-    verify(noteMapper).mapToNoteResponse(noteValue);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
   }
 
   @Test
@@ -67,10 +68,12 @@ class NoteControllerTest {
     NoteResponse response1 = mock(NoteResponse.class);
     NoteResponse response2 = mock(NoteResponse.class);
     List<NoteValue> noteValues = Arrays.asList(noteValue1, noteValue2);
+    when(noteValue1.shares()).thenReturn(Set.of());
+    when(noteValue2.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNotes(AUTHOR_ID)).thenReturn(noteValues);
-    when(noteMapper.mapToNoteResponse(noteValue1)).thenReturn(response1);
-    when(noteMapper.mapToNoteResponse(noteValue2)).thenReturn(response2);
+    when(noteMapper.mapToNoteResponse(eq(noteValue1), anyList())).thenReturn(response1);
+    when(noteMapper.mapToNoteResponse(eq(noteValue2), anyList())).thenReturn(response2);
     // when
     List<NoteResponse> result = noteController.getNotes();
     // then
@@ -78,8 +81,8 @@ class NoteControllerTest {
     assertTrue(result.contains(response1));
     assertTrue(result.contains(response2));
     verify(noteService).getCreatedNotes(AUTHOR_ID);
-    verify(noteMapper).mapToNoteResponse(noteValue1);
-    verify(noteMapper).mapToNoteResponse(noteValue2);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue1), anyList());
+    verify(noteMapper).mapToNoteResponse(eq(noteValue2), anyList());
   }
 
   @Test
@@ -88,10 +91,11 @@ class NoteControllerTest {
     NoteValue noteValue = mock(NoteValue.class);
     NoteResponse response = mock(NoteResponse.class);
     NoteQueryBean query = new NoteQueryBean(true, null, 1, 10, SortList.empty());
+    when(noteValue.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.search(AUTHOR_ID, query))
         .thenReturn(new Paged<>(List.of(noteValue), 1, 10, 20));
-    when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
     // when
     PagedResponse<NoteResponse> result = noteController.searchNotes(query);
     // then
@@ -101,7 +105,7 @@ class NoteControllerTest {
     assertEquals(10, result.getSize());
     assertEquals(20, result.getTotal());
     verify(noteService).search(AUTHOR_ID, query);
-    verify(noteMapper).mapToNoteResponse(noteValue);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
   }
 
   @Test
@@ -110,15 +114,16 @@ class NoteControllerTest {
     UUID id = UUID.randomUUID();
     NoteValue noteValue = mock(NoteValue.class);
     NoteResponse response = mock(NoteResponse.class);
+    when(noteValue.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNote(id, AUTHOR_ID)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
     // when
     NoteResponse result = noteController.getNote(id);
     // then
     assertEquals(response, result);
     verify(noteService).getCreatedNote(id, AUTHOR_ID);
-    verify(noteMapper).mapToNoteResponse(noteValue);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
   }
 
   @Test
@@ -129,17 +134,18 @@ class NoteControllerTest {
     NoteUpdate noteUpdate = mock(NoteUpdate.class);
     NoteValue noteValue = mock(NoteValue.class);
     NoteResponse response = mock(NoteResponse.class);
+    when(noteValue.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteMapper.mapToNoteUpdate(request, AUTHOR_ID)).thenReturn(noteUpdate);
     when(noteService.updateNote(id, noteUpdate)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(noteValue)).thenReturn(response);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
     // when
     NoteResponse result = noteController.updateNote(id, request);
     // then
     assertEquals(response, result);
     verify(noteMapper).mapToNoteUpdate(request, AUTHOR_ID);
     verify(noteService).updateNote(id, noteUpdate);
-    verify(noteMapper).mapToNoteResponse(noteValue);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
   }
 
   @Test
