@@ -68,11 +68,11 @@ export class NoteShareDialogComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['visible']?.currentValue && this.note?.id) {
-      this.loadPermissions(this.note.id);
+      this.syncSharesFromNote(this.note);
     }
 
     if (changes['note']?.currentValue && this.visible && this.note?.id) {
-      this.loadPermissions(this.note.id);
+      this.syncSharesFromNote(this.note);
     }
   }
 
@@ -109,7 +109,7 @@ export class NoteShareDialogComponent implements OnChanges {
         next: () => {
           this.form.reset({ email: '', permission: NotePermission.READ });
           this.userNotFound.set(false);
-          this.loadPermissions(noteId);
+          // Wait for SSE noteUpdateEvent to sync shares
         },
         error: (err) => {
           if ([400, 404].includes(err?.status)) {
@@ -153,7 +153,9 @@ export class NoteShareDialogComponent implements OnChanges {
       .removeNoteAccess(noteId, targetUserId)
       .pipe(finalize(() => this.removingUserId.set(null)))
       .subscribe({
-        next: () => this.loadPermissions(noteId),
+        next: () => {
+          // Wait for SSE noteUpdateEvent to sync shares
+        },
         error: (err) => console.error('remove access failed', err),
       });
   }
@@ -162,27 +164,15 @@ export class NoteShareDialogComponent implements OnChanges {
     return (share.permissions ?? []).join(', ');
   }
 
-  private loadPermissions(noteId: string) {
-    this.loading.set(true);
-    this.noteService
-      .getPermissions(noteId)
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (permissions) => {
-          const mapped = (permissions ?? []).map((share) => ({
-            ...share,
-            selectedPermission: (share.permissions ?? []).includes(NotePermission.EDIT)
-              ? NotePermission.EDIT
-              : NotePermission.READ,
-          }));
-          this.shares.set(mapped);
-          this.sharedStateChanged.emit({ noteId, isShared: mapped.length > 0 });
-        },
-        error: (err) => {
-          console.error('load permissions failed', err);
-          this.shares.set([]);
-        },
-      });
+  private syncSharesFromNote(note: Note) {
+    const mapped = (note.shares ?? []).map((share) => ({
+      ...share,
+      selectedPermission: (share.permissions ?? []).includes(NotePermission.EDIT)
+        ? NotePermission.EDIT
+        : NotePermission.READ,
+    }));
+    this.shares.set(mapped);
+    this.sharedStateChanged.emit({ noteId: note.id, isShared: mapped.length > 0 });
   }
 
   private updateSharePermission(share: ShareItem, permission: NotePermission) {
@@ -199,4 +189,3 @@ export class NoteShareDialogComponent implements OnChanges {
     return value === NotePermission.READ || value === NotePermission.EDIT ? value : null;
   }
 }
-

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideTranslateService } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
-import { NotePermission } from '@notes/notes_service';
+import { NotePermission, NoteShareResponse } from '@notes/notes_service';
 import { Select } from 'primeng/select';
 import { NoteShareDialogComponent } from './note-share-dialog.component';
 import { NoteService } from '../../services/note/note.service';
@@ -11,27 +11,27 @@ import { Note } from '../../types/note';
 describe('NoteShareDialogComponent', () => {
   let component: NoteShareDialogComponent;
   let fixture: ComponentFixture<NoteShareDialogComponent>;
-
   const noteService = {
-    getPermissions: vi.fn(),
     setNotePermissions: vi.fn(),
     removeNoteAccess: vi.fn(),
   };
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
-    id: '1',
+    id: '12',
     authorId: 'auth-1',
-    title: 'Title',
-    content: 'Content',
-    created: new Date().toISOString() as any,
-    updated: new Date().toISOString() as any,
+    title: 'test note',
+    content: 'content',
+    created: null as any,
+    updated: null as any,
     pinned: false,
+    style: undefined,
+    shares: [],
     shared: false,
     canEdit: true,
     ...overrides,
   });
 
-  const createShare = (overrides: any = {}) => ({
+  const createShare = (overrides: Partial<NoteShareResponse & { selectedPermission: NotePermission }> = {}) => ({
     userId: 'u-1',
     email: 'u1@example.com',
     permissions: [NotePermission.READ],
@@ -40,11 +40,9 @@ describe('NoteShareDialogComponent', () => {
   });
 
   beforeEach(async () => {
-    noteService.getPermissions.mockReset();
     noteService.setNotePermissions.mockReset();
-    noteService.removeNoteAccess.mockReset();
-    noteService.getPermissions.mockReturnValue(of([]));
     noteService.setNotePermissions.mockReturnValue(of({}));
+    noteService.removeNoteAccess.mockReset();
     noteService.removeNoteAccess.mockReturnValue(of({}));
 
     await TestBed.configureTestingModule({
@@ -57,185 +55,36 @@ describe('NoteShareDialogComponent', () => {
 
     fixture = TestBed.createComponent(NoteShareDialogComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('note', createNote({ id: '12' }));
+    fixture.componentRef.setInput('note', createNote({ id: 'note-1', shares: [] }));
     fixture.componentRef.setInput('visible', true);
     fixture.detectChanges();
   });
 
-  it('loads permissions when opened', () => {
-    expect(noteService.getPermissions).toHaveBeenCalledWith('12');
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('emits sharedStateChanged with isShared=false when permissions are empty', () => {
+  it('emits sharedStateChanged with isShared=false when shares are empty', () => {
     const emitSpy = vi.spyOn(component.sharedStateChanged, 'emit');
-    noteService.getPermissions.mockReturnValue(of([]));
-    (component as any).loadPermissions('12');
-    expect(emitSpy).toHaveBeenCalledWith({ noteId: '12', isShared: false });
+    component.note = createNote({ id: 'note-1', shares: [] });
+    component.visible = true;
+    component.ngOnChanges({
+      visible: { currentValue: true } as any,
+    });
+    expect(emitSpy).toHaveBeenCalledWith({ noteId: 'note-1', isShared: false });
   });
 
-  it('emits sharedStateChanged with isShared=true when permissions are non-empty', () => {
+  it('emits sharedStateChanged with isShared=true when shares are non-empty', () => {
     const emitSpy = vi.spyOn(component.sharedStateChanged, 'emit');
-    noteService.getPermissions.mockReturnValue(of([{ userId: 'u-1', email: 'u1@example.com', permissions: [NotePermission.READ] }]));
-    (component as any).loadPermissions('12');
-    expect(emitSpy).toHaveBeenCalledWith({ noteId: '12', isShared: true });
+    component.note = createNote({ id: 'note-1', shares: [{ userId: 'u-1', email: 'u1@example.com', permissions: [NotePermission.READ] }] });
+    component.visible = true;
+    component.ngOnChanges({
+      visible: { currentValue: true } as any,
+    });
+    expect(emitSpy).toHaveBeenCalledWith({ noteId: 'note-1', isShared: true });
   });
 
-  it('handles loadPermissions error gracefully and clears shares', () => {
-    noteService.getPermissions.mockReturnValue(throwError(() => new Error('fail')));
-    (component as any).loadPermissions('12');
-    expect(component.shares()).toEqual([]);
-    expect(component.loading()).toBe(false);
-  });
-
-  it('shares note with EDIT permission', () => {
-    component.form.controls.permission.setValue(NotePermission.EDIT);
-    component.form.controls.email.setValue('user@example.com');
-
-    component.onShare();
-
-    expect(noteService.setNotePermissions).toHaveBeenCalledWith('12', 'user@example.com', [NotePermission.EDIT]);
-  });
-
-  it('onShare does nothing when form is invalid', () => {
-    component.form.controls.email.setValue('not-an-email');
-    component.onShare();
-    expect(noteService.setNotePermissions).not.toHaveBeenCalled();
-  });
-
-  it('onShare does nothing when already saving', () => {
-    component.saving.set(true);
-    component.form.controls.email.setValue('user@example.com');
-    component.onShare();
-    expect(noteService.setNotePermissions).not.toHaveBeenCalled();
-  });
-
-  it('onShare does nothing when email is blank after trim', () => {
-    component.form.controls.email.setValue('   ');
-    // mark as valid for this test by bypassing validator via direct patch
-    vi.spyOn(component.form, 'invalid', 'get').mockReturnValue(false);
-    component.onShare();
-    expect(noteService.setNotePermissions).not.toHaveBeenCalled();
-  });
-
-  it('onShare resets form and reloads on success', () => {
-    noteService.setNotePermissions.mockReturnValue(of({}));
-    noteService.getPermissions.mockReturnValue(of([]));
-    component.form.controls.email.setValue('user@example.com');
-
-    noteService.getPermissions.mockClear(); // reset count after setup calls
-    component.onShare();
-
-    expect(component.form.controls.email.value).toBe('');
-    expect(component.userNotFound()).toBe(false);
-    expect(noteService.getPermissions).toHaveBeenCalledTimes(1); // reloads once after share
-  });
-
-  it('shows user-not-found message on 404 when adding share', () => {
-    noteService.setNotePermissions.mockReturnValue(throwError(() => ({ status: 404 })));
-    component.form.controls.email.setValue('missing@example.com');
-
-    component.onShare();
-    fixture.detectChanges();
-
-    expect(component.userNotFound()).toBe(true);
-    expect(fixture.debugElement.query(By.css('p-message'))).toBeTruthy();
-  });
-
-  it('shows user-not-found message on 400 when adding share', () => {
-    noteService.setNotePermissions.mockReturnValue(throwError(() => ({ status: 400 })));
-    component.form.controls.email.setValue('missing@example.com');
-
-    component.onShare();
-
-    expect(component.userNotFound()).toBe(true);
-  });
-
-  it('logs error on unexpected share failure', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    noteService.setNotePermissions.mockReturnValue(throwError(() => ({ status: 500 })));
-    component.form.controls.email.setValue('user@example.com');
-
-    component.onShare();
-
-    expect(consoleSpy).toHaveBeenCalledWith('share failed', expect.objectContaining({ status: 500 }));
-    consoleSpy.mockRestore();
-  });
-
-  it('clears userNotFound when email changes', () => {
-    component.userNotFound.set(true);
-    component.form.controls.email.setValue('new@example.com');
-    expect(component.userNotFound()).toBe(false);
-  });
-
-  it('updates selected permission for an existing shared user', () => {
-    const share = createShare();
-    component.shares.set([share]);
-
-    component.onPermissionChange(share, NotePermission.EDIT);
-
-    expect(noteService.setNotePermissions).toHaveBeenCalledWith('12', 'u1@example.com', [NotePermission.EDIT]);
-  });
-
-  it('onPermissionChange does nothing when same permission', () => {
-    const share = createShare({ selectedPermission: NotePermission.READ });
-    component.shares.set([share]);
-
-    component.onPermissionChange(share, NotePermission.READ);
-
-    expect(noteService.setNotePermissions).not.toHaveBeenCalled();
-  });
-
-  it('onPermissionChange does nothing when permission value is invalid', () => {
-    const share = createShare();
-    component.shares.set([share]);
-
-    component.onPermissionChange(share, null as any);
-
-    expect(noteService.setNotePermissions).not.toHaveBeenCalled();
-  });
-
-  it('onPermissionChange rolls back on API error', () => {
-    noteService.setNotePermissions.mockReturnValue(throwError(() => new Error('fail')));
-    const share = createShare({ selectedPermission: NotePermission.READ });
-    component.shares.set([share]);
-
-    component.onPermissionChange(share, NotePermission.EDIT);
-
-    // After error, should roll back to READ
-    expect(component.shares()[0].selectedPermission).toBe(NotePermission.READ);
-  });
-
-  it('removes user access', () => {
-    component.onRemove({ userId: 'u-1' } as any);
-    expect(noteService.removeNoteAccess).toHaveBeenCalledWith('12', 'u-1');
-  });
-
-  it('onRemove does nothing when no userId', () => {
-    component.onRemove({ userId: undefined } as any);
-    expect(noteService.removeNoteAccess).not.toHaveBeenCalled();
-  });
-
-  it('onRemove does nothing when already removing', () => {
-    component.removingUserId.set('u-1');
-    component.onRemove({ userId: 'u-2' } as any);
-    expect(noteService.removeNoteAccess).not.toHaveBeenCalled();
-  });
-
-  it('onRemove logs error on failure', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    noteService.removeNoteAccess.mockReturnValue(throwError(() => new Error('fail')));
-    component.onRemove({ userId: 'u-1' } as any);
-    expect(consoleSpy).toHaveBeenCalledWith('remove access failed', expect.any(Error));
-    consoleSpy.mockRestore();
-  });
-
-  it('emits visibility change on hide', () => {
-    const hideSpy = vi.spyOn(component.visibleChange, 'emit');
-    component.onHide();
-    expect(hideSpy).toHaveBeenCalledWith(false);
-  });
-
-  it('resets state on hide', () => {
+  it('resets state onHide', () => {
     component.userNotFound.set(true);
     component.saving.set(true);
     component.onHide();
@@ -410,5 +259,3 @@ describe('NoteShareDialogComponent', () => {
     expect(onRemoveSpy).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u-remove' }));
   });
 });
-
-

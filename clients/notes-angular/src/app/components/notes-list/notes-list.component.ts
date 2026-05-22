@@ -85,7 +85,7 @@ export class NotesListComponent {
   }
 
   onSharedStateChanged(event: { noteId: string; isShared: boolean }) {
-    this.noteService.refreshPermissions(event.noteId);
+    // Shared state is now handled automatically when `NoteResponse` receives `shares` or through SSE which pushes updates to `NoteService`.
   }
 
   isShared(note: Note): boolean {

@@ -97,7 +97,6 @@ export class NoteService {
       if (filterFn) {
         mappedData = mappedData.filter(filterFn);
       }
-      this.loadPermissionsForNotes(mappedData);
 
       section.next({
         data: [...current.data, ...mappedData],
@@ -143,9 +142,6 @@ export class NoteService {
         this.otherSection.next({ ...this.otherSection.value, data: [value, ...this.otherSection.value.data] });
       }
 
-      if (value.id) {
-        this.loadPermissionsForNote(value.id);
-      }
       return;
     }
 
@@ -156,10 +152,6 @@ export class NoteService {
     this.upsertNoteInSection(this.pinnedSection, next[idx]);
     this.upsertNoteInSection(this.otherSection, next[idx]);
     this.upsertNoteInSection(this.sharedSection, next[idx]);
-
-    if (value.id) {
-      this.loadPermissionsForNote(value.id);
-    }
   }
 
   private removeNoteFromSubject(id: string) {
@@ -187,69 +179,6 @@ export class NoteService {
     this.pinnedSection.next(reset);
     this.otherSection.next(reset);
     this.sharedSection.next(reset);
-  }
-
-  private loadPermissionsForNotes(notes: Note[]) {
-    const ids = notes.map((n) => n.id).filter((id): id is string => !!id);
-    if (!ids.length) return;
-
-    forkJoin(ids.map((id) => this.getPermissionsForNote(id))).subscribe((updates) => {
-      const current = this.notesSubject.value;
-      const next = current.map((n) => {
-        const update = updates.find((u) => u.id === n.id);
-        return update ? { ...n, ...update } : n;
-      });
-      this.notesSubject.next(next);
-
-      updates.forEach((update) => {
-        const note = next.find((n) => n.id === update.id);
-        if (note) {
-          this.upsertNoteInSection(this.pinnedSection, note);
-          this.upsertNoteInSection(this.otherSection, note);
-          this.upsertNoteInSection(this.sharedSection, note);
-        }
-      });
-    });
-  }
-
-  private loadPermissionsForNote(id: string) {
-    this.getPermissionsForNote(id).subscribe((update) => {
-      const current = this.notesSubject.value;
-      const next = current.map((n) => (n.id === id ? { ...n, ...update } : n));
-      this.notesSubject.next(next);
-
-      const note = next.find((n) => n.id === update.id);
-      if (note) {
-        this.upsertNoteInSection(this.pinnedSection, note);
-        this.upsertNoteInSection(this.otherSection, note);
-        this.upsertNoteInSection(this.sharedSection, note);
-      }
-    });
-  }
-
-  private getPermissionsForNote(id: string) {
-    return this.notesApi.getPermissions(id).pipe(
-      map((permissions) => {
-        const currentUser = this.auth.getCurrentUserValue();
-        const currentUserId = currentUser?.id;
-
-        const shared = (permissions ?? []).length > 0;
-
-        const canEdit = (permissions ?? []).some(
-          (p) => p.userId === currentUserId && (p.permissions ?? []).includes(NotePermission.EDIT)
-        );
-
-        return {
-          id,
-          shared,
-          canEdit,
-        };
-      }),
-      catchError((err) => {
-        console.error(`Error loading permissions for ${id}`, err);
-        return of({ id, shared: false, canEdit: false });
-      }),
-    );
   }
 
   updateNote(id: string, body: NoteUpdateRequest) {
@@ -280,10 +209,6 @@ export class NoteService {
     );
   }
 
-  getPermissions(id: string) {
-    return this.notesApi.getPermissions(id);
-  }
-
   setNotePermissions(id: string, email: string, permissions: NotePermission[] = [NotePermission.READ]) {
     const body: SetNotePermissionsRequest = { email, permissions };
     return this.notesApi.setNotePermissions(body, id);
@@ -293,15 +218,20 @@ export class NoteService {
     return this.notesApi.removeNoteAccess(id, targetUserId);
   }
 
-  refreshPermissions(id: string) {
-    this.loadPermissionsForNote(id);
-  }
-
   private mapToNote(res: NoteResponse): Note {
+    const shares = res.shares || [];
+    const currentUser = this.auth.getCurrentUserValue();
+    const currentUserId = currentUser?.id;
+
+    const shared = shares.length > 0;
+    const canEdit = shares.some(
+      (p) => p.userId === currentUserId && (p.permissions ?? []).includes(NotePermission.EDIT)
+    );
+
     return {
       ...res,
-      shared: false,
-      canEdit: false,
+      shared,
+      canEdit,
     };
   }
 }
