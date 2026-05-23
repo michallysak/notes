@@ -181,6 +181,10 @@ export class NoteService {
     this.sharedSection.next(reset);
   }
 
+  getNoteById(id: string) {
+    return this.notesApi.getNote(id).pipe(map(res => this.mapToNote(res)));
+  }
+
   updateNote(id: string, body: NoteUpdateRequest) {
     return this.notesApi.updateNote(body, id).pipe(
       tap((res: NoteResponse) => {

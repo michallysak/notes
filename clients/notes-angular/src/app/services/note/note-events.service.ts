@@ -21,7 +21,7 @@ export class NoteEventsService implements OnDestroy {
   public noteUpdatedEvents$ = this.noteUpdatedEventsSubject.asObservable();
   private noteDeletedEventsSubject = new Subject<NoteDeletedEventDTO>();
   public noteDeletedEvents$ = this.noteDeletedEventsSubject.asObservable();
-  private basePath = inject(BASE_PATH);
+  private basePath = inject(BASE_PATH, { optional: true });
   private stream?: SharedEventStream;
 
   constructor(
@@ -45,7 +45,7 @@ export class NoteEventsService implements OnDestroy {
     const requestedEvents = [noteCreatedEventType, noteUpdatedEventType, noteDeletedEventType];
 
     const keySub = this.noteSse.createStreamKey(requestedEvents).subscribe(({ key }) => {
-      if (key) {
+      if (key && this.basePath) {
         this.stream = this.sse.openSharedEventStream({
           baseUrl: this.basePath,
           path: '/notes/events',

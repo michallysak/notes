@@ -1,31 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, EMPTY, of, throwError } from 'rxjs';
 import { provideTranslateService } from '@ngx-translate/core';
 import { NotesListComponent } from './notes-list.component';
 import { NoteService } from '../../services/note/note.service';
-import { Note } from '../../types/note';
 import { AuthService } from '../../services/auth/auth.service';
+import { Note } from '../../types/note';
 import { signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { BASE_PATH } from '@notes/notes_service';
+import { NoteEventsService } from '../../services/note/note-events.service';
 
 describe('NotesListComponent', () => {
   let component: NotesListComponent;
   let fixture: ComponentFixture<NotesListComponent>;
-  let notesSubject: BehaviorSubject<Note[]>;
-  let pinnedNotesSubject: BehaviorSubject<Note[]>;
-  let otherNotesSubject: BehaviorSubject<Note[]>;
-  let sharedNotesSubject: BehaviorSubject<Note[]>;
+  let noteServiceMock: any;
+  let authServiceMock: any;
   let currentUserSignal: any;
-
-  const noteServiceMock: any = {
-    pinnedSection: new BehaviorSubject({ data: [], page: 0, hasMore: true }),
-    otherSection: new BehaviorSubject({ data: [], page: 0, hasMore: true }),
-    sharedSection: new BehaviorSubject({ data: [], page: 0, hasMore: true }),
-    updateNote: vi.fn(),
-    loadMorePinned: vi.fn(),
-    loadMoreOther: vi.fn(),
-    loadMoreShared: vi.fn(),
-  };
+  let router: any;
+  let activatedRoute: any;
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
     id: '1',
@@ -42,32 +37,48 @@ describe('NotesListComponent', () => {
     ...overrides,
   });
 
-  const noteService = noteServiceMock as unknown as NoteService;
-
-  beforeEach(() => {
-    noteServiceMock.updateNote.mockReset();
-    noteServiceMock.updateNote.mockReturnValue(of({}));
-    noteServiceMock.loadMorePinned.mockReset();
-    noteServiceMock.loadMoreOther.mockReset();
-    noteServiceMock.loadMoreShared.mockReset();
-
-    noteServiceMock.pinnedSection.next({ data: [], page: 0, hasMore: true });
-    noteServiceMock.otherSection.next({ data: [], page: 0, hasMore: true });
-    noteServiceMock.sharedSection.next({ data: [], page: 0, hasMore: true });
-  });
-
   beforeEach(async () => {
     currentUserSignal = signal({ id: 'auth-1' });
 
+    authServiceMock = {
+      currentUser$: of({ id: 'auth-1' }),
+      currentUser: signal({ id: 'auth-1' }),
+    };
+
+    router = {
+      navigate: vi.fn(),
+    };
+    activatedRoute = {
+      paramMap: of({ get: () => null }),
+      snapshot: { paramMap: { has: () => false } },
+    };
+
+    noteServiceMock = {
+      updateNote: vi.fn().mockReturnValue(of({})),
+      loadMorePinned: vi.fn(),
+      loadMoreOther: vi.fn(),
+      loadMoreShared: vi.fn(),
+      getNoteById: vi.fn().mockReturnValue(of({})),
+      pinnedSection: new BehaviorSubject({ data: [], page: 0, hasMore: false }),
+      otherSection: new BehaviorSubject({ data: [], page: 0, hasMore: false }),
+      sharedSection: new BehaviorSubject({ data: [], page: 0, hasMore: false }),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [NotesListComponent],
+      imports: [NotesListComponent, RouterModule.forRoot([])],
       providers: [
-        provideTranslateService({
-          lang: 'en',
-          fallbackLang: 'en',
-        }),
+        provideTranslateService(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: BASE_PATH, useValue: 'http://localhost' },
         { provide: NoteService, useValue: noteServiceMock },
-        { provide: AuthService, useValue: { currentUser$: of({ id: 'auth-1' }) } },
+        { provide: AuthService, useValue: authServiceMock },
+        {
+          provide: NoteEventsService,
+          useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY },
+        },
+        { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: Router, useValue: router },
       ],
     }).compileComponents();
 
@@ -90,11 +101,15 @@ describe('NotesListComponent', () => {
   it('should split pinned and other notes', () => {
     noteServiceMock.pinnedSection.next({
       data: [createNote({ id: '1', pinned: true }), createNote({ id: '3', pinned: true })],
-      page: 0, hasMore: false, loading: false
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     noteServiceMock.otherSection.next({
       data: [createNote({ id: '2', pinned: false })],
-      page: 0, hasMore: false, loading: false
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
 
     // re-create the component to pick up new observables
@@ -104,8 +119,8 @@ describe('NotesListComponent', () => {
 
     fixture.detectChanges();
 
-    expect(component.sections.find(s => s.id === 'pinned')?.signal().data.length).toBe(2);
-    expect(component.sections.find(s => s.id === 'other')?.signal().data.length).toBe(1);
+    expect(component.sections.find((s) => s.id === 'pinned')?.signal().data.length).toBe(2);
+    expect(component.sections.find((s) => s.id === 'other')?.signal().data.length).toBe(1);
     expect(queryElements('app-note-card').length).toBe(3);
   });
 
@@ -120,14 +135,16 @@ describe('NotesListComponent', () => {
   it('should call loadMore when Load more button is clicked', () => {
     noteServiceMock.pinnedSection.next({
       data: [createNote({ id: '1', pinned: true })],
-      page: 0, hasMore: true, loading: false
+      page: 0,
+      hasMore: true,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
     (component as any).currentUser = currentUserSignal;
     fixture.detectChanges();
 
-    const loadMoreSpy = vi.spyOn(noteService, 'loadMorePinned' as any);
+    const loadMoreSpy = vi.spyOn(noteServiceMock, 'loadMorePinned' as any);
     const loadMoreBtn = queryElement('.load-more-btn');
     expect(loadMoreBtn).toBeTruthy();
     loadMoreBtn.triggerEventHandler('onClick', {});
@@ -189,7 +206,7 @@ describe('NotesListComponent', () => {
 
   it('should call updateNote when pin is clicked', () => {
     const successNote: Note = createNote({ id: '7', pinned: false });
-    const updateSpy = (noteServiceMock.updateNote as any);
+    const updateSpy = noteServiceMock.updateNote as any;
 
     component.onPinClickPropagation(successNote);
     expect(updateSpy).toHaveBeenCalledWith('7', { pinned: true });
@@ -239,7 +256,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: false });
 
     noteServiceMock.otherSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -257,7 +277,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: true });
 
     noteServiceMock.pinnedSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -275,7 +298,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: false });
 
     noteServiceMock.otherSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -293,7 +319,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: false });
 
     noteServiceMock.otherSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -311,7 +340,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: false });
 
     noteServiceMock.otherSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -337,7 +369,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: true });
 
     noteServiceMock.pinnedSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -355,7 +390,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: true });
 
     noteServiceMock.pinnedSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -373,7 +411,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: false });
 
     noteServiceMock.otherSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -391,7 +432,10 @@ describe('NotesListComponent', () => {
     const note = createNote({ id: '1', pinned: false });
 
     noteServiceMock.otherSection.next({
-      data: [note], page: 0, hasMore: false, loading: false
+      data: [note],
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;
@@ -418,11 +462,24 @@ describe('NotesListComponent', () => {
 
   it('renders section correctly when data is empty or undefined', () => {
     noteServiceMock.otherSection.next({
-      data: undefined as any, page: 0, hasMore: false, loading: false
+      data: undefined as any,
+      page: 0,
+      hasMore: false,
+      loading: false,
     });
     // Ensure all sections are empty
-    noteServiceMock.pinnedSection.next({ data: undefined as any, page: 0, hasMore: false, loading: false });
-    noteServiceMock.sharedSection.next({ data: undefined as any, page: 0, hasMore: false, loading: false });
+    noteServiceMock.pinnedSection.next({
+      data: undefined as any,
+      page: 0,
+      hasMore: false,
+      loading: false,
+    });
+    noteServiceMock.sharedSection.next({
+      data: undefined as any,
+      page: 0,
+      hasMore: false,
+      loading: false,
+    });
 
     fixture = TestBed.createComponent(NotesListComponent);
     component = fixture.componentInstance;

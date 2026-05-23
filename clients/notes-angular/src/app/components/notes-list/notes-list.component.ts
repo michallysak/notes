@@ -14,6 +14,7 @@ import { NoteChangeDialogComponent } from '../note-change-dialog/note-change-dia
 import { NoteUpdateRequest } from '@notes/notes_service';
 import { NoteShareDialogComponent } from '../note-share-dialog/note-share-dialog.component';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 
 type ChangeNoteDialogStatus =
   | { visible: false; readonly: false }
@@ -47,10 +48,36 @@ export class NotesListComponent {
   clickNote = signal<ChangeNoteDialogStatus>({ visible: false, readonly: false });
   shareNote = signal<ShareNoteDialogStatus>({ visible: false });
 
-  constructor(private noteService: NoteService) {
+  constructor(
+    private noteService: NoteService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
     this.pinnedNotesSection = toSignal(this.noteService.pinnedSection);
     this.otherNotesSection = toSignal(this.noteService.otherSection);
     this.sharedNotesSection = toSignal(this.noteService.sharedSection);
+
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (id) {
+        this.noteService.getNoteById(id).subscribe({
+          next: (note) => {
+            if (note) {
+              const readonly = !note.canEdit;
+              this.clickNote.set({ visible: true, note, readonly });
+            }
+          },
+          error: (err) => {
+            if (err.status === 403) {
+              this.router.navigate(['/403'], { replaceUrl: true });
+            } else {
+              console.error('Failed to load note from URL mapping', err);
+              this.router.navigate(['/'], { replaceUrl: true });
+            }
+          }
+        });
+      }
+    });
   }
 
   onPinClickPropagation(note: Note) {
@@ -70,6 +97,7 @@ export class NotesListComponent {
   async noteCardClick(note: Note) {
     const readonly = !note.canEdit;
     this.clickNote.set({ visible: true, note, readonly });
+    this.router.navigate(['/', note.id], { replaceUrl: true });
   }
 
   noteCardShareClick(note: Note) {
@@ -78,6 +106,9 @@ export class NotesListComponent {
 
   noteDialogClose() {
     this.clickNote.set({ visible: false, readonly: false });
+    if (this.route.snapshot.paramMap.has('id')) {
+      this.router.navigate(['/']);
+    }
   }
 
   shareDialogClose() {
