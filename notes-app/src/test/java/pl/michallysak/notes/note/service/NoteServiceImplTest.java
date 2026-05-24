@@ -20,8 +20,10 @@ import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
+import pl.michallysak.notes.note.domain.event.NoteAccessRemovedEvent;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
+import pl.michallysak.notes.note.domain.event.NotePermissionsSetEvent;
 import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.*;
@@ -174,6 +176,17 @@ class NoteServiceImplTest {
     service.setPermissions(noteId, AUTHOR_ID, setNotePermissions);
     // then
     verify(repository).saveNote(note);
+    verify(eventPublisher)
+        .publish(
+            argThat(
+                events ->
+                    events.stream().anyMatch(e -> e instanceof NotePermissionsSetEvent)
+                        && events.stream()
+                            .filter(e -> e instanceof NotePermissionsSetEvent)
+                            .allMatch(e -> e.getRecipients().contains(AUTHOR_ID))
+                        && events.stream()
+                            .filter(e -> e instanceof NotePermissionsSetEvent)
+                            .allMatch(e -> e.getRecipients().contains(targetUserId))));
   }
 
   @Test
@@ -201,6 +214,17 @@ class NoteServiceImplTest {
     service.removeAccess(noteId, AUTHOR_ID, targetUserId);
     // then
     verify(repository).saveNote(note);
+    verify(eventPublisher)
+        .publish(
+            argThat(
+                events ->
+                    events.stream().anyMatch(e -> e instanceof NoteAccessRemovedEvent)
+                        && events.stream()
+                            .filter(e -> e instanceof NoteAccessRemovedEvent)
+                            .allMatch(e -> e.getRecipients().contains(AUTHOR_ID))
+                        && events.stream()
+                            .filter(e -> e instanceof NoteAccessRemovedEvent)
+                            .allMatch(e -> e.getRecipients().contains(targetUserId))));
   }
 
   @Test

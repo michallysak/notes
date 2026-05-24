@@ -8,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
+import pl.michallysak.notes.note.domain.event.NoteAccessRemovedEvent;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
+import pl.michallysak.notes.note.domain.event.NotePermissionsSetEvent;
 import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.*;
@@ -84,6 +86,10 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.setPermissions(actingUserId, request.targetUserId(), request.permissions());
     noteRepository.saveNote(note);
+    NotePermissionsSetEvent notePermissionsSetEvent =
+        NotePermissionsSetEvent.from(
+            noteId, actingUserId, request.targetUserId(), request.permissions());
+    eventPublisher.publish(Collections.singletonList(notePermissionsSetEvent));
   }
 
   @Override
@@ -92,6 +98,9 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     note.removeAccess(actingUserId, targetUserId);
     noteRepository.saveNote(note);
+    NoteAccessRemovedEvent noteAccessRemovedEvent =
+        NoteAccessRemovedEvent.from(noteId, actingUserId, targetUserId);
+    eventPublisher.publish(Collections.singletonList(noteAccessRemovedEvent));
   }
 
   @Override
