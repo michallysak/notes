@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
@@ -6,7 +6,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TranslatePipe } from '@ngx-translate/core';
-import { finalize } from 'rxjs';
+import { finalize, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NotePermission, NoteShareResponse } from '@notes/notes_service';
 import { NoteService } from '../../services/note/note.service';
 import { Note } from '../../types/note';
@@ -38,7 +39,7 @@ type ShareItem = NoteShareResponse & { selectedPermission: NotePermission };
   templateUrl: './note-share-dialog.component.html',
   styleUrls: ['./note-share-dialog.component.scss'],
 })
-export class NoteShareDialogComponent implements OnChanges {
+export class NoteShareDialogComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) visible = false;
   @Input({ required: true }) note: Note | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
@@ -51,6 +52,8 @@ export class NoteShareDialogComponent implements OnChanges {
   userNotFound = signal(false);
   permissionOptions: NotePermission[] = [NotePermission.READ, NotePermission.EDIT];
 
+  private destroy$ = new Subject<void>();
+
   form = new FormGroup<ShareForm>({
     email: new FormControl('', {
       nonNullable: true,
@@ -62,8 +65,21 @@ export class NoteShareDialogComponent implements OnChanges {
     }),
   });
 
-  constructor(private noteService: NoteService) {
+  constructor(
+    private noteService: NoteService,
+  ) {
     this.form.controls.email.valueChanges.subscribe(() => this.userNotFound.set(false));
+
+    this.noteService.notes$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((notes) => {
+        if (this.note?.id && this.visible) {
+          const updatedNote = notes.find(n => n.id === this.note!.id);
+          if (updatedNote) {
+            this.syncSharesFromNote(updatedNote);
+          }
+        }
+      });
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -74,6 +90,11 @@ export class NoteShareDialogComponent implements OnChanges {
     if (changes['note']?.currentValue && this.visible && this.note?.id) {
       this.syncSharesFromNote(this.note);
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onHide() {

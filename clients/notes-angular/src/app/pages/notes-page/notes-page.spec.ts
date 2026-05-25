@@ -64,7 +64,7 @@ describe('NotesPage', () => {
         { provide: AuthService, useValue: authServiceSpy },
         { provide: NoteService, useValue: noteServiceSpy },
         { provide: NotesAPIService, useValue: notesApiService },
-        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } },
+        { provide: NoteEventsService, useValue: { domainEvents$: EMPTY } },
       ],
     }).compileComponents();
 

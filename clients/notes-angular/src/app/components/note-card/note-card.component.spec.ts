@@ -42,7 +42,7 @@ describe('NoteCardComponent', () => {
       imports: [NoteCardComponent],
       providers: [
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
-        { provide: NoteEventsService, useValue: { noteEvents$: EMPTY } },
+        { provide: NoteEventsService, useValue: { domainEvents$: EMPTY } },
         { provide: NoteService, useValue: noteService },
         { provide: AuthService, useValue: authService },
       ],

@@ -8,6 +8,9 @@ import {
   NoteUpdatedEventDTO,
   NoteSseResourceService,
   NoteDeletedEventDTO,
+  NotePermissionsSetEventDTO,
+  NoteAccessRemovedEventDTO,
+  DomainEventDTO,
 } from '@notes/notes_service';
 
 
@@ -15,12 +18,8 @@ import {
 export class NoteEventsService implements OnDestroy {
   private connectSub = new Subscription();
   private authSub: Subscription;
-  private noteEventsSubject = new Subject<NoteCreatedEventDTO>();
-  public noteEvents$ = this.noteEventsSubject.asObservable();
-  private noteUpdatedEventsSubject = new Subject<NoteUpdatedEventDTO>();
-  public noteUpdatedEvents$ = this.noteUpdatedEventsSubject.asObservable();
-  private noteDeletedEventsSubject = new Subject<NoteDeletedEventDTO>();
-  public noteDeletedEvents$ = this.noteDeletedEventsSubject.asObservable();
+  private domainEventsSubject = new Subject<DomainEventDTO>();
+  public domainEvents$ = this.domainEventsSubject.asObservable();
   private basePath = inject(BASE_PATH, { optional: true });
   private stream?: SharedEventStream;
 
@@ -42,7 +41,9 @@ export class NoteEventsService implements OnDestroy {
     let noteCreatedEventType = NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT;
     let noteUpdatedEventType = NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT;
     let noteDeletedEventType = NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT;
-    const requestedEvents = [noteCreatedEventType, noteUpdatedEventType, noteDeletedEventType];
+    let notePermissionsSetEventType = NotePermissionsSetEventDTO.TypeEnum.NOTEPERMISSIONSSETEVENT;
+    let noteAccessRemovedEventType = NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT;
+    const requestedEvents = [noteCreatedEventType, noteUpdatedEventType, noteDeletedEventType, notePermissionsSetEventType, noteAccessRemovedEventType];
 
     const keySub = this.noteSse.createStreamKey(requestedEvents).subscribe(({ key }) => {
       if (key && this.basePath) {
@@ -55,13 +56,19 @@ export class NoteEventsService implements OnDestroy {
         });
 
         const created$ = this.stream.get<NoteCreatedEventDTO>(noteCreatedEventType);
-        this.forwardToSubject(created$, this.noteEventsSubject, this.connectSub);
+        this.forwardToSubject(created$, this.domainEventsSubject, this.connectSub);
 
         const updated$ = this.stream.get<NoteUpdatedEventDTO>(noteUpdatedEventType);
-        this.forwardToSubject(updated$, this.noteUpdatedEventsSubject, this.connectSub);
+        this.forwardToSubject(updated$, this.domainEventsSubject, this.connectSub);
 
         const deleted$ = this.stream.get<NoteDeletedEventDTO>(noteDeletedEventType);
-        this.forwardToSubject(deleted$, this.noteDeletedEventsSubject, this.connectSub);
+        this.forwardToSubject(deleted$, this.domainEventsSubject, this.connectSub);
+
+        const permissionSet$ = this.stream.get<NotePermissionsSetEventDTO>(notePermissionsSetEventType);
+        this.forwardToSubject(permissionSet$, this.domainEventsSubject, this.connectSub);
+
+        const accessRemoved$ = this.stream.get<NoteAccessRemovedEventDTO>(noteAccessRemovedEventType);
+        this.forwardToSubject(accessRemoved$, this.domainEventsSubject, this.connectSub);
 
         return;
       }

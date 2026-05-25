@@ -4,14 +4,17 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
 import { NotePermission, NoteShareResponse } from '@notes/notes_service';
 import { Select } from 'primeng/select';
+import { MessageService } from 'primeng/api';
 import { NoteShareDialogComponent } from './note-share-dialog.component';
 import { NoteService } from '../../services/note/note.service';
+import { NoteEventsService } from '../../services/note/note-events.service';
 import { Note } from '../../types/note';
 
 describe('NoteShareDialogComponent', () => {
   let component: NoteShareDialogComponent;
   let fixture: ComponentFixture<NoteShareDialogComponent>;
   const noteService = {
+    notes$: of([]),
     setNotePermissions: vi.fn(),
     removeNoteAccess: vi.fn(),
   };
@@ -50,6 +53,8 @@ describe('NoteShareDialogComponent', () => {
       providers: [
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
         { provide: NoteService, useValue: noteService },
+        MessageService,
+        { provide: NoteEventsService, useValue: { domainEvents$: of(null) } },
       ],
     }).compileComponents();
 

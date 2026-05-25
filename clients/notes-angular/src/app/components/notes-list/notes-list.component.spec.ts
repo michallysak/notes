@@ -12,6 +12,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BASE_PATH } from '@notes/notes_service';
 import { NoteEventsService } from '../../services/note/note-events.service';
+import { MessageService } from 'primeng/api';
+import { NoteAccessRemovedEventDTO } from '@notes/notes_service';
 
 describe('NotesListComponent', () => {
   let component: NotesListComponent;
@@ -62,8 +64,10 @@ describe('NotesListComponent', () => {
       pinnedSection: new BehaviorSubject({ data: [], page: 0, hasMore: false }),
       otherSection: new BehaviorSubject({ data: [], page: 0, hasMore: false }),
       sharedSection: new BehaviorSubject({ data: [], page: 0, hasMore: false }),
+      notes$: new BehaviorSubject([]),
     };
 
+    let domainEventsSubject = new BehaviorSubject<any>({});
     await TestBed.configureTestingModule({
       imports: [NotesListComponent, RouterModule.forRoot([])],
       providers: [
@@ -75,8 +79,9 @@ describe('NotesListComponent', () => {
         { provide: AuthService, useValue: authServiceMock },
         {
           provide: NoteEventsService,
-          useValue: { noteEvents$: EMPTY, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY },
+          useValue: { domainEvents$: domainEventsSubject },
         },
+        MessageService,
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: Router, useValue: router },
       ],
@@ -504,5 +509,111 @@ describe('NotesListComponent', () => {
     fixture.detectChanges();
     const dialog = queryElement('app-note-share-dialog');
     expect(dialog.componentInstance.note).toBeFalsy();
+  });
+
+  describe('Route Param id loading', () => {
+    let mockSubject: any;
+
+    beforeEach(() => {
+      mockSubject = new BehaviorSubject({ get: () => '999' });
+      activatedRoute.paramMap = mockSubject;
+    });
+
+    it('loads note on valid id param and opens dialog', () => {
+      const mockNote = createNote({ id: '999', canEdit: false });
+      noteServiceMock.getNoteById.mockReturnValue(of(mockNote));
+
+      fixture = TestBed.createComponent(NotesListComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const state: any = component.clickNote();
+      expect(state.visible).toBe(true);
+      expect(state.note.id).toBe('999');
+      expect(state.readonly).toBe(true);
+    });
+
+    it('navigates to 403 on forbidden error', () => {
+      noteServiceMock.getNoteById.mockReturnValue(throwError(() => ({ status: 403 })));
+      const navigateSpy = vi.spyOn(router, 'navigate');
+
+      fixture = TestBed.createComponent(NotesListComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      expect(navigateSpy).toHaveBeenCalledWith(['/403'], { replaceUrl: true });
+    });
+
+    it('navigates to / on general error', () => {
+      noteServiceMock.getNoteById.mockReturnValue(throwError(() => ({ status: 500 })));
+      const navigateSpy = vi.spyOn(router, 'navigate');
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      fixture = TestBed.createComponent(NotesListComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      expect(navigateSpy).toHaveBeenCalledWith(['/'], { replaceUrl: true });
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe('setupPermissionChangeListener', () => {
+    it('revokes access when NOTEACCESSREMOVEDEVENT event is received', () => {
+      vi.useFakeTimers();
+      authServiceMock.getCurrentUserValue = vi.fn().mockReturnValue({ id: 'auth-1' });
+
+      fixture = TestBed.createComponent(NotesListComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const note = createNote({ id: 'note-1' });
+      component.clickNote.set({ visible: true, note, readonly: false });
+
+      const domainEventsSubject = TestBed.inject(NoteEventsService).domainEvents$ as BehaviorSubject<any>;
+
+      const spyClose = vi.spyOn(component, 'noteDialogClose');
+
+      domainEventsSubject.next({
+        type: NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT,
+        payload: { noteId: 'note-1', userId: 'auth-1' }
+      });
+
+      vi.advanceTimersByTime(10);
+      expect(spyClose).toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it('changes to readonly when note.canEdit becomes false from notes$ stream', () => {
+      vi.useFakeTimers();
+      fixture = TestBed.createComponent(NotesListComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const note = createNote({ id: 'note-1', canEdit: true });
+      component.clickNote.set({ visible: true, note, readonly: false });
+      (component as any).previousReadonlyState = false;
+
+      const updatedNote = createNote({ id: 'note-1', canEdit: false });
+
+      noteServiceMock.notes$.next([updatedNote]);
+
+      vi.advanceTimersByTime(10);
+      const state = component.clickNote() as Extract<any, { visible: true }>;
+      expect(state.readonly).toBe(true);
+      vi.useRealTimers();
+    });
+  });
+
+  it('calls shareDialogClose from visibleChange binding', () => {
+    const closeSpy = vi.spyOn(component, 'shareDialogClose');
+    component.shareNote.set({ visible: true, note: createNote() });
+    fixture.detectChanges();
+
+    const dialog = queryElement('app-note-share-dialog');
+    dialog.triggerEventHandler('visibleChange', false);
+
+    expect(closeSpy).toHaveBeenCalled();
   });
 });

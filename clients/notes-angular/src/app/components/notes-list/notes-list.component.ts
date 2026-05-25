@@ -1,4 +1,4 @@
-import { Component, Signal, signal } from '@angular/core';
+import { Component, Signal, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NoteService } from '../../services/note/note.service';
 import { NoteCardComponent } from '../note-card/note-card.component';
@@ -11,10 +11,14 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Note } from '../../types/note';
 import { NoteChangeDialogComponent } from '../note-change-dialog/note-change-dialog.component';
-import { NoteUpdateRequest } from '@notes/notes_service';
+import { NoteUpdateRequest, NoteAccessRemovedEventDTO } from '@notes/notes_service';
 import { NoteShareDialogComponent } from '../note-share-dialog/note-share-dialog.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NoteEventsService } from '../../services/note/note-events.service';
+import { AuthService } from '../../services/auth/auth.service';
+import { NotificationService } from '../../services/notification/notification.service';
+import { Subject, takeUntil, skip } from 'rxjs';
 
 type ChangeNoteDialogStatus =
   | { visible: false; readonly: false }
@@ -40,7 +44,7 @@ type ShareNoteDialogStatus = { visible: false } | ({ visible: true } & { note: N
   styleUrls: ['./notes-list.component.scss'],
   templateUrl: './notes-list.component.html',
 })
-export class NotesListComponent {
+export class NotesListComponent implements OnInit, OnDestroy {
   pinnedNotesSection: Signal<any>;
   otherNotesSection: Signal<any>;
   sharedNotesSection: Signal<any>;
@@ -48,10 +52,16 @@ export class NotesListComponent {
   clickNote = signal<ChangeNoteDialogStatus>({ visible: false, readonly: false });
   shareNote = signal<ShareNoteDialogStatus>({ visible: false });
 
+  private destroy$ = new Subject<void>();
+  private previousReadonlyState: boolean | null = null;
+
   constructor(
     private noteService: NoteService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private noteEventsService: NoteEventsService,
+    private auth: AuthService,
+    private notificationService: NotificationService
   ) {
     this.pinnedNotesSection = toSignal(this.noteService.pinnedSection);
     this.otherNotesSection = toSignal(this.noteService.otherSection);
@@ -65,6 +75,7 @@ export class NotesListComponent {
             if (note) {
               const readonly = !note.canEdit;
               this.clickNote.set({ visible: true, note, readonly });
+              this.previousReadonlyState = readonly;
             }
           },
           error: (err) => {
@@ -80,6 +91,64 @@ export class NotesListComponent {
     });
   }
 
+  ngOnInit() {
+    this.setupPermissionChangeListener();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private setupPermissionChangeListener() {
+    this.noteEventsService.domainEvents$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((event) => {
+        if (event.type !== NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT) return;
+
+        const currentUserId = this.auth.getCurrentUserValue()?.id;
+        const currentNoteState = this.clickNote();
+        if (!currentNoteState.visible || !currentNoteState.note || !currentUserId) return;
+
+        const noteId = currentNoteState.note.id;
+        if (event.payload?.noteId === noteId && event.payload?.userId === currentUserId) {
+          setTimeout(() => {
+            this.noteDialogClose();
+            this.notificationService.show('NOTES.PERMISSION_REVOKED', 'warn', 5000);
+          });
+        }
+      });
+
+    this.noteService.notes$
+      .pipe(
+        takeUntil(this.destroy$),
+        skip(1),
+      )
+      .subscribe((notes) => {
+        const currentNoteState = this.clickNote();
+        if (!currentNoteState.visible || !currentNoteState.note) return;
+
+        const noteId = currentNoteState.note.id;
+        const updatedNote = notes.find(n => n.id === noteId);
+        if (!updatedNote) return;
+
+        const newReadonly = !updatedNote.canEdit;
+        const currentReadonly = this.previousReadonlyState;
+
+        if (currentReadonly !== null && currentReadonly !== newReadonly) {
+          setTimeout(() => {
+            this.clickNote.set({
+              visible: true,
+              note: updatedNote,
+              readonly: newReadonly
+            });
+            this.previousReadonlyState = newReadonly;
+            this.notificationService.show('NOTES.PERMISSION_CHANGED', 'info', 5000);
+          });
+        }
+      });
+  }
+
   onPinClickPropagation(note: Note) {
     if (!note || !note.id) return;
     const body: NoteUpdateRequest = { pinned: !note.pinned };
@@ -92,11 +161,13 @@ export class NotesListComponent {
   openCreate() {
     console.log('open create');
     this.clickNote.set({ visible: true, note: null, readonly: false });
+    this.previousReadonlyState = false;
   }
 
   async noteCardClick(note: Note) {
     const readonly = !note.canEdit;
     this.clickNote.set({ visible: true, note, readonly });
+    this.previousReadonlyState = readonly;
     this.router.navigate(['/', note.id], { replaceUrl: true });
   }
 
@@ -106,6 +177,7 @@ export class NotesListComponent {
 
   noteDialogClose() {
     this.clickNote.set({ visible: false, readonly: false });
+    this.previousReadonlyState = null;
     if (this.route.snapshot.paramMap.has('id')) {
       this.router.navigate(['/']);
     }

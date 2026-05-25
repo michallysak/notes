@@ -21,18 +21,20 @@
   "STATUS": {
     "LOGGED": "Logged in"
   },
-  "NOTES": {
-    "CREATE_BUTTON": "Create note",
-    "SECTION_PINNED": "Pinned",
-    "SECTION_OTHER": "Other",
-    "SECTION_SHARED": "Shared with you",
-    "SHARE": "Share",
-    "SHARED": "Shared",
-    "DELETE": "Delete",
-    "PIN": "Unpin note",
-    "UNPIN": "Unpin note",
-    "MORE": "More",
-    "SHARE_DIALOG": {
+   "NOTES": {
+     "CREATE_BUTTON": "Create note",
+     "SECTION_PINNED": "Pinned",
+     "SECTION_OTHER": "Other",
+     "SECTION_SHARED": "Shared with you",
+     "SHARE": "Share",
+     "SHARED": "Shared",
+     "DELETE": "Delete",
+     "PIN": "Unpin note",
+     "UNPIN": "Unpin note",
+     "MORE": "More",
+     "PERMISSION_REVOKED": "Your access to this note has been revoked",
+     "PERMISSION_CHANGED": "Your permissions for this note have changed",
+     "SHARE_DIALOG": {
       "TITLE": "Share note",
       "EMAIL_PLACEHOLDER": "User email",
       "ADD": "Add",
@@ -41,7 +43,9 @@
       "PERMISSION": {
         "READ": "Read",
         "EDIT": "Edit"
-      }
+      },
+      "PERMISSION_REVOKED": "Permission revoked",
+      "PERMISSION_CHANGED": "Permission changed"
     },
     "DIALOG": {
       "UPDATE_TITLE": "Update Note",

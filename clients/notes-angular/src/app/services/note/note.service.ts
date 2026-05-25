@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, forkJoin, map, of } from 'rxjs';
+import { BehaviorSubject, map } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import {
   CreateNoteRequest,
@@ -11,6 +11,9 @@ import {
   NoteUpdatedEventDTO,
   NoteUpdateRequest,
   SetNotePermissionsRequest,
+  DomainEventDTO,
+  NotePermissionsSetEventDTO,
+  NoteAccessRemovedEventDTO,
 } from '@notes/notes_service';
 import { Note } from '../../types/note';
 import { NoteEventsService } from './note-events.service';
@@ -47,26 +50,47 @@ export class NoteService {
       }
     });
 
-    noteEventsService.noteEvents$.subscribe((value: NoteCreatedEventDTO) => {
-      if (!value?.payload) {
-        return;
-      }
-      this.upsertNoteInSubject(this.mapToNote(value.payload));
-    });
+    noteEventsService.domainEvents$.subscribe((value: DomainEventDTO) => {
+      if (!value) return;
 
-    noteEventsService.noteUpdatedEvents$.subscribe((value: NoteUpdatedEventDTO) => {
-      if (!value?.payload) {
-        return;
+      switch(value.type) {
+        case NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT:
+        case NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT:
+          if (value.payload) {
+            this.upsertNoteInSubject(this.mapToNote(value.payload as NoteResponse));
+          }
+          break;
+        case NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT:
+          if (value.payload?.id) {
+            this.removeNoteFromSubject(value.payload.id);
+          }
+          break;
+        case NotePermissionsSetEventDTO.TypeEnum.NOTEPERMISSIONSSETEVENT:
+          if (value.payload?.noteId) {
+            this.getNoteById(value.payload.noteId).subscribe(note => {
+              this.upsertNoteInSubject(note);
+            });
+          }
+          break;
+        case NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT:
+          if (value.payload?.noteId) {
+            const currentUserId = this.auth.getCurrentUserValue()?.id;
+            const noteId = value.payload.noteId;
+            if (value.payload.userId === currentUserId) {
+              this.removeNoteFromSubject(noteId);
+            } else {
+              this.getNoteById(noteId).subscribe({
+                next: (note) => this.upsertNoteInSubject(note),
+                error: (err) => {
+                  if (err?.status === 403) {
+                    this.removeNoteFromSubject(noteId);
+                  }
+                }
+              });
+            }
+          }
+          break;
       }
-      this.upsertNoteInSubject(this.mapToNote(value.payload));
-    });
-
-    noteEventsService.noteDeletedEvents$.subscribe((value: NoteDeletedEventDTO) => {
-      const id = value?.payload?.id;
-      if (!id) {
-        return;
-      }
-      this.removeNoteFromSubject(id);
     });
   }
 

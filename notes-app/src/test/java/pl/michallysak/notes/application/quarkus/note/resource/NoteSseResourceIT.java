@@ -6,13 +6,10 @@ import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 import static pl.michallysak.notes.helpers.TestExtensions.waitGivenMillis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.InboundSseEvent;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -27,13 +24,15 @@ import pl.michallysak.notes.note.model.NoteValue;
 class NoteSseResourceIT extends BaseIT {
 
   private static final Set<String> ALL_EVENTS;
-  private static final Set<String> NOTE_EVENTS = Set.of("NOTE_CREATED_EVENT", "NOTE_UPDATED_EVENT", "NOTE_DELETED_EVENT");
-  private static final Set<String> PERMISSION_EVENTS = Set.of("NOTE_PERMISSIONS_SET_EVENT", "NOTE_ACCESS_REMOVED_EVENT");
+  private static final Set<String> NOTE_EVENTS =
+      Set.of("NOTE_CREATED_EVENT", "NOTE_UPDATED_EVENT", "NOTE_DELETED_EVENT");
+  private static final Set<String> PERMISSION_EVENTS =
+      Set.of("NOTE_PERMISSIONS_SET_EVENT", "NOTE_ACCESS_REMOVED_EVENT");
 
   static {
-      ALL_EVENTS = new HashSet<>();
-      ALL_EVENTS.addAll(NOTE_EVENTS);
-      ALL_EVENTS.addAll(PERMISSION_EVENTS);
+    ALL_EVENTS = new HashSet<>();
+    ALL_EVENTS.addAll(NOTE_EVENTS);
+    ALL_EVENTS.addAll(PERMISSION_EVENTS);
   }
 
   @Test
@@ -182,10 +181,9 @@ class NoteSseResourceIT extends BaseIT {
           String noteId = createNote(jwtOwner, createNoteRequest);
           NoteResourceRestTestClient noteClient = NoteResourceRestTestClient.auth(jwtOwner);
           SetNotePermissionsRequest permissionsRequest =
-              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder()
-                  .email(EMAIL_2)
-                  .build();
-          noteClient.setPermissions(noteId, toJsonString(permissionsRequest))
+              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
+          noteClient
+              .setPermissions(noteId, toJsonString(permissionsRequest))
               .then()
               .statusCode(204);
           waitGivenMillis(200);
@@ -218,10 +216,9 @@ class NoteSseResourceIT extends BaseIT {
           NoteResourceRestTestClient noteClient = NoteResourceRestTestClient.auth(jwtOwner);
           // First set permissions
           SetNotePermissionsRequest permissionsRequest =
-              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder()
-                  .email(EMAIL_2)
-                  .build();
-          noteClient.setPermissions(noteId, toJsonString(permissionsRequest))
+              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
+          noteClient
+              .setPermissions(noteId, toJsonString(permissionsRequest))
               .then()
               .statusCode(204);
           waitGivenMillis(100);
@@ -229,9 +226,7 @@ class NoteSseResourceIT extends BaseIT {
           notesEventsSseTestClient.getEvents().clear();
           // Now remove access
           UUID targetUserId = getUserId(jwtTarget);
-          noteClient.removeAccess(noteId, targetUserId)
-              .then()
-              .statusCode(204);
+          noteClient.removeAccess(noteId, targetUserId).then().statusCode(204);
           waitGivenMillis(200);
         });
     // then
@@ -262,10 +257,9 @@ class NoteSseResourceIT extends BaseIT {
           String noteId = createNote(jwtUser2, createNoteRequest);
           NoteResourceRestTestClient noteClient = NoteResourceRestTestClient.auth(jwtUser2);
           SetNotePermissionsRequest permissionsRequest =
-              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder()
-                  .email(EMAIL_3)
-                  .build();
-          noteClient.setPermissions(noteId, toJsonString(permissionsRequest))
+              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder().email(EMAIL_3).build();
+          noteClient
+              .setPermissions(noteId, toJsonString(permissionsRequest))
               .then()
               .statusCode(204);
           waitGivenMillis(200);

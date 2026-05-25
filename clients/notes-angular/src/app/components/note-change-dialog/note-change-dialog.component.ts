@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -6,7 +6,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { ProgressBarModule } from 'primeng/progressbar';
-import { debounceTime, delay } from 'rxjs/operators';
+import { debounceTime, delay, Subject, takeUntil } from 'rxjs';
 import { CreateNoteRequest, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
 import { NoteService } from '../../services/note/note.service';
 import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change-date-time.component';
@@ -44,7 +44,7 @@ type NoteForm = {
   templateUrl: './note-change-dialog.component.html',
   styleUrls: ['./note-change-dialog.component.scss'],
 })
-export class NoteChangeDialogComponent {
+export class NoteChangeDialogComponent implements OnDestroy {
   @Input({ required: true }) visible!: boolean;
   @Input({ required: true }) note!: NoteResponse | null;
   @Input({ required: true }) readonly!: boolean;
@@ -58,6 +58,7 @@ export class NoteChangeDialogComponent {
   saved = signal(false);
 
   private saveDebounce = 1000;
+  private destroy$ = new Subject<void>();
 
   constructor(private noteService: NoteService) {
     this.form = new FormGroup<NoteForm>({
@@ -72,7 +73,7 @@ export class NoteChangeDialogComponent {
       color: new FormControl<string | null>(null),
     });
 
-    this.form.valueChanges.pipe(debounceTime(this.saveDebounce)).subscribe(() => {
+    this.form.valueChanges.pipe(debounceTime(this.saveDebounce), takeUntil(this.destroy$)).subscribe(() => {
       if (this.readonly) {
         return;
       }
@@ -91,6 +92,11 @@ export class NoteChangeDialogComponent {
     });
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   ngOnChanges(changes: SimpleChanges) {
     if (changes['note']) {
       this.syncDialogState(this.note);
@@ -104,6 +110,7 @@ export class NoteChangeDialogComponent {
     }
 
     if (changes['readonly']) {
+      this.syncDialogState(this.note);
       if (this.readonly) {
         this.form.disable();
       } else {

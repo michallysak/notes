@@ -10,6 +10,8 @@ import {
   NoteUpdatedEventDTO,
   NoteSseResourceService,
   NoteDeletedEventDTO,
+  NotePermissionsSetEventDTO,
+  NoteAccessRemovedEventDTO,
 } from '@notes/notes_service';
 
 const makeStream = () => ({
@@ -82,13 +84,23 @@ describe('NoteEventsService', () => {
       NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT,
       NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT,
       NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT,
+      NotePermissionsSetEventDTO.TypeEnum.NOTEPERMISSIONSSETEVENT,
+      NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT,
     ]);
   });
 
-  it('forwards events from stream.get() to noteEvents$', () => {
+  it('forwards events from stream.get() to domainEvents$', () => {
     const eventSubj = new Subject<NoteCreatedEventDTO>();
     const authSubj = new Subject<boolean>();
-    const stream = { get: vi.fn().mockReturnValue(eventSubj.asObservable()), close: vi.fn() };
+    const stream = {
+      get: vi.fn((eventType: string) => {
+        if (eventType === NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT) {
+          return eventSubj.asObservable();
+        }
+        return new Subject().asObservable();
+      }),
+      close: vi.fn(),
+    };
     const mockSse = { openSharedEventStream: vi.fn().mockReturnValue(stream) } as unknown as SseService;
     const mockAuth = { logged$: authSubj.asObservable() } as unknown as AuthService;
     const mockNoteSse = { createStreamKey: vi.fn().mockReturnValue(of({ key: 'k' })) } as unknown as NoteSseResourceService;
@@ -99,7 +111,7 @@ describe('NoteEventsService', () => {
     TestBed.runInInjectionContext(() => { svc = new NoteEventsService(mockSse, mockAuth, mockNoteSse); });
 
     const received: unknown[] = [];
-    svc.noteEvents$.subscribe((v) => received.push(v));
+    svc.domainEvents$.subscribe((v: any) => received.push(v));
 
     authSubj.next(true);
     vi.runAllTimers();
@@ -115,7 +127,7 @@ describe('NoteEventsService', () => {
     expect(received[0]).toEqual(event);
   });
 
-  it('forwards deleted events from stream.get() to noteDeletedEvents$', () => {
+  it('forwards deleted events from stream.get() to domainEvents$', () => {
     const deletedSubj = new Subject<any>();
     const authSubj = new Subject<boolean>();
     const stream = {
@@ -137,7 +149,7 @@ describe('NoteEventsService', () => {
     TestBed.runInInjectionContext(() => { svc = new NoteEventsService(mockSse, mockAuth, mockNoteSse); });
 
     const received: unknown[] = [];
-    svc.noteDeletedEvents$.subscribe((v) => received.push(v));
+    svc.domainEvents$.subscribe((v: any) => received.push(v));
 
     authSubj.next(true);
     vi.runAllTimers();
@@ -158,7 +170,7 @@ describe('NoteEventsService', () => {
     expect(stream.close).toHaveBeenCalledOnce();
   });
 
-  it('propagates stream errors to noteEvents$ subscribers', () => {
+  it('propagates stream errors to domainEvents$ subscribers', () => {
     const eventSubj = new Subject<NoteCreatedEventDTO>();
     const authSubj = new Subject<boolean>();
     const stream = { get: vi.fn().mockReturnValue(eventSubj.asObservable()), close: vi.fn() };
@@ -174,7 +186,7 @@ describe('NoteEventsService', () => {
     });
 
     const errorSpy = vi.fn();
-    svc.noteEvents$.subscribe({ error: errorSpy });
+    svc.domainEvents$.subscribe({ error: errorSpy });
 
     authSubj.next(true);
     vi.runAllTimers();
@@ -183,7 +195,7 @@ describe('NoteEventsService', () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it('propagates stream completion to noteEvents$ subscribers', () => {
+  it('propagates stream completion to domainEvents$ subscribers', () => {
     const eventSubj = new Subject<NoteCreatedEventDTO>();
     const authSubj = new Subject<boolean>();
     const stream = { get: vi.fn().mockReturnValue(eventSubj.asObservable()), close: vi.fn() };
@@ -199,7 +211,7 @@ describe('NoteEventsService', () => {
     });
 
     const completeSpy = vi.fn();
-    svc.noteEvents$.subscribe({ complete: completeSpy });
+    svc.domainEvents$.subscribe({ complete: completeSpy });
 
     authSubj.next(true);
     vi.runAllTimers();

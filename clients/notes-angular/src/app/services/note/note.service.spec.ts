@@ -1,6 +1,6 @@
 import { BehaviorSubject, Subject, of, EMPTY, throwError } from 'rxjs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotePermission } from '@notes/notes_service';
+import { NotePermission, NoteCreatedEventDTO, NoteUpdatedEventDTO, NoteDeletedEventDTO, NotePermissionsSetEventDTO, NoteAccessRemovedEventDTO } from '@notes/notes_service';
 import { NoteService } from './note.service';
 import { Note } from '../../types/note';
 
@@ -33,6 +33,7 @@ describe('NoteService', () => {
       deleteNote: vi.fn().mockReturnValue(of({})),
       setNotePermissions: vi.fn().mockReturnValue(of({})),
       removeNoteAccess: vi.fn().mockReturnValue(of({})),
+      getNote: vi.fn().mockReturnValue(of({})),
     };
 
     authService = {
@@ -41,9 +42,7 @@ describe('NoteService', () => {
     };
 
     noteEventsService = {
-      noteEvents$: new BehaviorSubject<any>(null),
-      noteUpdatedEvents$: new BehaviorSubject<any>(null),
-      noteDeletedEvents$: new BehaviorSubject<any>(null),
+      domainEvents$: new BehaviorSubject<any>(null),
     };
 
     service = new NoteService(notesApi, authService, noteEventsService);
@@ -175,7 +174,7 @@ describe('NoteService', () => {
         createNote: vi.fn(),
       } as any,
       authService as any,
-      { noteEvents$: events, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } as any,
+      { domainEvents$: events } as any,
     );
 
     const created = createNote({ id: 'sse-1', title: 'SSE' });
@@ -204,7 +203,7 @@ describe('NoteService', () => {
         searchNotes: vi.fn().mockReturnValue(of({ data: initial })),
       } as any,
       authService as any,
-      { noteEvents$: events, noteUpdatedEvents$: EMPTY, noteDeletedEvents$: EMPTY } as any,
+      { domainEvents$: events } as any,
     );
 
     let latest: Note[] = [];
@@ -302,5 +301,119 @@ describe('NoteService', () => {
         expect(notes[0].canEdit).toBe(false);
       }
     }));
+  });
+
+  describe('Server-Sent Events (SSE)', () => {
+    let events = new Subject<any>();
+
+    beforeEach(() => {
+      events = new Subject<any>();
+      noteEventsService.domainEvents$ = events;
+      service = new NoteService(notesApi as any, authService as any, noteEventsService as any);
+    });
+
+    it('upserts note on NOTECREATEDEVENT', () => {
+      let latest: Note[] = [];
+      service.notes$.subscribe(notes => latest = notes);
+
+      const payload = createNote({ id: 'sse-1', title: 'Created Note' });
+      events.next({ type: NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT, payload });
+
+      expect(latest.length).toBe(1);
+      expect(latest[0].id).toBe('sse-1');
+      expect(latest[0].title).toBe('Created Note');
+    });
+
+    it('upserts note on NOTEUPDATEDEVENT', () => {
+      let latest: Note[] = [];
+      service.notes$.subscribe(notes => latest = notes);
+
+      const existing = createNote({ id: 'sse-2', title: 'Old Note' });
+      (service as any).notesSubject.next([existing]);
+
+      const payload = createNote({ id: 'sse-2', title: 'Updated Note' });
+      events.next({ type: NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT, payload });
+
+      expect(latest.length).toBe(1);
+      expect(latest[0].id).toBe('sse-2');
+      expect(latest[0].title).toBe('Updated Note');
+    });
+
+    it('removes note on NOTEDELETEDEVENT', () => {
+      let latest: Note[] = [];
+      service.notes$.subscribe(notes => latest = notes);
+
+      const existing = createNote({ id: 'sse-3', title: 'Old Note' });
+      (service as any).notesSubject.next([existing]);
+
+      events.next({ type: NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT, payload: { id: 'sse-3' } });
+
+      expect(latest.length).toBe(0);
+    });
+
+    it('fetches and upserts note on NOTEPERMISSIONSSETEVENT', () => {
+      const payload = createNote({ id: 'sse-4', title: 'Permission Updated Note' });
+      notesApi.getNote.mockReturnValue(of(payload));
+
+      let latest: Note[] = [];
+      service.notes$.subscribe(notes => latest = notes);
+
+      events.next({ type: NotePermissionsSetEventDTO.TypeEnum.NOTEPERMISSIONSSETEVENT, payload: { noteId: 'sse-4' } });
+
+      expect(notesApi.getNote).toHaveBeenCalledWith('sse-4');
+      expect(latest.length).toBe(1);
+      expect(latest[0].id).toBe('sse-4');
+    });
+
+    it('removes note access on NOTEACCESSREMOVEDEVENT self user', () => {
+      let latest: Note[] = [];
+      const existing = createNote({ id: 'sse-5', title: 'Old Note' });
+      (service as any).notesSubject.next([existing]);
+      service.notes$.subscribe(notes => latest = notes);
+
+      events.next({ type: NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT, payload: { noteId: 'sse-5', userId: 'auth-1' } });
+
+      expect(latest.length).toBe(0);
+    });
+
+    it('fetches and upserts on NOTEACCESSREMOVEDEVENT other user', () => {
+      let latest: Note[] = [];
+      service.notes$.subscribe(notes => latest = notes);
+
+      const payload = createNote({ id: 'sse-6', title: 'Refresh Note' });
+      notesApi.getNote.mockReturnValue(of(payload));
+
+      events.next({ type: NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT, payload: { noteId: 'sse-6', userId: 'other-user' } });
+
+      expect(notesApi.getNote).toHaveBeenCalledWith('sse-6');
+      expect(latest.length).toBe(1);
+      expect(latest[0].id).toBe('sse-6');
+    });
+
+    it('removes on NOTEACCESSREMOVEDEVENT other user when 403', () => {
+      let latest: Note[] = [];
+      const existing = createNote({ id: 'sse-7', title: 'Old Note' });
+      (service as any).notesSubject.next([existing]);
+      service.notes$.subscribe(notes => latest = notes);
+
+      notesApi.getNote.mockReturnValue(throwError(() => ({ status: 403 })));
+
+      events.next({ type: NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT, payload: { noteId: 'sse-7', userId: 'other-user' } });
+
+      expect(notesApi.getNote).toHaveBeenCalledWith('sse-7');
+      expect(latest.length).toBe(0);
+    });
+  });
+
+  it('getNoteById calls notesApi.getNote and maps it', () => {
+    const apiNote = { id: 'note-get', shares: [] };
+    notesApi.getNote.mockReturnValue(of(apiNote));
+
+    let fetchedNote: any;
+    service.getNoteById('note-get').subscribe(n => fetchedNote = n);
+
+    expect(notesApi.getNote).toHaveBeenCalledWith('note-get');
+    expect(fetchedNote.id).toBe('note-get');
+    expect(fetchedNote.shared).toBe(false);
   });
 });

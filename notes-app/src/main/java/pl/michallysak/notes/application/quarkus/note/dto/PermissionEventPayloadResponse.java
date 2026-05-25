@@ -17,7 +17,7 @@ public class PermissionEventPayloadResponse {
   private UUID noteId;
 
   @Schema(description = "Target user ID", examples = "550e8400-e29b-41d4-a716-446655440001")
-  private UUID targetUserId;
+  private UUID userId;
 
   @Schema(description = "Permissions granted")
   private Set<NotePermission> permissions;
