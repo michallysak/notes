@@ -122,10 +122,13 @@ export class NoteService {
         mappedData = mappedData.filter(filterFn);
       }
 
+      const nextPage = current.page + 1;
+      const hasMore = nextPage * this.pageSize < (res?.total || 0);
+
       section.next({
         data: [...current.data, ...mappedData],
-        page: current.page + 1,
-        hasMore: (res?.data?.length || 0) >= this.pageSize,
+        page: nextPage,
+        hasMore,
         loading: false
       });
       this.syncAllNotes();

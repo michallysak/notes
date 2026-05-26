@@ -31,7 +31,7 @@
                          (shareClick)="noteCardShareClick($event)"></app-note-card>
         }
       </div>
-      @if (section.signal()?.hasMore) {
+      @if (section.signal()?.hasMore && section.signal()?.data?.length) {
         <p-button (onClick)="section.loadMore()" label="Load more" class="load-more-btn"></p-button>
       }
     </div>
