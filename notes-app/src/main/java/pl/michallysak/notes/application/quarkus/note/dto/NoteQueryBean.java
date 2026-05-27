@@ -35,10 +35,18 @@ public class NoteQueryBean implements NotePagedQuery {
   @QueryParam("sort")
   private SortList sort;
 
+  @QueryParam("search")
+  private String search;
+
   public List<FieldSort> getSort() {
     if (sort == null) {
       return Collections.emptyList();
     }
     return sort.values();
+  }
+
+  @Override
+  public String getSearchQuery() {
+    return search;
   }
 }

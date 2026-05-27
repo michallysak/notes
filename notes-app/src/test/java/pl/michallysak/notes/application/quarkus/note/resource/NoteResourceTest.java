@@ -52,7 +52,7 @@ class NoteResourceTest {
   @Test
   void searchNotes_shouldDelegateToController() {
     // given
-    NoteQueryBean query = new NoteQueryBean(true, null, 1, 25, SortList.empty());
+    NoteQueryBean query = new NoteQueryBean(true, null, 1, 25, SortList.empty(), null);
     PagedResponse<NoteResponse> response =
         PagedResponse.<NoteResponse>builder().data(List.of()).page(1).size(25).total(0).build();
     when(noteController.searchNotes(query)).thenReturn(response);

@@ -307,6 +307,210 @@ class InMemoryNoteRepositoryTest {
     assertEquals(0, result.total());
   }
 
+  @Test
+  void search_shouldFilterBySearchQueryInTitle() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder()
+            .authorId(authorId)
+            .title("Java Programming")
+            .build();
+    CreateNote createNote2 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Python Guide").build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1, note2);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null, "Java");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.data().size());
+    assertEquals(note1.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
+  }
+
+  @Test
+  void search_shouldFilterBySearchQueryInContent() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder()
+            .authorId(authorId)
+            .title("Guide")
+            .content("Learn Spring Framework basics")
+            .build();
+    CreateNote createNote2 =
+        NoteTestUtils.createCreateNoteBuilder()
+            .authorId(authorId)
+            .title("Guide")
+            .content("Learn Python basics")
+            .build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1, note2);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null, "Spring");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.data().size());
+    assertEquals(note1.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
+  }
+
+  @Test
+  void search_shouldFilterBySearchQueryCaseInsensitive() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder()
+            .authorId(authorId)
+            .title("JAVA Programming")
+            .build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null, "java");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.data().size());
+    assertEquals(note1.getId(), result.data().getFirst().getId());
+  }
+
+  @Test
+  void search_shouldReturnNoNotes_whenSearchQueryDoesNotMatch() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Guide").build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null, "Python");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertTrue(result.data().isEmpty());
+    assertEquals(0, result.total());
+  }
+
+  @Test
+  void search_shouldReturnAllNotes_whenSearchQueryIsNull() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Guide").build();
+    CreateNote createNote2 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Python Guide").build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1, note2);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null, null);
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(2, result.data().size());
+    assertEquals(2, result.total());
+  }
+
+  @Test
+  void search_shouldReturnAllNotes_whenSearchQueryIsEmpty() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Guide").build();
+    CreateNote createNote2 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Python Guide").build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1, note2);
+    NotePagedQuery query = createNotePagedQuery(null, null, 0, 10, null, "  ");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(2, result.data().size());
+    assertEquals(2, result.total());
+  }
+
+  @Test
+  void search_shouldCombineSearchQueryWithIsSharedFilter() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    CreateNote createShared =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Shared").build();
+    CreateNote createPrivate =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Private").build();
+    Note shared = new NoteImpl(createShared, noteValidator);
+    shared.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
+    Note privateNote = new NoteImpl(createPrivate, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(shared, privateNote);
+    NotePagedQuery query = createNotePagedQuery(true, null, 0, 10, null, "Java");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.data().size());
+    assertEquals(shared.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
+  }
+
+  @Test
+  void search_shouldCombineSearchQueryWithIsPinnedFilter() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Guide").build();
+    CreateNote createNote2 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Tips").build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    note1.update(
+        NoteTestUtils.createNoteUpdateBuilder()
+            .actingUserId(authorId)
+            .title("Java Guide")
+            .pinned(true)
+            .build());
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1, note2);
+    NotePagedQuery query = createNotePagedQuery(null, true, 0, 10, null, "Java");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.data().size());
+    assertEquals(note1.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
+  }
+
+  @Test
+  void search_shouldCombineAllFilters() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID targetUserId = UUID.randomUUID();
+    CreateNote createNote1 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Shared").build();
+    CreateNote createNote2 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Python Shared").build();
+    CreateNote createNote3 =
+        NoteTestUtils.createCreateNoteBuilder().authorId(authorId).title("Java Private").build();
+    Note note1 = new NoteImpl(createNote1, noteValidator);
+    note1.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
+    note1.update(
+        NoteTestUtils.createNoteUpdateBuilder()
+            .actingUserId(authorId)
+            .title("Java Shared")
+            .pinned(true)
+            .build());
+    Note note2 = new NoteImpl(createNote2, noteValidator);
+    note2.setPermissions(authorId, targetUserId, Set.of(NotePermission.READ));
+    Note note3 = new NoteImpl(createNote3, noteValidator);
+    NoteRepository noteRepository = createNoteRepository(note1, note2, note3);
+    NotePagedQuery query = createNotePagedQuery(true, true, 0, 10, null, "Java");
+    // when
+    Paged<Note> result = noteRepository.search(authorId, query);
+    // then
+    assertEquals(1, result.data().size());
+    assertEquals(note1.getId(), result.data().getFirst().getId());
+    assertEquals(1, result.total());
+  }
+
   private NoteRepository createNoteRepository(Note... notes) {
     return new InMemoryNoteRepository(Arrays.asList(notes));
   }

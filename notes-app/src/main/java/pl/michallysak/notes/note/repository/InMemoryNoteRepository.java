@@ -56,6 +56,15 @@ public class InMemoryNoteRepository implements NoteRepository {
                   }
                   return query.getIsPinned().equals(note.isPinned());
                 })
+            .filter(
+                note -> {
+                  if (query.getSearchQuery() == null || query.getSearchQuery().isBlank()) {
+                    return true;
+                  }
+                  String searchTerm = query.getSearchQuery().toLowerCase();
+                  return note.getTitle().toLowerCase().contains(searchTerm)
+                      || note.getContent().toLowerCase().contains(searchTerm);
+                })
             .sorted(comparator)
             .toList();
 

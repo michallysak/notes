@@ -5,4 +5,6 @@ public interface NotePagedQuery extends PagedQuery, SortQuery {
   Boolean getIsShared();
 
   Boolean getIsPinned();
+
+  String getSearchQuery();
 }

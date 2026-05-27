@@ -69,6 +69,12 @@ public class PanacheNoteRepository
       queryBuilder.append(" and pinned = ?2");
     }
 
+    if (query.getSearchQuery() != null && !query.getSearchQuery().isBlank()) {
+      int paramIndex = query.getIsPinned() != null ? 3 : 2;
+      queryBuilder.append(" and (lower(title) like ?").append(paramIndex);
+      queryBuilder.append(" or lower(content) like ?").append(paramIndex).append(")");
+    }
+
     List<FieldSort> fieldSorts = query.getSort();
     if (fieldSorts != null && !fieldSorts.isEmpty()) {
       String orderBy =
@@ -79,8 +85,17 @@ public class PanacheNoteRepository
     }
 
     String queryText = queryBuilder.toString();
-    if (query.getIsPinned() != null) {
+    String searchPattern =
+        query.getSearchQuery() != null && !query.getSearchQuery().isBlank()
+            ? "%" + query.getSearchQuery().toLowerCase() + "%"
+            : null;
+
+    if (query.getIsPinned() != null && searchPattern != null) {
+      return find(queryText, actingUserId, query.getIsPinned(), searchPattern);
+    } else if (query.getIsPinned() != null) {
       return find(queryText, actingUserId, query.getIsPinned());
+    } else if (searchPattern != null) {
+      return find(queryText, actingUserId, searchPattern);
     } else {
       return find(queryText, actingUserId);
     }

@@ -90,7 +90,7 @@ class NoteControllerTest {
     // given
     NoteValue noteValue = mock(NoteValue.class);
     NoteResponse response = mock(NoteResponse.class);
-    NoteQueryBean query = new NoteQueryBean(true, null, 1, 10, SortList.empty());
+    NoteQueryBean query = new NoteQueryBean(true, null, 1, 10, SortList.empty(), null);
     when(noteValue.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.search(AUTHOR_ID, query))
