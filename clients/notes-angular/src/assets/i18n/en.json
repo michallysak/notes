@@ -21,20 +21,20 @@
   "STATUS": {
     "LOGGED": "Logged in"
   },
-   "NOTES": {
-     "CREATE_BUTTON": "Create note",
-     "SECTION_PINNED": "Pinned",
-     "SECTION_OTHER": "Other",
-     "SECTION_SHARED": "Shared with you",
-     "SHARE": "Share",
-     "SHARED": "Shared",
-     "DELETE": "Delete",
-     "PIN": "Unpin note",
-     "UNPIN": "Unpin note",
-     "MORE": "More",
-     "PERMISSION_REVOKED": "Your access to this note has been revoked",
-     "PERMISSION_CHANGED": "Your permissions for this note have changed",
-     "SHARE_DIALOG": {
+  "NOTES": {
+    "CREATE_BUTTON": "Create note",
+    "SECTION_PINNED": "Pinned",
+    "SECTION_OTHER": "Other",
+    "SECTION_SHARED": "Shared with you",
+    "SHARE": "Share",
+    "SHARED": "Shared",
+    "DELETE": "Delete",
+    "PIN": "Unpin note",
+    "UNPIN": "Unpin note",
+    "MORE": "More",
+    "PERMISSION_REVOKED": "Your access to this note has been revoked",
+    "PERMISSION_CHANGED": "Your permissions for this note have changed",
+    "SHARE_DIALOG": {
       "TITLE": "Share note",
       "EMAIL_PLACEHOLDER": "User email",
       "ADD": "Add",
@@ -46,6 +46,21 @@
       },
       "PERMISSION_REVOKED": "Permission revoked",
       "PERMISSION_CHANGED": "Permission changed"
+    },
+    "SEARCH_DIALOG": {
+      "TITLE": "Search notes",
+      "SEARCH_LABEL": "Search",
+      "SEARCH_TERM": "Search term",
+      "SEARCH_PLACEHOLDER": "Search by title or content (3 characters min)",
+      "PINNED": "Pinned",
+      "SHARED": "Shared",
+      "FILTER": {
+        "ANY": "Any",
+        "YES": "Yes",
+        "NO": "No"
+      },
+      "LOAD_MORE": "Load more",
+      "NO_RESULTS": "No notes found"
     },
     "DIALOG": {
       "UPDATE_TITLE": "Update Note",

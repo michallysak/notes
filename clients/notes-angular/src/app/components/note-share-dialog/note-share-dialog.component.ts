@@ -6,7 +6,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TranslatePipe } from '@ngx-translate/core';
-import { finalize, Subject } from 'rxjs';
+import { finalize, Subject, debounceTime } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { NotePermission, NoteShareResponse } from '@notes/notes_service';
 import { NoteService } from '../../services/note/note.service';
@@ -68,7 +68,9 @@ export class NoteShareDialogComponent implements OnChanges, OnDestroy {
   constructor(
     private noteService: NoteService,
   ) {
-    this.form.controls.email.valueChanges.subscribe(() => this.userNotFound.set(false));
+    this.form.controls.email.valueChanges
+      .pipe(debounceTime(500), takeUntil(this.destroy$))
+      .subscribe(() => this.userNotFound.set(false));
 
     this.noteService.notes$
       .pipe(takeUntil(this.destroy$))

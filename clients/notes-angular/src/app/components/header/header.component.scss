@@ -3,11 +3,21 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
+  border-top: none;
+  border-right: none;
+  border-left: none;
+}
+
+.header-actions {
+  padding: 8px 16px;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .user-info {
   display: flex;
   gap: 8px;
-  align-items: center
+  align-items: center;
 }
 

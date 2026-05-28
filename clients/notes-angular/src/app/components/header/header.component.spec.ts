@@ -5,6 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { provideTranslateService } from '@ngx-translate/core';
 import * as AuthModule from '../../services/auth/auth.service';
 import { HeaderComponent } from './header.component';
+import { NoteEventsService } from '../../services/note/note-events.service';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
@@ -13,11 +14,16 @@ describe('HeaderComponent', () => {
 
   const authService = {
     currentUser$: new BehaviorSubject<any | null>(null),
+    logged$: new BehaviorSubject(false),
     logout: vi.fn(),
   };
 
   const router = {
     navigate: vi.fn(),
+  };
+
+  const noteEventsService = {
+    domainEvents$: new BehaviorSubject<any>({}),
   };
 
   beforeEach(async () => {
@@ -35,6 +41,7 @@ describe('HeaderComponent', () => {
         }),
         { provide: AuthModule.AuthService, useValue: authService },
         { provide: Router, useValue: router },
+        { provide: NoteEventsService, useValue: noteEventsService },
       ],
     }).compileComponents();
 
@@ -47,9 +54,9 @@ describe('HeaderComponent', () => {
 
   it('should render correctly', () => {
     expect(component).toBeTruthy();
-    expect(queryElement('header.app-header')).toBeTruthy();
-    expect(queryElement('div:nth-child(1) h1')).toBeTruthy();
-    expect(queryElement('div:nth-child(2)')).toBeTruthy();
+    expect(queryElement('p-toolbar.app-header')).toBeTruthy();
+    const toolbar = queryElement('p-toolbar');
+    expect(toolbar).toBeTruthy();
   });
 
   it('should render user info when current user exists', () => {

@@ -1,14 +1,38 @@
-<header class="app-header">
-  <div>
-    <h1>{{ 'HEADER.TITLE' | translate }}</h1>
-  </div>
-  <div>
-    @if (currentUser$ | async; as user) {
-      <div class="user-info">
-        <span>{{ user.email }}</span>
-        <p-button type="button" label="{{ 'ACTION.LOGOUT' | translate }}" (onClick)="logout()" />
-      </div>
-    }
-  </div>
-</header>
+<p-toolbar class="app-header">
+
+  <ng-template #start>
+    <h1 class="toolbar-title">{{ 'HEADER.TITLE' | translate }}</h1>
+
+    <div class="header-actions">
+      <app-note-search />
+
+      <p-button
+        (onClick)="openCreate()"
+        [label]="'NOTES.CREATE_BUTTON' | translate"
+        [icon]="'pi pi-plus'"
+        severity="secondary"
+        [attr.aria-label]="'NOTES.CREATE_BUTTON' | translate"
+      ></p-button>
+    </div>
+
+  </ng-template>
+
+  <ng-template #end>
+    <div class="toolbar-end">
+      @if (currentUser$ | async; as user) {
+        <div class="user-info">
+          <span>{{ user.email }}</span>
+          <p-button type="button" label="{{ 'ACTION.LOGOUT' | translate }}" (onClick)="logout()" />
+        </div>
+      }
+    </div>
+  </ng-template>
+</p-toolbar>
+
+<app-note-change-dialog
+  [visible]="showCreateDialog()"
+  (visibleChange)="showCreateDialog.set($event)"
+  [note]="null"
+  [readonly]="false"
+/>
 

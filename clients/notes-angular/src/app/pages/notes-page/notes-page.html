@@ -1,6 +1,9 @@
-<div>
+<div class="notes-page-container">
   @if (logged()) {
-    <app-notes-list />
+    <div class="page-wrapper">
+      <app-header class="page-header" />
+      <app-notes-list class="page-content" />
+    </div>
   } @else {
     <app-auth-dialog [visible]="true" />
   }

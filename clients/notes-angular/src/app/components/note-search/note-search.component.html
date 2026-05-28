@@ -1,0 +1,99 @@
+<p-button
+  type="button"
+  [icon]="'pi pi-search'"
+  [rounded]="true"
+  severity="secondary"
+  (onClick)="openSearch()"
+  [attr.aria-label]="'NOTES.SEARCH_DIALOG.SEARCH_LABEL' | translate"
+></p-button>
+
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="'NOTES.SEARCH_DIALOG.TITLE' | translate"
+  [modal]="true"
+  [closable]="true"
+  [styleClass]="'search-dialog'"
+  [contentStyleClass]="'search-dialog-content'"
+  [maximizable]="true"
+  [style]="{ height: '500px' }"
+  (onShow)="onDialogShow()"
+  (onHide)="onDialogHide()"
+>
+  <div class="content-wrapper">
+    <p-toolbar class="search-toolbar">
+      <ng-template #center>
+        <div class="filters-container" [formGroup]="form">
+          <div class="filter-group">
+            <label>{{ 'NOTES.SEARCH_DIALOG.SEARCH_TERM' | translate }}</label>
+            <p-iconfield>
+              <p-inputicon class="pi pi-search" />
+              <input
+                id="search"
+                pInputText
+                type="text"
+                formControlName="searchQuery"
+                [placeholder]="'NOTES.SEARCH_DIALOG.SEARCH_PLACEHOLDER' | translate"
+                class="search-input"
+              />
+            </p-iconfield>
+          </div>
+
+          <div class="filter-group">
+            <label>{{ 'NOTES.SEARCH_DIALOG.PINNED' | translate }}</label>
+            <p-select
+              [options]="filterOptions"
+              formControlName="pinnedFilter"
+              optionLabel="label"
+              optionValue="value"
+              (onChange)="onPinnedFilterChange($event.value)"
+              class="filter-select"
+            ></p-select>
+          </div>
+
+          <div class="filter-group">
+            <label>{{ 'NOTES.SEARCH_DIALOG.SHARED' | translate }}</label>
+            <p-select
+              [options]="filterOptions"
+              formControlName="sharedFilter"
+              optionLabel="label"
+              optionValue="value"
+              (onChange)="onSharedFilterChange($event.value)"
+              class="filter-select"
+            ></p-select>
+          </div>
+        </div>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="search-results-inner">
+      @if (searchResults$()?.loading && (searchResults$()?.data?.length || 0) === 0) {
+        <div class="loader-container">
+          <p-progressSpinner></p-progressSpinner>
+        </div>
+      } @else if ((searchResults$()?.data?.length || 0) > 0) {
+        <div class="results-grid">
+          @for (note of searchResults$()?.data; track note.id) {
+            <app-note-card
+              [note]="note"
+              (onClick)="onNoteClick($event)"
+              (shareClick)="onNoteShare($event)"
+            ></app-note-card>
+          }
+        </div>
+
+        @if (searchResults$()?.loading) {
+          <div class="infinite-scroll-loader">
+            <p-progressSpinner></p-progressSpinner>
+          </div>
+        }
+      } @else {
+        <div class="no-results">
+          <p>{{ 'NOTES.SEARCH_DIALOG.NO_RESULTS' | translate }}</p>
+        </div>
+      }
+    </div>
+
+  </div>
+</p-dialog>
+

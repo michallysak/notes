@@ -115,7 +115,7 @@ export class NoteService {
 
     section.next({ ...current, loading: true });
 
-    this.notesApi.searchNotes(isPinned, isShared, current.page, this.pageSize).subscribe(res => {
+    this.notesApi.searchNotes(isPinned, isShared, current.page, undefined, this.pageSize).subscribe(res => {
       let data = res?.data || [];
       let mappedData = data.map(n => this.mapToNote(n));
       if (filterFn) {
@@ -255,7 +255,8 @@ export class NoteService {
     const currentUserId = currentUser?.id;
 
     const shared = shares.length > 0;
-    const canEdit = shares.some(
+    const isAuthor = res.authorId === currentUserId;
+    const canEdit = isAuthor || shares.some(
       (p) => p.userId === currentUserId && (p.permissions ?? []).includes(NotePermission.EDIT)
     );
 

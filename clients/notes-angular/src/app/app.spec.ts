@@ -4,7 +4,6 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { App } from './app';
 import { provideTranslateService } from '@ngx-translate/core';
-import { HeaderComponent } from './components/header/header.component';
 import { MessageService } from 'primeng/api';
 
 describe('App Component', () => {
@@ -13,7 +12,7 @@ describe('App Component', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App, HeaderComponent],
+      imports: [App],
       providers: [
         provideRouter([]),
         provideHttpClientTesting(),
@@ -34,8 +33,6 @@ describe('App Component', () => {
 
   it('should render correctly', () => {
     expect(component).toBeTruthy();
-    expect(queryElement('header')).toBeTruthy();
-    expect(queryElement('header app-header')).toBeTruthy();
     expect(queryElement('main')).toBeTruthy();
     expect(queryElement('main router-outlet')).toBeTruthy();
   });

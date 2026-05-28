@@ -269,7 +269,7 @@ describe('NoteService', () => {
     expect(notesApi.removeNoteAccess).toHaveBeenCalledWith('note-1', 'user-1');
   });
 
-  it('mapToNote calculates permissions correctly when editing is true', () => {
+  it('mapToNote calculates permissions correctly when editing is true', async () => {
     const res: any = {
       id: '1',
       authorId: 'auth-1',
@@ -278,29 +278,37 @@ describe('NoteService', () => {
     notesApi.searchNotes.mockReturnValue(of({ data: [res] }));
     service.loadNotes();
 
-    expect(service.notes$.subscribe((notes) => {
-      if (notes.length) {
-        expect(notes[0].shared).toBe(true);
-        expect(notes[0].canEdit).toBe(true);
-      }
-    }));
+    const notes = await new Promise<any>((resolve) => {
+      service.notes$.pipe().subscribe((notes) => {
+        if (notes.length) {
+          resolve(notes);
+        }
+      });
+    });
+
+    expect(notes[0].shared).toBe(true);
+    expect(notes[0].canEdit).toBe(true);
   });
 
-  it('mapToNote calculates permissions correctly when sharing without edit', () => {
+  it('mapToNote calculates permissions correctly when sharing without edit', async () => {
     const res: any = {
       id: '1',
-      authorId: 'auth-1',
-      shares: [{ userId: 'other-user', email: 'other@ex.com', permissions: [NotePermission.READ] }],
+      authorId: 'other-author',
+      shares: [{ userId: 'auth-1', email: 'me@ex.com', permissions: [NotePermission.READ] }],
     };
     notesApi.searchNotes.mockReturnValue(of({ data: [res] }));
     service.loadNotes();
 
-    expect(service.notes$.subscribe((notes) => {
-      if (notes.length) {
-        expect(notes[0].shared).toBe(true);
-        expect(notes[0].canEdit).toBe(false);
-      }
-    }));
+    const notes = await new Promise<any>((resolve) => {
+      service.notes$.pipe().subscribe((notes) => {
+        if (notes.length) {
+          resolve(notes);
+        }
+      });
+    });
+
+    expect(notes[0].shared).toBe(true);
+    expect(notes[0].canEdit).toBe(false);
   });
 
   describe('Server-Sent Events (SSE)', () => {

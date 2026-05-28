@@ -1,0 +1,21 @@
+.notes-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.page-header {
+  flex-shrink: 0;
+}
+
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}

@@ -1,6 +1,6 @@
-import { Component, Signal, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NoteService } from '../../services/note/note.service';
+import { NoteService, NotesSection } from '../../services/note/note.service';
 import { NoteCardComponent } from '../note-card/note-card.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -11,18 +11,16 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Note } from '../../types/note';
 import { NoteChangeDialogComponent } from '../note-change-dialog/note-change-dialog.component';
-import { NoteUpdateRequest, NoteAccessRemovedEventDTO } from '@notes/notes_service';
+import { NoteAccessRemovedEventDTO, NoteUpdateRequest } from '@notes/notes_service';
 import { NoteShareDialogComponent } from '../note-share-dialog/note-share-dialog.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NoteEventsService } from '../../services/note/note-events.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { NotificationService } from '../../services/notification/notification.service';
-import { Subject, takeUntil, skip } from 'rxjs';
+import { skip, Subject, takeUntil } from 'rxjs';
 
-type ChangeNoteDialogStatus =
-  | { visible: false; readonly: false }
-  | ({ visible: true } & { note: Note | null; readonly: boolean });
+type ChangeNoteDialogStatus ={ visible: boolean; note: Note | null; readonly: boolean };
 type ShareNoteDialogStatus = { visible: false } | ({ visible: true } & { note: Note });
 
 @Component({
@@ -45,12 +43,11 @@ type ShareNoteDialogStatus = { visible: false } | ({ visible: true } & { note: N
   templateUrl: './notes-list.component.html',
 })
 export class NotesListComponent implements OnInit, OnDestroy {
-  pinnedNotesSection: Signal<any>;
-  otherNotesSection: Signal<any>;
-  sharedNotesSection: Signal<any>;
-
-  clickNote = signal<ChangeNoteDialogStatus>({ visible: false, readonly: false });
+  clickNote = signal<ChangeNoteDialogStatus>({ visible: false, readonly: false, note: null });
   shareNote = signal<ShareNoteDialogStatus>({ visible: false });
+  pinnedNotesSection: Signal<NotesSection | undefined>;
+  otherNotesSection: Signal<NotesSection | undefined>;
+  sharedNotesSection: Signal<NotesSection | undefined>;
 
   private destroy$ = new Subject<void>();
   private previousReadonlyState: boolean | null = null;
@@ -61,13 +58,13 @@ export class NotesListComponent implements OnInit, OnDestroy {
     private router: Router,
     private noteEventsService: NoteEventsService,
     private auth: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {
     this.pinnedNotesSection = toSignal(this.noteService.pinnedSection);
     this.otherNotesSection = toSignal(this.noteService.otherSection);
     this.sharedNotesSection = toSignal(this.noteService.sharedSection);
 
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
         this.noteService.getNoteById(id).subscribe({
@@ -176,7 +173,7 @@ export class NotesListComponent implements OnInit, OnDestroy {
   }
 
   noteDialogClose() {
-    this.clickNote.set({ visible: false, readonly: false });
+    this.clickNote.set({ visible: false, readonly: false, note: null });
     this.previousReadonlyState = null;
     if (this.route.snapshot.paramMap.has('id')) {
       this.router.navigate(['/']);
@@ -187,8 +184,9 @@ export class NotesListComponent implements OnInit, OnDestroy {
     this.shareNote.set({ visible: false });
   }
 
-  onSharedStateChanged(event: { noteId: string; isShared: boolean }) {
-    // Shared state is now handled automatically when `NoteResponse` receives `shares` or through SSE which pushes updates to `NoteService`.
+  getShareDialogNote(): Note | null {
+    const state = this.shareNote();
+    return state.visible && 'note' in state ? state.note : null;
   }
 
   isShared(note: Note): boolean {

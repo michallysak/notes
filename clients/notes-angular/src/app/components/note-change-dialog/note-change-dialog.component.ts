@@ -307,3 +307,4 @@ export class NoteChangeDialogComponent implements OnDestroy {
     return normalizeHexColor(color);
   }
 }
+
