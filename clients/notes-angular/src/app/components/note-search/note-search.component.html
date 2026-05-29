@@ -46,6 +46,7 @@
               formControlName="pinnedFilter"
               optionLabel="label"
               optionValue="value"
+              [placeholder]="'NOTES.SEARCH_DIALOG.FILTER.ANY' | translate"
               (onChange)="onPinnedFilterChange($event.value)"
               class="filter-select"
             ></p-select>
@@ -58,6 +59,7 @@
               formControlName="sharedFilter"
               optionLabel="label"
               optionValue="value"
+              [placeholder]="'NOTES.SEARCH_DIALOG.FILTER.ANY' | translate"
               (onChange)="onSharedFilterChange($event.value)"
               class="filter-select"
             ></p-select>
@@ -76,6 +78,7 @@
           @for (note of searchResults$()?.data; track note.id) {
             <app-note-card
               [note]="note"
+              [showActions]="true"
               (onClick)="onNoteClick($event)"
               (shareClick)="onNoteShare($event)"
             ></app-note-card>
@@ -96,4 +99,3 @@
 
   </div>
 </p-dialog>
-

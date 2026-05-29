@@ -1,6 +1,7 @@
 package pl.michallysak.notes.application.cli.note.beans;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import org.junit.jupiter.api.Test;
@@ -8,10 +9,12 @@ import pl.michallysak.notes.application.cli.io.ConsoleIO;
 import pl.michallysak.notes.application.cli.note.presenter.CliNotePresenter;
 import pl.michallysak.notes.application.cli.presenter.Presenter;
 import pl.michallysak.notes.application.cli.presenter.RootPresenter;
+import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
 import pl.michallysak.notes.note.repository.InMemoryNoteRepository;
 import pl.michallysak.notes.note.repository.NoteRepository;
 import pl.michallysak.notes.note.service.NoteService;
 import pl.michallysak.notes.note.service.NoteServiceImpl;
+import pl.michallysak.notes.note.validator.NoteValidator;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 import pl.michallysak.notes.user.service.NoAuthCurrentUserProvider;
 
@@ -100,5 +103,29 @@ class NoteBeansTest {
     NoteRepository noteRepository = noteBeans.noteRepository();
     // then
     assertInstanceOf(InMemoryNoteRepository.class, noteRepository);
+  }
+
+  @Test
+  void domainEventPublisher_shouldBeSingletonAndInitialized() {
+    // given
+    NoteBeans noteBeans = new NoteBeans(new String[] {});
+    // when
+    DomainEventPublisher publisher1 = noteBeans.domainEventPublisher();
+    DomainEventPublisher publisher2 = noteBeans.domainEventPublisher();
+    // then
+    assertSame(publisher1, publisher2);
+    assertNotNull(publisher1);
+  }
+
+  @Test
+  void noteValidator_shouldBeSingletonAndInitialized() {
+    // given
+    NoteBeans noteBeans = new NoteBeans(new String[] {});
+    // when
+    NoteValidator validator1 = noteBeans.noteValidator();
+    NoteValidator validator2 = noteBeans.noteValidator();
+    // then
+    assertSame(validator1, validator2);
+    assertNotNull(validator1);
   }
 }

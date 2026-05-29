@@ -9,7 +9,7 @@
           </span>
         }
       </div>
-        @if (isAuthor()) {
+        @if (isAuthor() && !showActions) {
         <p-menu #menu [model]="items" popup="true" [appendTo]="'body'" ></p-menu>
         <div class="controls">
         <p-button

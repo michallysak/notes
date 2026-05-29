@@ -42,7 +42,7 @@ class NoteMapperTest {
   private static final UUID AUTHOR_ID = UUID.randomUUID();
 
   @Mock private NoteValidator noteValidator;
-  private NoteMapper noteMapper;
+  private NoteMapperImpl noteMapper;
 
   @BeforeEach
   void setUp() {
@@ -514,7 +514,7 @@ class NoteMapperTest {
   @Test
   void noteToUserEntity_shouldReturnNull_whenNoteNull() {
     // when
-    UserEntity userEntity = ((NoteMapperImpl) noteMapper).noteToUserEntity(null);
+    UserEntity userEntity = noteMapper.noteToUserEntity(null);
     // then
     assertNull(userEntity);
   }
@@ -522,10 +522,9 @@ class NoteMapperTest {
   @Test
   void noteStyleDTOToNoteStyle_shouldMapCorrectly_whenNoteStyleDTONotNull() {
     // given
-    NoteMapperImpl mapper = (NoteMapperImpl) noteMapper;
     NoteStyleDTO noteStyleDTO = NoteStyleDTO.builder().color("#AABBCC").build();
     // when
-    NoteStyle noteStyle = mapper.noteStyleDTOToNoteStyle(noteStyleDTO);
+    NoteStyle noteStyle = noteMapper.noteStyleDTOToNoteStyle(noteStyleDTO);
     // then
     assertNotNull(noteStyle);
     assertEquals(noteStyleDTO.getColor(), noteStyle.color());
@@ -534,10 +533,9 @@ class NoteMapperTest {
   @Test
   void noteStyleToNoteStyleDTO_shouldMapCorrectly_whenNoteStyleNotNull() {
     // given
-    NoteMapperImpl mapper = (NoteMapperImpl) noteMapper;
     NoteStyle noteStyle = NoteStyle.builder().color("#112233").build();
     // when
-    NoteStyleDTO noteStyleDTO = mapper.noteStyleToNoteStyleDTO(noteStyle);
+    NoteStyleDTO noteStyleDTO = noteMapper.noteStyleToNoteStyleDTO(noteStyle);
     // then
     assertNotNull(noteStyleDTO);
     assertEquals(noteStyle.color(), noteStyleDTO.getColor());
@@ -552,7 +550,7 @@ class NoteMapperTest {
     entity.setUser(user);
     entity.setPermissions(Set.of(NotePermission.READ));
     // when
-    NoteShare mapped = ((NoteMapperImpl) noteMapper).noteShareEntityToDomainNoteShare(entity);
+    NoteShare mapped = noteMapper.noteShareEntityToDomainNoteShare(entity);
     // then
     assertNull(mapped);
   }
@@ -560,7 +558,7 @@ class NoteMapperTest {
   @Test
   void noteShareEntityToDomainNoteShare_shouldReturnNull_whenEntityNull() {
     // when
-    NoteShare mapped = ((NoteMapperImpl) noteMapper).noteShareEntityToDomainNoteShare(null);
+    NoteShare mapped = noteMapper.noteShareEntityToDomainNoteShare(null);
     // then
     assertNull(mapped);
   }
@@ -568,8 +566,7 @@ class NoteMapperTest {
   @Test
   void noteSharesToDomainNoteShareEntities_shouldReturnNull_whenSharesNull() {
     // when
-    Set<NoteShareEntity> entities =
-        ((NoteMapperImpl) noteMapper).noteSharesToDomainNoteShareEntities(null);
+    Set<NoteShareEntity> entities = noteMapper.noteSharesToDomainNoteShareEntities(null);
     // then
     assertNull(entities);
   }
@@ -577,8 +574,68 @@ class NoteMapperTest {
   @Test
   void userIdToUserEntity_shouldReturnNull_whenUserIdNull() {
     // when
-    UserEntity userEntity = ((NoteMapperImpl) noteMapper).userIdToUserEntity(null);
+    UserEntity userEntity = noteMapper.userIdToUserEntity(null);
     // then
     assertNull(userEntity);
+  }
+
+  @Test
+  void userIdToUserEntity_shouldCreateUserEntity_whenUserIdNotNull() {
+    // given
+    UUID userId = UUID.randomUUID();
+    // when
+    UserEntity userEntity = noteMapper.userIdToUserEntity(userId);
+    // then
+    assertNotNull(userEntity);
+    assertEquals(userId, userEntity.getId());
+  }
+
+  @Test
+  void noteShareEntityToDomainNoteShare_shouldMapCorrectly_whenValid() {
+    // given
+    UUID userId = UUID.randomUUID();
+    UserEntity user = new UserEntity();
+    user.setId(userId);
+    NoteShareEntity entity = new NoteShareEntity();
+    entity.setUser(user);
+    entity.setPermissions(Set.of(NotePermission.READ, NotePermission.EDIT));
+    // when
+    NoteShare mapped = noteMapper.noteShareEntityToDomainNoteShare(entity);
+    // then
+    assertNotNull(mapped);
+    assertEquals(userId, mapped.userId());
+    assertEquals(Set.of(NotePermission.READ, NotePermission.EDIT), mapped.permissions());
+  }
+
+  @Test
+  void noteSharesToDomainNoteShareEntities_shouldMapCorrectly_whenSharesNotNull() {
+    // given
+    NoteShare share = new NoteShare(UUID.randomUUID(), Set.of(NotePermission.READ));
+    // when
+    Set<NoteShareEntity> entities = noteMapper.noteSharesToDomainNoteShareEntities(Set.of(share));
+    // then
+    assertNotNull(entities);
+    assertEquals(1, entities.size());
+  }
+
+  @Test
+  void mapToNoteResponse_shouldMapCorrectly_whenValueAndSharesNotNull() {
+    // given
+    UUID userId = UUID.randomUUID();
+    NoteShare share = new NoteShare(userId, Set.of(NotePermission.READ));
+    NoteValue value =
+        NoteTestUtils.createNoteValueBuilder()
+            .updated(Optional.empty())
+            .shares(Set.of(share))
+            .build();
+    Email email = Email.of("user@example.com");
+    NoteShareResponse shareResponse = noteMapper.mapToNoteShareResponse(share, email);
+    // when
+    NoteResponse noteResponse =
+        noteMapper.mapToNoteResponse(value, java.util.List.of(shareResponse));
+    // then
+    assertNotNull(noteResponse);
+    assertNotNull(noteResponse.getShares());
+    assertFalse(noteResponse.getShares().isEmpty());
   }
 }

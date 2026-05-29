@@ -255,4 +255,38 @@ class CliNotePresenterIT {
     // and
     assertTrue(noteService.getCreatedNotes(AUTHOR_ID).isEmpty());
   }
+
+  @Test
+  void present$handleOption_shouldShowError_whenInvalidOption() {
+    // when
+    CliNotePresenterTestClient client = new CliNotePresenterTestClient(noteService);
+    client.present("999", NoteOption.EXIT.getValue());
+    // then
+    String output = client.getOutput();
+    assertTrue(output.contains("Invalid option. Try again."));
+  }
+
+  @Test
+  void present$updateNote_shouldSetPinnedTrue_whenUserEntersY() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    CliNotePresenterTestClient client = createTestClient();
+    String id = client.createNoteAndGetId(createNote);
+    // when
+    CliNotePresenterTestClient updateClient =
+        createTestClient()
+            .present(
+                NoteOption.UPDATE.getValue(),
+                id,
+                "newTitle",
+                "newContent",
+                "y",
+                NoteOption.EXIT.getValue());
+    // then
+    String output = updateClient.getOutput();
+    assertTrue(output.contains("Updated:"));
+    // and
+    NoteValue note = noteService.getCreatedNotes(AUTHOR_ID).getFirst();
+    assertTrue(note.pinned());
+  }
 }

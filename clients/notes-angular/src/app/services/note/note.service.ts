@@ -152,6 +152,16 @@ export class NoteService {
       const nextData = [...current.data];
       nextData[idx] = { ...nextData[idx], ...value };
       section.next({ ...current, data: nextData });
+    } else {
+      section.next({ ...current, data: [value, ...current.data] });
+    }
+  }
+
+  private removeNoteFromSection(section: BehaviorSubject<NotesSection>, noteId: string) {
+    const current = section.value;
+    const newData = current.data.filter(n => n.id !== noteId);
+    if (newData.length !== current.data.length) {
+      section.next({ ...current, data: newData });
     }
   }
 
@@ -176,9 +186,20 @@ export class NoteService {
     next[idx] = { ...next[idx], ...value };
     this.notesSubject.next(next);
 
-    this.upsertNoteInSection(this.pinnedSection, next[idx]);
-    this.upsertNoteInSection(this.otherSection, next[idx]);
-    this.upsertNoteInSection(this.sharedSection, next[idx]);
+    const currentUserId = this.auth.getCurrentUserValue()?.id;
+    const isOwnNote = value.authorId === currentUserId;
+
+    if (!isOwnNote) {
+      this.upsertNoteInSection(this.sharedSection, next[idx]);
+    } else {
+      if (value.pinned) {
+        this.upsertNoteInSection(this.pinnedSection, next[idx]);
+        this.removeNoteFromSection(this.otherSection, value.id);
+      } else {
+        this.upsertNoteInSection(this.otherSection, next[idx]);
+        this.removeNoteFromSection(this.pinnedSection, value.id);
+      }
+    }
   }
 
   private removeNoteFromSubject(id: string) {
@@ -215,15 +236,8 @@ export class NoteService {
   updateNote(id: string, body: NoteUpdateRequest) {
     return this.notesApi.updateNote(body, id).pipe(
       tap((res: NoteResponse) => {
-        const current = this.notesSubject.value;
-        const idx = current.findIndex((n) => n.id === res.id);
-        let next: Note[];
-        if (idx === -1) {
-          next = [this.mapToNote(res), ...current];
-        } else {
-          next = current.map((n) => (n.id === res.id ? { ...n, ...res } : n));
-        }
-        this.notesSubject.next(next);
+        const mappedNote = this.mapToNote(res);
+        this.upsertNoteInSubject(mappedNote);
       }),
     );
   }

@@ -81,27 +81,29 @@ describe('NoteCardComponent', () => {
     expect(queryElement('.shared-badge')).toBeFalsy();
   });
 
-  it('renders controls and menu when isAuthor is true', async () => {
-    const note = createNote({ authorId: 'auth-1' });
-    fixture.componentRef.setInput('note', note);
-    authService.currentUser$.next({ id: 'auth-1' });
-    fixture.detectChanges();
-    await fixture.whenStable();
+   it('renders controls and menu when isAuthor is true', async () => {
+     const note = createNote({ authorId: 'auth-1' });
+     fixture.componentRef.setInput('note', note);
+     fixture.componentRef.setInput('showActions', false);
+     authService.currentUser$.next({ id: 'auth-1' });
+     fixture.detectChanges();
+     await fixture.whenStable();
 
-    expect(queryElement('.controls')).toBeTruthy();
-    expect(queryElement('p-menu')).toBeTruthy();
-  });
+     expect(queryElement('.controls')).toBeTruthy();
+     expect(queryElement('p-menu')).toBeTruthy();
+   });
 
-  it('does not render controls and menu when isAuthor is false', async () => {
-    const note = createNote({ authorId: 'auth-1' });
-    fixture.componentRef.setInput('note', note);
-    authService.currentUser$.next({ id: 'other-user' });
-    fixture.detectChanges();
-    await fixture.whenStable();
+   it('does not render controls and menu when isAuthor is false', async () => {
+     const note = createNote({ authorId: 'auth-1' });
+     fixture.componentRef.setInput('note', note);
+     fixture.componentRef.setInput('showActions', false);
+     authService.currentUser$.next({ id: 'other-user' });
+     fixture.detectChanges();
+     await fixture.whenStable();
 
-    expect(queryElement('.controls')).toBeFalsy();
-    expect(queryElement('p-menu')).toBeFalsy();
-  });
+     expect(queryElement('.controls')).toBeFalsy();
+     expect(queryElement('p-menu')).toBeFalsy();
+   });
 
   it('should initialize menu items on init', () => {
     expect(component.items.length).toBe(2);
@@ -226,11 +228,35 @@ describe('NoteCardComponent', () => {
   });
 
 
-  it('should log click action in handleCardClick', () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+   it('should log click action in handleCardClick', () => {
+     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    component.handleCardClick();
+     component.handleCardClick();
 
-    expect(logSpy).toHaveBeenCalledWith('click', '5');
-  });
+     expect(logSpy).toHaveBeenCalledWith('click', '5');
+   });
+
+   it('should hide controls when showActions is true', async () => {
+     const note = createNote({ authorId: 'auth-1' });
+     fixture.componentRef.setInput('note', note);
+     fixture.componentRef.setInput('showActions', true);
+     authService.currentUser$.next({ id: 'auth-1' });
+     fixture.detectChanges();
+     await fixture.whenStable();
+
+     expect(queryElement('.controls')).toBeFalsy();
+     expect(queryElement('p-menu')).toBeFalsy();
+   });
+
+   it('should show controls when showActions is false', async () => {
+     const note = createNote({ authorId: 'auth-1' });
+     fixture.componentRef.setInput('note', note);
+     fixture.componentRef.setInput('showActions', false);
+     authService.currentUser$.next({ id: 'auth-1' });
+     fixture.detectChanges();
+     await fixture.whenStable();
+
+     expect(queryElement('.controls')).toBeTruthy();
+     expect(queryElement('p-menu')).toBeTruthy();
+   });
 });

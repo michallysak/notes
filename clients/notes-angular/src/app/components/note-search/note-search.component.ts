@@ -12,8 +12,9 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NoteCardComponent } from '../note-card/note-card.component';
-import { NotesAPIService, NoteResponse } from '@notes/notes_service';
+import { NotesAPIService, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
 import { AuthService } from '../../services/auth/auth.service';
+import { NoteService } from '../../services/note/note.service';
 import { Note } from '../../types/note';
 import { BehaviorSubject, Subject, takeUntil, debounceTime } from 'rxjs';
 import { Router } from '@angular/router';
@@ -77,6 +78,7 @@ export class NoteSearchComponent implements OnDestroy, OnInit {
     private el: ElementRef,
     private ngZone: NgZone,
     private translate: TranslateService,
+    private noteService: NoteService,
   ) {
     this.form = new FormGroup<SearchFilterForm>({
       searchQuery: new FormControl('', { nonNullable: true }),

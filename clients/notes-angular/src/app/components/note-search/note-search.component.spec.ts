@@ -4,6 +4,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { NotesAPIService } from '@notes/notes_service';
 import { AuthService } from '../../services/auth/auth.service';
 import { NoteEventsService } from '../../services/note/note-events.service';
+import { NoteService } from '../../services/note/note.service';
 import { Router } from '@angular/router';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
 import { of, throwError, BehaviorSubject } from 'rxjs';
@@ -29,33 +30,37 @@ describe('NoteSearchComponent', () => {
     canEdit: true,
     ...overrides,
   });
-  beforeEach(async () => {
-    mockNotesApi = {
-      searchNotes: vi.fn(),
-    };
-    mockAuthService = {
-      getCurrentUserValue: vi.fn().mockReturnValue({ id: 'auth-1' }),
-    };
-    mockRouter = {
-      navigate: vi.fn(),
-    };
-    mockNoteEventsService = {
-      domainEvents$: new BehaviorSubject<any>({}),
-    };
-    await TestBed.configureTestingModule({
-      imports: [NoteSearchComponent],
-      providers: [
-        provideTranslateService(),
-        { provide: NotesAPIService, useValue: mockNotesApi },
-        { provide: AuthService, useValue: mockAuthService },
-        { provide: Router, useValue: mockRouter },
-        { provide: NoteEventsService, useValue: mockNoteEventsService },
-      ],
-    }).compileComponents();
-    fixture = TestBed.createComponent(NoteSearchComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+   beforeEach(async () => {
+     mockNotesApi = {
+       searchNotes: vi.fn(),
+     };
+     mockAuthService = {
+       getCurrentUserValue: vi.fn().mockReturnValue({ id: 'auth-1' }),
+     };
+     mockRouter = {
+       navigate: vi.fn(),
+     };
+     mockNoteEventsService = {
+       domainEvents$: new BehaviorSubject<any>({}),
+     };
+     const mockNoteService = {
+       updateNote: vi.fn(),
+     };
+     await TestBed.configureTestingModule({
+       imports: [NoteSearchComponent],
+       providers: [
+         provideTranslateService(),
+         { provide: NotesAPIService, useValue: mockNotesApi },
+         { provide: AuthService, useValue: mockAuthService },
+         { provide: Router, useValue: mockRouter },
+         { provide: NoteEventsService, useValue: mockNoteEventsService },
+         { provide: NoteService, useValue: mockNoteService },
+       ],
+     }).compileComponents();
+     fixture = TestBed.createComponent(NoteSearchComponent);
+     component = fixture.componentInstance;
+     fixture.detectChanges();
+   });
   it('should create', () => {
     expect(component).toBeTruthy();
   });
@@ -754,14 +759,14 @@ describe('NoteSearchComponent', () => {
      expect(spy).toHaveBeenCalledWith(note);
    });
 
-   it('should call onNoteShare when share button is clicked', () => {
-     const spy = vi.spyOn(component, 'onNoteShare');
-     const note = createNote();
+    it('should call onNoteShare when share button is clicked', () => {
+      const spy = vi.spyOn(component, 'onNoteShare');
+      const note = createNote();
 
-     component.onNoteShare(note);
+      component.onNoteShare(note);
 
-     expect(spy).toHaveBeenCalledWith(note);
-   });
+      expect(spy).toHaveBeenCalledWith(note);
+    });
 
    it('should maintain scroll listener lifecycle', () => {
      // Test that removeScrollListener clears the scroll listener

@@ -9,6 +9,7 @@ CLIENT_DIR="$ROOT_DIR/notes/clients/notes-angular"
 NOTES_SERVICE=notes-notes_service-0.0.0+auto.tgz
 
 cd "$GEN_TS_DIR"
+cp "$CLIENT_DIR/.npmrc" .npmrc
 npm i
 npm run build
 cd dist

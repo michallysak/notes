@@ -256,4 +256,89 @@ class NoteControllerTest {
     verify(noteMapper).mapToNoteShareResponse(currentUserShare, currentUserEmail);
     verify(userService).getUser(currentUserId);
   }
+
+  @Test
+  void createNote_shouldHandleNullShares() {
+    // given
+    CreateNoteRequest request = mock(CreateNoteRequest.class);
+    CreateNote createNote = mock(CreateNote.class);
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteResponse response = mock(NoteResponse.class);
+    when(noteValue.shares()).thenReturn(null);
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteMapper.mapToCreateNote(any(CreateNoteRequest.class), eq(AUTHOR_ID)))
+        .thenReturn(createNote);
+    when(noteService.createNote(createNote)).thenReturn(noteValue);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    // when
+    NoteResponse result = noteController.createNote(request);
+    // then
+    assertEquals(response, result);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), eq(List.of()));
+  }
+
+  @Test
+  void getNote_shouldHandleNullShares() {
+    // given
+    UUID id = UUID.randomUUID();
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteResponse response = mock(NoteResponse.class);
+    when(noteValue.shares()).thenReturn(null);
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteService.getCreatedNote(id, AUTHOR_ID)).thenReturn(noteValue);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    // when
+    NoteResponse result = noteController.getNote(id);
+    // then
+    assertEquals(response, result);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), eq(List.of()));
+  }
+
+  @Test
+  void updateNote_shouldHandleNullShares() {
+    // given
+    UUID id = UUID.randomUUID();
+    NoteUpdateRequest request = mock(NoteUpdateRequest.class);
+    NoteUpdate noteUpdate = mock(NoteUpdate.class);
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteResponse response = mock(NoteResponse.class);
+    when(noteValue.shares()).thenReturn(null);
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteMapper.mapToNoteUpdate(request, AUTHOR_ID)).thenReturn(noteUpdate);
+    when(noteService.updateNote(id, noteUpdate)).thenReturn(noteValue);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    // when
+    NoteResponse result = noteController.updateNote(id, request);
+    // then
+    assertEquals(response, result);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), eq(List.of()));
+  }
+
+  @Test
+  void getNotes_shouldHandleSharesWithElements() {
+    // given
+    UUID sharedUserId = UUID.randomUUID();
+    Email sharedUserEmail = Email.of("shared@example.com");
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteShare noteShare = new NoteShare(sharedUserId, Set.of(NotePermission.READ));
+    NoteResponse response = mock(NoteResponse.class);
+    NoteShareResponse shareResponse =
+        NoteShareResponse.builder()
+            .userId(sharedUserId)
+            .email(sharedUserEmail.getValue())
+            .permissions(Set.of(NotePermission.READ))
+            .build();
+    when(noteValue.shares()).thenReturn(Set.of(noteShare));
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteService.getCreatedNotes(AUTHOR_ID)).thenReturn(List.of(noteValue));
+    when(noteMapper.mapToNoteShareResponse(noteShare, sharedUserEmail)).thenReturn(shareResponse);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(userService.getUser(sharedUserId))
+        .thenReturn(UserValue.builder().id(sharedUserId).email(sharedUserEmail).build());
+    // when
+    List<NoteResponse> result = noteController.getNotes();
+    // then
+    assertEquals(1, result.size());
+    assertEquals(response, result.getFirst());
+  }
 }

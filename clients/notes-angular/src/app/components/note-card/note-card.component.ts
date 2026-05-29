@@ -31,6 +31,7 @@ import { UserResponse } from '@notes/notes_service';
 })
 export class NoteCardComponent {
   @Input({ required: true }) note!: Note;
+  @Input() showActions = false;
   @Output() onClick = new EventEmitter<Note>();
   @Output() pinClick = new EventEmitter<Note>();
   @Output() shareClick = new EventEmitter<Note>();
