@@ -65,6 +65,7 @@ public abstract class NoteMapper {
 
   @Mapping(target = "authorId", source = "author.id")
   @Mapping(target = "shares", source = "shares")
+  @Mapping(target = "attachmentIds", ignore = true)
   public abstract NoteValue mapToNoteValue(NoteEntity noteEntity);
 
   public Note mapToDomain(NoteEntity noteEntity) {

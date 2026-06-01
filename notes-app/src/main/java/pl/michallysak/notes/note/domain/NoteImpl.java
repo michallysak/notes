@@ -25,6 +25,7 @@ public class NoteImpl implements Note {
   private NoteStyle style;
   private final NoteValidator noteValidator;
   private final Set<NoteShare> shares = new HashSet<>();
+  private final Set<UUID> attachmentIds = new HashSet<>();
 
   public NoteImpl(CreateNote createNote, NoteValidator noteValidator) {
     this.noteValidator = noteValidator;
@@ -51,6 +52,9 @@ public class NoteImpl implements Note {
 
     if (noteValue.shares() != null) {
       this.shares.addAll(Set.copyOf(noteValue.shares()));
+    }
+    if (noteValue.attachmentIds() != null) {
+      this.attachmentIds.addAll(Set.copyOf(noteValue.attachmentIds()));
     }
   }
 
@@ -127,6 +131,33 @@ public class NoteImpl implements Note {
       return shares.stream()
           .filter(noteShare -> noteShare.userId().equals(actingUserId))
           .collect(Collectors.toSet());
+    }
+  }
+
+  @Override
+  public Set<UUID> getAttachmentIds() {
+    return Set.copyOf(attachmentIds);
+  }
+
+  @Override
+  public void addAttachment(UUID actingUserId, UUID attachmentId) {
+    checkPermission(actingUserId, NotePermission.EDIT);
+    if (attachmentId == null) {
+      throw new IllegalArgumentException("Attachment id cannot be null");
+    }
+    if (attachmentIds.add(attachmentId)) {
+      this.updated = OffsetDateTime.now();
+    }
+  }
+
+  @Override
+  public void deleteAttachment(UUID actingUserId, UUID attachmentId) {
+    checkPermission(actingUserId, NotePermission.EDIT);
+    if (attachmentId == null) {
+      throw new IllegalArgumentException("Attachment id cannot be null");
+    }
+    if (attachmentIds.remove(attachmentId)) {
+      this.updated = OffsetDateTime.now();
     }
   }
 
