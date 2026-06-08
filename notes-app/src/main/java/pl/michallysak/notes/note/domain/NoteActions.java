@@ -18,8 +18,4 @@ public interface NoteActions {
   void removeAccess(UUID actingUserId, UUID targetUserId);
 
   Set<NoteShare> getShares(UUID actingUserId);
-
-  void addAttachment(UUID actingUserId, UUID attachmentId);
-
-  void deleteAttachment(UUID actingUserId, UUID attachmentId);
 }

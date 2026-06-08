@@ -3,7 +3,7 @@ package pl.michallysak.notes.note.attachment.domain;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public interface NoteAttachmentMeta extends NoteAttachmentActions {
+public interface NoteAttachmentMeta extends NoteAttachmentMetaActions {
   UUID getId();
 
   UUID getNoteId();
@@ -17,5 +17,4 @@ public interface NoteAttachmentMeta extends NoteAttachmentActions {
   long getSize();
 
   OffsetDateTime getCreated();
-
 }

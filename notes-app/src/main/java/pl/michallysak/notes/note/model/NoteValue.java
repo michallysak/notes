@@ -17,8 +17,7 @@ public record NoteValue(
     Optional<OffsetDateTime> updated,
     boolean pinned,
     NoteStyle style,
-    Set<NoteShare> shares,
-    Set<UUID> attachmentIds) {
+    Set<NoteShare> shares) {
 
   public static NoteValue fromAuthor(Note note) {
     return from(note, note.getAuthorId());
@@ -35,7 +34,6 @@ public record NoteValue(
         .updated(note.getUpdated())
         .style(note.getStyle())
         .shares(note.getShares(actingUserId))
-        .attachmentIds(note.getAttachmentIds())
         .build();
   }
 }

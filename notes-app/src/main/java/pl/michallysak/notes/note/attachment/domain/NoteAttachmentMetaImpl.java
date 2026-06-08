@@ -9,7 +9,7 @@ import pl.michallysak.notes.note.attachment.model.NoteAttachmentMetaValue;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidator;
 
 @Getter
-public class NoteAttachmentMetaMetaImpl implements NoteAttachmentMeta {
+public class NoteAttachmentMetaImpl implements NoteAttachmentMeta {
   private final UUID id;
   private final UUID noteId;
   private final UUID authorId;
@@ -19,7 +19,7 @@ public class NoteAttachmentMetaMetaImpl implements NoteAttachmentMeta {
   private final OffsetDateTime created;
   private final NoteAttachmentValidator noteAttachmentValidator;
 
-  public NoteAttachmentMetaMetaImpl(
+  public NoteAttachmentMetaImpl(
       CreateNoteAttachmentMeta createMeta, NoteAttachmentValidator noteAttachmentValidator) {
     this.noteAttachmentValidator = noteAttachmentValidator;
     noteAttachmentValidator.validateCreateAttachmentMeta(createMeta);
@@ -32,7 +32,7 @@ public class NoteAttachmentMetaMetaImpl implements NoteAttachmentMeta {
     this.created = OffsetDateTime.now();
   }
 
-  public NoteAttachmentMetaMetaImpl(
+  public NoteAttachmentMetaImpl(
       NoteAttachmentMetaValue value, NoteAttachmentValidator noteAttachmentValidator) {
     this.noteAttachmentValidator = noteAttachmentValidator;
     this.id = value.id();
@@ -51,6 +51,21 @@ public class NoteAttachmentMetaMetaImpl implements NoteAttachmentMeta {
 
   @Override
   public void delete(UUID actingUserId) {
+    checkOwnership(actingUserId);
+  }
+
+  @Override
+  public void uploadContent(UUID actingUserId) {
+    checkOwnership(actingUserId);
+  }
+
+  @Override
+  public void downloadContent(UUID actingUserId) {
+    checkOwnership(actingUserId);
+  }
+
+  @Override
+  public void deleteContent(UUID actingUserId) {
     checkOwnership(actingUserId);
   }
 

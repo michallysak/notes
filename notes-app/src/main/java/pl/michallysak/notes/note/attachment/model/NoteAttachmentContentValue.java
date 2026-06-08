@@ -1,8 +1,7 @@
 package pl.michallysak.notes.note.attachment.model;
 
-import lombok.RequiredArgsConstructor;
-
 import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public final class NoteAttachmentContentValue {

@@ -6,50 +6,47 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import pl.michallysak.notes.note.attachment.domain.NoteAttachmentMeta;
-import pl.michallysak.notes.note.attachment.domain.NoteAttachmentContentImpl;
-import pl.michallysak.notes.note.attachment.domain.NoteAttachmentMetaMetaImpl;
+import pl.michallysak.notes.note.attachment.domain.NoteAttachmentMetaImpl;
 import pl.michallysak.notes.note.attachment.exception.NoteAttachmentNotFoundException;
-import pl.michallysak.notes.note.attachment.model.NoteAttachmentContentValue;
 import pl.michallysak.notes.note.attachment.model.CreateNoteAttachmentMeta;
+import pl.michallysak.notes.note.attachment.model.NoteAttachmentContentValue;
 import pl.michallysak.notes.note.attachment.model.NoteAttachmentMetaValue;
 import pl.michallysak.notes.note.attachment.repository.NoteAttachmentContentRepository;
 import pl.michallysak.notes.note.attachment.repository.NoteAttachmentMetaRepository;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidator;
-import pl.michallysak.notes.note.domain.Note;
-import pl.michallysak.notes.note.exception.NoteNotFoundException;
-import pl.michallysak.notes.note.repository.NoteRepository;
 
 @RequiredArgsConstructor
 public class NoteAttachmentServiceImpl implements NoteAttachmentService {
   private final NoteAttachmentMetaRepository attachmentMetaRepository;
   private final NoteAttachmentContentRepository attachmentContentRepository;
-  private final NoteRepository noteRepository;
   private final NoteAttachmentValidator noteAttachmentValidator;
 
   @Override
   public NoteAttachmentMetaValue createAttachmentMeta(
       CreateNoteAttachmentMeta createAttachmentMeta) {
-    Note note = findNoteByIdOrThrow(createAttachmentMeta.noteId());
     NoteAttachmentMeta noteAttachmentMeta =
-        new NoteAttachmentMetaMetaImpl(createAttachmentMeta, noteAttachmentValidator);
-    note.addAttachment(createAttachmentMeta.authorId(), noteAttachmentMeta.getId());
-    noteRepository.saveNote(note);
+        new NoteAttachmentMetaImpl(createAttachmentMeta, noteAttachmentValidator);
     attachmentMetaRepository.saveAttachmentMeta(noteAttachmentMeta);
     return NoteAttachmentMetaValue.from(noteAttachmentMeta);
   }
 
   @Override
-  public Optional<NoteAttachmentMetaValue> getAttachmentMeta(UUID attachmentId) {
+  public Optional<NoteAttachmentMetaValue> getAttachmentMeta(UUID attachmentId, UUID actingUserId) {
     validateAttachmentId(attachmentId);
     return attachmentMetaRepository
         .findAttachmentMetaById(attachmentId)
-        .map(NoteAttachmentMetaValue::from);
+        .map(
+            meta -> {
+              meta.read(actingUserId);
+              return NoteAttachmentMetaValue.from(meta);
+            });
   }
 
   @Override
-  public List<NoteAttachmentMetaValue> getAttachmentMetasForNote(UUID noteId) {
+  public List<NoteAttachmentMetaValue> getAttachmentMetasForNote(UUID noteId, UUID actingUserId) {
     Objects.requireNonNull(noteId, "Note id cannot be null");
     return attachmentMetaRepository.findAttachmentMetaByNoteId(noteId).stream()
+        .peek(meta -> meta.read(actingUserId))
         .map(NoteAttachmentMetaValue::from)
         .toList();
   }
@@ -57,47 +54,42 @@ public class NoteAttachmentServiceImpl implements NoteAttachmentService {
   @Override
   public void deleteAttachmentMeta(UUID attachmentId, UUID actingUserId) {
     validateAttachmentId(attachmentId);
-    NoteAttachmentMeta noteAttachmentMeta =
-        attachmentMetaRepository
-            .findAttachmentMetaById(attachmentId)
-            .orElseThrow(
-                () -> NoteAttachmentNotFoundException.ofAttachmentMeta(attachmentId));
-    Note note = findNoteByIdOrThrow(noteAttachmentMeta.getNoteId());
+    NoteAttachmentMeta noteAttachmentMeta = findAttachmentMetaByIdOrThrow(attachmentId);
     noteAttachmentMeta.delete(actingUserId);
-    note.deleteAttachment(actingUserId, attachmentId);
-    noteRepository.saveNote(note);
+
     attachmentMetaRepository.deleteAttachmentMetaById(attachmentId);
+    attachmentContentRepository.deleteAttachmentContentByAttachmentId(attachmentId);
   }
 
   @Override
-  public void uploadAttachmentContent(UUID attachmentId, NoteAttachmentContentValue attachmentContent) {
+  public void uploadAttachmentContent(
+      UUID attachmentId, UUID actingUserId, NoteAttachmentContentValue attachmentContent) {
     validateAttachmentId(attachmentId);
     noteAttachmentValidator.validateUploadAttachmentContentPayload(attachmentContent);
     NoteAttachmentMeta noteAttachmentMeta = findAttachmentMetaByIdOrThrow(attachmentId);
-    NoteAttachmentContentImpl content =
-        new NoteAttachmentContentImpl(
-            attachmentId, noteAttachmentMeta.getAuthorId(), attachmentContent);
-    attachmentContentRepository.saveAttachmentContent(
-        content.getAttachmentId(), content.getAttachmentContent());
+    noteAttachmentMeta.uploadContent(actingUserId);
+
+    attachmentContentRepository.saveAttachmentContent(attachmentId, attachmentContent);
   }
 
   @Override
-  public NoteAttachmentContentValue downloadAttachmentContent(UUID attachmentId) {
+  public NoteAttachmentContentValue downloadAttachmentContent(
+      UUID attachmentId, UUID actingUserId) {
     validateAttachmentId(attachmentId);
     NoteAttachmentMeta noteAttachmentMeta = findAttachmentMetaByIdOrThrow(attachmentId);
-    NoteAttachmentContentValue attachmentContent =
-        attachmentContentRepository
-            .findAttachmentContentByAttachmentId(attachmentId)
-            .orElseThrow(() -> NoteAttachmentNotFoundException.ofAttachmentContent(attachmentId));
-    NoteAttachmentContentImpl content =
-        new NoteAttachmentContentImpl(
-            attachmentId, noteAttachmentMeta.getAuthorId(), attachmentContent);
-    return content.getAttachmentContent();
+    noteAttachmentMeta.downloadContent(actingUserId);
+
+    return attachmentContentRepository
+        .findAttachmentContentByAttachmentId(attachmentId)
+        .orElseThrow(() -> NoteAttachmentNotFoundException.ofAttachmentContent(attachmentId));
   }
 
   @Override
-  public void deleteAttachmentContent(UUID attachmentId) {
+  public void deleteAttachmentContent(UUID attachmentId, UUID actingUserId) {
     validateAttachmentId(attachmentId);
+    NoteAttachmentMeta noteAttachmentMeta = findAttachmentMetaByIdOrThrow(attachmentId);
+    noteAttachmentMeta.deleteContent(actingUserId);
+
     attachmentContentRepository.deleteAttachmentContentByAttachmentId(attachmentId);
   }
 
@@ -110,9 +102,4 @@ public class NoteAttachmentServiceImpl implements NoteAttachmentService {
         .findAttachmentMetaById(attachmentId)
         .orElseThrow(() -> NoteAttachmentNotFoundException.ofAttachmentMeta(attachmentId));
   }
-
-  private Note findNoteByIdOrThrow(UUID noteId) {
-    return noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
-  }
-
 }

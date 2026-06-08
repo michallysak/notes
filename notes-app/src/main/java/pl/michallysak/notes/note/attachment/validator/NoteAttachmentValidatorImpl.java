@@ -2,8 +2,8 @@ package pl.michallysak.notes.note.attachment.validator;
 
 import pl.michallysak.notes.common.exception.ValidationException;
 import pl.michallysak.notes.common.validator.CommonValidator;
-import pl.michallysak.notes.note.attachment.model.NoteAttachmentContentValue;
 import pl.michallysak.notes.note.attachment.model.CreateNoteAttachmentMeta;
+import pl.michallysak.notes.note.attachment.model.NoteAttachmentContentValue;
 
 public class NoteAttachmentValidatorImpl implements NoteAttachmentValidator {
   private final CommonValidator commonValidator = new CommonValidator();
@@ -11,8 +11,7 @@ public class NoteAttachmentValidatorImpl implements NoteAttachmentValidator {
   @Override
   public void validateCreateAttachmentMeta(CreateNoteAttachmentMeta createAttachmentMeta) {
     commonValidator.throwOnNull(createAttachmentMeta, "Attachment create payload cannot be null");
-    commonValidator.throwOnNull(
-        createAttachmentMeta.noteId(), "Attachment note id cannot be null");
+    commonValidator.throwOnNull(createAttachmentMeta.noteId(), "Attachment note id cannot be null");
     commonValidator.throwOnNull(
         createAttachmentMeta.authorId(), "Attachment author id cannot be null");
 
