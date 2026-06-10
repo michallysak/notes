@@ -167,7 +167,7 @@ class NoteAttachmentServiceImplTest {
         .thenReturn(Optional.empty());
     // when
     Executable executable = () -> service.downloadAttachmentContent(meta.getId(), AUTHOR_ID);
-    //then
+    // then
     assertThrows(NoteAttachmentNotFoundException.class, executable);
   }
 
