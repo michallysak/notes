@@ -75,6 +75,11 @@
       "TITLE_LABEL": "Title",
       "CONTENT_LABEL": "Content"
     },
+    "ATTACHMENTS": {
+      "TITLE": "Attachments",
+      "UPLOAD": "Upload",
+      "ERROR_TOO_LARGE": "{{name}} exceeds the 10 MB limit."
+    },
     "META": {
       "CREATED": "Created {{date}}",
       "EDITED": "Edited {{date}}"

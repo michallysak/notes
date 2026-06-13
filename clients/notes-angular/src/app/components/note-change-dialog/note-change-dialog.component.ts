@@ -10,6 +10,7 @@ import { debounceTime, delay, Subject, takeUntil } from 'rxjs';
 import { CreateNoteRequest, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
 import { NoteService } from '../../services/note/note.service';
 import { NoteChangeDateTimeComponent } from '../note-change-datetime/note-change-date-time.component';
+import { NoteAttachmentsComponent } from '../note-attachments/note-attachments.component';
 import { TextRangeComponent } from '../text-range/text-range.component';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -35,6 +36,7 @@ type NoteForm = {
     ButtonModule,
     ProgressBarModule,
     NoteChangeDateTimeComponent,
+    NoteAttachmentsComponent,
     TextRangeComponent,
     ProgressSpinnerModule,
     TranslatePipe,

@@ -1,0 +1,85 @@
+<div class="note-attachments">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5>{{ 'NOTES.ATTACHMENTS.TITLE' | translate }} ({{ attachments().length }})</h5>
+    @if (!readonly) {
+      <p-fileupload
+        #fileUpload
+        mode="basic"
+        [multiple]="true"
+        [maxFileSize]="maxFileSize"
+        name="file"
+        [chooseLabel]="'NOTES.ATTACHMENTS.UPLOAD' | translate"
+        [chooseButtonProps]="{ disabled: uploadingFiles().length > 0 }"
+        [showUploadButton]="false"
+        [showCancelButton]="false"
+        [customUpload]="true"
+        [auto]="true"
+        (uploadHandler)="onUpload($event)"
+        (onSelect)="onSelectedFiles($event)">
+        <ng-template #content>
+        </ng-template>
+      </p-fileupload>
+    }
+  </div>
+
+  @if (uploadingFiles().length > 0) {
+    <div>
+      <h5>{{ 'Uploading' }}</h5>
+      <ul class="attachment-list">
+        @for (file of uploadingFiles(); track file.name) {
+          <li class="attachment-item">
+            <div class="attachment-info">
+              <div class="file-header">
+                <i class="pi pi-file"></i>
+                <span class="file-name" [title]="file.name">{{ file.name }}</span>
+              </div>
+            </div>
+            <div class="actions">
+              <p-progressSpinner class="upload-spinner"></p-progressSpinner>
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+  @if (attachments().length > 0) {
+    <ul class="attachment-list">
+      @for (attachment of attachments(); track attachment.id) {
+        <li class="attachment-item">
+          <div class="attachment-info">
+            <div class="file-header">
+              <i class="pi pi-file"></i>
+              <span class="file-name" [title]="attachment.fileName">{{ attachment.fileName }}</span>
+            </div>
+            <span class="file-size text-muted">{{ attachment.size || 0 | formatSize }}</span>
+          </div>
+          <div class="actions">
+            <p-button
+              icon="pi pi-download"
+              severity="info"
+              [rounded]="true"
+              [text]="true"
+              (click)="onDownload(attachment)"
+              [pTooltip]="'Download'"
+              tooltipPosition="top">
+            </p-button>
+            @if (!readonly) {
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [rounded]="true"
+                [text]="true"
+                (click)="onDelete(attachment)"
+                [pTooltip]="'Delete'"
+                tooltipPosition="top">
+              </p-button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+
+</div>

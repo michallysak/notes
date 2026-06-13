@@ -119,6 +119,10 @@
           [backgroundColor]="inputBackgroundColor()"
         ></app-text-range>
       </div>
+
+      @if (activeNote()?.id; as noteId) {
+        <app-note-attachments [noteId]="noteId" [readonly]="readonly"></app-note-attachments>
+      }
     </form>
   </div>
 </p-dialog>
