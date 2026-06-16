@@ -267,4 +267,33 @@ class NoteServiceImplTest {
     // then
     assertThrows(NoteNotFoundException.class, executable);
   }
+
+  @Test
+  void getEffectivePermissions_shouldEnforceReadAndReturnEffectivePermissions() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    Note note = mock(Note.class);
+    Set<NoteShare> effective = Set.of(new NoteShare(userId, Set.of(NotePermission.EDIT)));
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.of(note));
+    when(note.getEffectivePermissions(userId)).thenReturn(effective);
+    // when
+    Set<NoteShare> result = service.getEffectivePermissions(noteId, userId);
+    // then
+    assertEquals(effective, result);
+    verify(note).read(userId);
+    verify(note).getEffectivePermissions(userId);
+  }
+
+  @Test
+  void getEffectivePermissions_shouldThrow_whenNoteNotFound() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    when(repository.findNoteWithId(noteId)).thenReturn(Optional.empty());
+    // when
+    Executable executable = () -> service.getEffectivePermissions(noteId, userId);
+    // then
+    assertThrows(NoteNotFoundException.class, executable);
+  }
 }

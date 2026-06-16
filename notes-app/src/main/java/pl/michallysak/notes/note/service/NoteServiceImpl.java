@@ -110,4 +110,12 @@ public class NoteServiceImpl implements NoteService {
     note.read(actingUserId);
     return note.getShares(actingUserId);
   }
+
+  @Override
+  public Set<NoteShare> getEffectivePermissions(UUID noteId, UUID actingUserId)
+      throws NoteNotFoundException {
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    note.read(actingUserId);
+    return note.getEffectivePermissions(actingUserId);
+  }
 }

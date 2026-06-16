@@ -11,6 +11,7 @@ import pl.michallysak.notes.note.attachment.service.NoteAttachmentService;
 import pl.michallysak.notes.note.attachment.service.NoteAttachmentServiceImpl;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidator;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidatorImpl;
+import pl.michallysak.notes.note.service.NoteService;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -38,7 +39,8 @@ public class NoteAttachmentBeans {
   public NoteAttachmentService noteAttachmentService(
       NoteAttachmentMetaRepository metaRepository,
       NoteAttachmentContentRepository contentRepository,
-      NoteAttachmentValidator validator) {
-    return new NoteAttachmentServiceImpl(metaRepository, contentRepository, validator);
+      NoteAttachmentValidator validator,
+      NoteService noteService) {
+    return new NoteAttachmentServiceImpl(metaRepository, contentRepository, validator, noteService);
   }
 }

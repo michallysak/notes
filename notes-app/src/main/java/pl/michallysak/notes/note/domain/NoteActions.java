@@ -18,4 +18,6 @@ public interface NoteActions {
   void removeAccess(UUID actingUserId, UUID targetUserId);
 
   Set<NoteShare> getShares(UUID actingUserId);
+
+  Set<NoteShare> getEffectivePermissions(UUID actingUserId);
 }

@@ -1,12 +1,16 @@
 package pl.michallysak.notes.note.attachment.domain;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
 import pl.michallysak.notes.note.attachment.exception.NoteAttachmentAccessException;
 import pl.michallysak.notes.note.attachment.model.CreateNoteAttachmentMeta;
 import pl.michallysak.notes.note.attachment.model.NoteAttachmentMetaValue;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidator;
+import pl.michallysak.notes.note.model.NotePermission;
+import pl.michallysak.notes.note.model.NoteShare;
 
 @Getter
 public class NoteAttachmentMetaImpl implements NoteAttachmentMeta {
@@ -45,33 +49,42 @@ public class NoteAttachmentMetaImpl implements NoteAttachmentMeta {
   }
 
   @Override
-  public void read(UUID actingUserId) {
-    checkOwnership(actingUserId);
+  public void read(UUID actingUserId, Set<NoteShare> shares) {
+    checkPermission(actingUserId, shares, NotePermission.READ);
   }
 
   @Override
-  public void delete(UUID actingUserId) {
-    checkOwnership(actingUserId);
+  public void delete(UUID actingUserId, Set<NoteShare> shares) {
+    checkPermission(actingUserId, shares, NotePermission.EDIT);
   }
 
   @Override
-  public void uploadContent(UUID actingUserId) {
-    checkOwnership(actingUserId);
+  public void uploadContent(UUID actingUserId, Set<NoteShare> shares) {
+    checkPermission(actingUserId, shares, NotePermission.EDIT);
   }
 
   @Override
-  public void downloadContent(UUID actingUserId) {
-    checkOwnership(actingUserId);
+  public void downloadContent(UUID actingUserId, Set<NoteShare> shares) {
+    checkPermission(actingUserId, shares, NotePermission.READ);
   }
 
   @Override
-  public void deleteContent(UUID actingUserId) {
-    checkOwnership(actingUserId);
+  public void deleteContent(UUID actingUserId, Set<NoteShare> shares) {
+    checkPermission(actingUserId, shares, NotePermission.EDIT);
   }
 
-  private void checkOwnership(UUID actingUserId) {
-    if (!authorId.equals(actingUserId)) {
-      throw new NoteAttachmentAccessException(id, actingUserId);
+  private void checkPermission(UUID actingUserId, Set<NoteShare> shares, NotePermission required) {
+    if (authorId.equals(actingUserId)) {
+      return;
     }
+
+    Optional<NoteShare> userShare =
+        shares.stream().filter(s -> s.userId().equals(actingUserId)).findFirst();
+
+    if (userShare.isPresent() && userShare.get().allows(required)) {
+      return;
+    }
+
+    throw new NoteAttachmentAccessException(id, actingUserId);
   }
 }

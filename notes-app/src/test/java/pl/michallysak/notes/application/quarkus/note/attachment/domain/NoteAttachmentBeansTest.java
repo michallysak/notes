@@ -15,6 +15,7 @@ import pl.michallysak.notes.note.attachment.service.NoteAttachmentService;
 import pl.michallysak.notes.note.attachment.service.NoteAttachmentServiceImpl;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidator;
 import pl.michallysak.notes.note.attachment.validator.NoteAttachmentValidatorImpl;
+import pl.michallysak.notes.note.service.NoteService;
 
 @ExtendWith(MockitoExtension.class)
 class NoteAttachmentBeansTest {
@@ -56,10 +57,14 @@ class NoteAttachmentBeansTest {
     NoteAttachmentContentRepository noteAttachmentContentRepository =
         mock(NoteAttachmentContentRepository.class);
     NoteAttachmentValidator noteAttachmentValidator = mock(NoteAttachmentValidator.class);
+    NoteService noteService = mock(NoteService.class);
     // when
     NoteAttachmentService noteAttachmentService =
         beans.noteAttachmentService(
-            noteAttachmentMetaRepository, noteAttachmentContentRepository, noteAttachmentValidator);
+            noteAttachmentMetaRepository,
+            noteAttachmentContentRepository,
+            noteAttachmentValidator,
+            noteService);
     // then
     assertInstanceOf(NoteAttachmentServiceImpl.class, noteAttachmentService);
   }

@@ -32,4 +32,7 @@ public interface NoteService {
   void removeAccess(UUID noteId, UUID actingUserId, UUID targetUserId) throws NoteNotFoundException;
 
   Set<NoteShare> getPermissions(UUID noteId, UUID actingUserId) throws NoteNotFoundException;
+
+  Set<NoteShare> getEffectivePermissions(UUID noteId, UUID actingUserId)
+      throws NoteNotFoundException;
 }

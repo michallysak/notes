@@ -130,6 +130,16 @@ public class NoteImpl implements Note {
     }
   }
 
+  @Override
+  public Set<NoteShare> getEffectivePermissions(UUID actingUserId) {
+    if (authorId.equals(actingUserId)) {
+      return Set.of(new NoteShare(actingUserId, Set.of(NotePermission.EDIT)));
+    }
+    return shares.stream()
+        .filter(noteShare -> noteShare.userId().equals(actingUserId))
+        .collect(Collectors.toSet());
+  }
+
   private void checkOwnership(UUID actingUserId) {
     if (!authorId.equals(actingUserId)) {
       throw new NoteAccessException(id, actingUserId);

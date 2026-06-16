@@ -1,15 +1,17 @@
 package pl.michallysak.notes.note.attachment.domain;
 
+import java.util.Set;
 import java.util.UUID;
+import pl.michallysak.notes.note.model.NoteShare;
 
 public interface NoteAttachmentMetaActions {
-  void read(UUID actingUserId);
+  void read(UUID actingUserId, Set<NoteShare> shares);
 
-  void delete(UUID actingUserId);
+  void delete(UUID actingUserId, Set<NoteShare> shares);
 
-  void uploadContent(UUID actingUserId);
+  void uploadContent(UUID actingUserId, Set<NoteShare> shares);
 
-  void downloadContent(UUID actingUserId);
+  void downloadContent(UUID actingUserId, Set<NoteShare> shares);
 
-  void deleteContent(UUID actingUserId);
+  void deleteContent(UUID actingUserId, Set<NoteShare> shares);
 }

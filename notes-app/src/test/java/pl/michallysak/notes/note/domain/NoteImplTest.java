@@ -515,4 +515,52 @@ class NoteImplTest {
     // then
     assertTrue(visibleShares.isEmpty());
   }
+
+  @Test
+  void getEffectivePermissions_shouldGrantEditToAuthor_evenWhenAuthorHasNoShareEntry() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID editorId = UUID.randomUUID();
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    note.setPermissions(authorId, editorId, Set.of(NotePermission.EDIT));
+    // when
+    Set<NoteShare> effective = note.getEffectivePermissions(authorId);
+    // then
+    assertEquals(1, effective.size());
+    NoteShare authorShare = effective.iterator().next();
+    assertEquals(authorId, authorShare.userId());
+    assertTrue(authorShare.allows(NotePermission.READ));
+    assertTrue(authorShare.allows(NotePermission.EDIT));
+  }
+
+  @Test
+  void getEffectivePermissions_shouldReturnOnlyActingUserShare_whenActingUserIsSharedUser() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID sharedUserId = UUID.randomUUID();
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    note.setPermissions(authorId, sharedUserId, Set.of(NotePermission.READ));
+    // when
+    Set<NoteShare> effective = note.getEffectivePermissions(sharedUserId);
+    // then
+    assertEquals(1, effective.size());
+    NoteShare share = effective.iterator().next();
+    assertEquals(sharedUserId, share.userId());
+    assertEquals(Set.of(NotePermission.READ), share.permissions());
+  }
+
+  @Test
+  void getEffectivePermissions_shouldReturnEmptySet_whenActingUserHasNoAccess() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID otherUserId = UUID.randomUUID();
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().authorId(authorId).build();
+    Note note = new NoteImpl(createNote, noteValidator);
+    // when
+    Set<NoteShare> effective = note.getEffectivePermissions(otherUserId);
+    // then
+    assertTrue(effective.isEmpty());
+  }
 }
