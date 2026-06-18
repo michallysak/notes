@@ -19,7 +19,7 @@ class NoteAttachmentValidatorImplTest {
         .noteId(UUID.randomUUID())
         .authorId(UUID.randomUUID())
         .fileName("file.txt")
-        .contentType("text/plain")
+        .contentType("image/jpeg")
         .size(10);
   }
 
@@ -80,6 +80,27 @@ class NoteAttachmentValidatorImplTest {
   }
 
   @Test
+  void validateCreateAttachmentMeta_shouldThrowWhenFileNameTooLong() {
+    // given
+    String longName = "a".repeat(256);
+    CreateNoteAttachmentMeta payload = validBuilder().fileName(longName).build();
+    // when
+    Executable executable = () -> validator.validateCreateAttachmentMeta(payload);
+    // then
+    assertThrows(ValidationException.class, executable);
+  }
+
+  @Test
+  void validateCreateAttachmentMeta_shouldThrowWhenFileNameContainsIllegalCharacters() {
+    // given
+    CreateNoteAttachmentMeta payload = validBuilder().fileName("bad/../file.txt").build();
+    // when
+    Executable executable = () -> validator.validateCreateAttachmentMeta(payload);
+    // then
+    assertThrows(ValidationException.class, executable);
+  }
+
+  @Test
   void validateCreateAttachmentMeta_shouldThrowWhenContentTypeNull() {
     // given
     CreateNoteAttachmentMeta payload = validBuilder().contentType(null).build();
@@ -100,9 +121,29 @@ class NoteAttachmentValidatorImplTest {
   }
 
   @Test
+  void validateCreateAttachmentMeta_shouldThrowWhenContentTypeNotAllowed() {
+    // given
+    CreateNoteAttachmentMeta payload = validBuilder().contentType("application/exe").build();
+    // when
+    Executable executable = () -> validator.validateCreateAttachmentMeta(payload);
+    // then
+    assertThrows(ValidationException.class, executable);
+  }
+
+  @Test
   void validateCreateAttachmentMeta_shouldThrowWhenSizeNegative() {
     // given
     CreateNoteAttachmentMeta payload = validBuilder().size(-1).build();
+    // when
+    Executable executable = () -> validator.validateCreateAttachmentMeta(payload);
+    // then
+    assertThrows(ValidationException.class, executable);
+  }
+
+  @Test
+  void validateCreateAttachmentMeta_shouldThrowWhenSizeTooLarge() {
+    // given
+    CreateNoteAttachmentMeta payload = validBuilder().size(11 * 1024 * 1024).build();
     // when
     Executable executable = () -> validator.validateCreateAttachmentMeta(payload);
     // then

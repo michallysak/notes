@@ -16,6 +16,7 @@
         [customUpload]="true"
         [auto]="true"
         (uploadHandler)="onUpload($event)"
+        [accept]="'image/*,application/pdf'"
         (onSelect)="onSelectedFiles($event)">
         <ng-template #content>
         </ng-template>
