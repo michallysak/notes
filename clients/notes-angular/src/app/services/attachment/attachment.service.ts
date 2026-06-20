@@ -22,9 +22,7 @@ export class AttachmentService {
   }
 
   downloadAttachment(id: string, fileName: string): void {
-    // TODO try to change swagger codegen to use it
-    const url = `${this.basePath}/attachments/${encodeURIComponent(String(id))}`;
-    this.http.get(url, { responseType: 'blob', headers: { 'Accept': 'application/octet-stream' } }).subscribe((blob) => {
+    this.attachmentsApi.getAttachmentContent(id).subscribe((blob) => {
       const a = document.createElement('a');
       const objectUrl = URL.createObjectURL(blob);
       a.href = objectUrl;

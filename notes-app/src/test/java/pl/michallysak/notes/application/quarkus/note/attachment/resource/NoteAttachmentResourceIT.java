@@ -38,7 +38,7 @@ class NoteAttachmentResourceIT extends BaseIT {
   }
 
   @Test
-  void getAttachmentMeta_shouldReturn200AndAttachmentResponse() {
+  void getAttachmentMeta_shouldReturn200AndAttachmentMetadataResponse() {
     // given
     String token = createUser(EMAIL_1);
     String noteId = createNote(token, getCreateNoteRequestBuilder().build());
@@ -63,7 +63,7 @@ class NoteAttachmentResourceIT extends BaseIT {
   }
 
   @Test
-  void getAttachmentMeta_shouldReturn403_whenNonOwnerWithoutPermission() {
+  void getAttachmentMetadataMeta_shouldReturn403_whenNonOwnerWithoutPermission() {
     // given
     String owner = createUser(EMAIL_1);
     String user = createUser(EMAIL_2);
@@ -92,7 +92,7 @@ class NoteAttachmentResourceIT extends BaseIT {
   }
 
   @Test
-  void getAttachmentsForNote_shouldReturnListOfAttachments() {
+  void getAttachmentsForNote_shouldReturnListOfAttachmentsMetadata() {
     // given
     String token = createUser(EMAIL_1);
     String noteId = createNote(token, getCreateNoteRequestBuilder().build());

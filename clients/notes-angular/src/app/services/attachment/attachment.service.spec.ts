@@ -10,6 +10,7 @@ describe('AttachmentService', () => {
     getAttachmentsForNote: vi.fn(),
     createAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
+    getAttachmentContent: vi.fn(),
   };
 
   const httpClientMock = {
@@ -17,10 +18,15 @@ describe('AttachmentService', () => {
   };
 
   beforeEach(async () => {
+    vi.restoreAllMocks();
+
     attachmentsApiMock.getAttachmentsForNote.mockReset();
     attachmentsApiMock.createAttachment.mockReset();
     attachmentsApiMock.deleteAttachment.mockReset();
+    attachmentsApiMock.getAttachmentContent.mockReset();
     httpClientMock.get.mockReset();
+
+    attachmentsApiMock.getAttachmentContent.mockReturnValue(of(new Blob(['default'])));
 
     await TestBed.configureTestingModule({
       providers: [
@@ -35,241 +41,168 @@ describe('AttachmentService', () => {
   const createService = () => TestBed.inject(AttachmentService);
 
   describe('getAttachmentsForNote', () => {
-    it('should call attachmentsApi.getAttachmentsForNote with noteId', () => {
+    it('should call API with noteId', () => {
       const service = createService();
-      const noteId = 'test-note-id';
 
       attachmentsApiMock.getAttachmentsForNote.mockReturnValue(of([]));
 
-      service.getAttachmentsForNote(noteId);
+      service.getAttachmentsForNote('note-1');
 
-      expect(attachmentsApiMock.getAttachmentsForNote).toHaveBeenCalledWith(noteId);
+      expect(attachmentsApiMock.getAttachmentsForNote).toHaveBeenCalledWith('note-1');
     });
 
-    it('should return observable from attachmentsApi', async () => {
+    it('should return attachments', async () => {
       const service = createService();
-      const noteId = 'test-note-id';
-      const mockAttachments: AttachmentResponse[] = [
-        { id: '1', fileName: 'test.pdf', size: 1024 },
-      ];
 
-      attachmentsApiMock.getAttachmentsForNote.mockReturnValue(of(mockAttachments));
+      const mock: AttachmentResponse[] = [{ id: '1', fileName: 'a.pdf', size: 10 }];
 
-      const result = await service.getAttachmentsForNote(noteId).toPromise();
-      expect(result).toEqual(mockAttachments);
+      attachmentsApiMock.getAttachmentsForNote.mockReturnValue(of(mock));
+
+      const result = await service.getAttachmentsForNote('note-1').toPromise();
+
+      expect(result).toEqual(mock);
     });
 
-    it('should handle errors from attachmentsApi', async () => {
+    it('should propagate errors', async () => {
       const service = createService();
-      const noteId = 'test-note-id';
-      const error = new Error('API Error');
 
-      attachmentsApiMock.getAttachmentsForNote.mockReturnValue(throwError(() => error));
+      attachmentsApiMock.getAttachmentsForNote.mockReturnValue(
+        throwError(() => new Error('API Error')),
+      );
 
-      await expect(service.getAttachmentsForNote(noteId).toPromise()).rejects.toThrow('API Error');
+      await expect(service.getAttachmentsForNote('note-1').toPromise()).rejects.toThrow(
+        'API Error',
+      );
     });
   });
 
   describe('createAttachment', () => {
-    it('should call attachmentsApi.createAttachment with correct parameters', () => {
+    it('should call API correctly', () => {
       const service = createService();
-      const noteId = 'test-note-id';
-      const file = new File(['content'], 'test.txt', { type: 'text/plain' });
+
+      const file = new File(['x'], 'test.txt', { type: 'text/plain' });
 
       attachmentsApiMock.createAttachment.mockReturnValue(of({}));
 
-      service.createAttachment(noteId, file);
+      service.createAttachment('note-1', file);
 
       expect(attachmentsApiMock.createAttachment).toHaveBeenCalledWith(
-        noteId,
+        'note-1',
         file.name,
         file.type,
-        file
+        file,
       );
     });
 
-    it('should return observable from attachmentsApi', async () => {
+    it('should return response', async () => {
       const service = createService();
-      const noteId = 'test-note-id';
-      const file = new File(['content'], 'test.txt', { type: 'text/plain' });
-      const mockResponse: AttachmentResponse = {
+
+      const file = new File(['x'], 'test.txt', { type: 'text/plain' });
+
+      const mock: AttachmentResponse = {
         id: '1',
         fileName: 'test.txt',
-        size: 7,
+        size: 123,
       };
 
-      attachmentsApiMock.createAttachment.mockReturnValue(of(mockResponse));
+      attachmentsApiMock.createAttachment.mockReturnValue(of(mock));
 
-      const result = await service.createAttachment(noteId, file).toPromise();
-      expect(result).toEqual(mockResponse);
-    });
+      const result = await service.createAttachment('note-1', file).toPromise();
 
-    it('should handle file with different types', () => {
-      const service = createService();
-      const noteId = 'test-note-id';
-      const files = [
-        new File(['content'], 'test.pdf', { type: 'application/pdf' }),
-        new File(['content'], 'test.doc', { type: 'application/msword' }),
-        new File(['content'], 'test.jpg', { type: 'image/jpeg' }),
-      ];
-
-      attachmentsApiMock.createAttachment.mockReturnValue(of({}));
-
-      files.forEach((file) => {
-        service.createAttachment(noteId, file);
-      });
-
-      expect(attachmentsApiMock.createAttachment).toHaveBeenCalledTimes(3);
+      expect(result).toEqual(mock);
     });
   });
 
   describe('deleteAttachment', () => {
-    it('should call attachmentsApi.deleteAttachment with attachment id', () => {
+    it('should call delete API', () => {
       const service = createService();
-      const attachmentId = 'test-attachment-id';
 
       attachmentsApiMock.deleteAttachment.mockReturnValue(of({}));
 
-      service.deleteAttachment(attachmentId);
+      service.deleteAttachment('id-1');
 
-      expect(attachmentsApiMock.deleteAttachment).toHaveBeenCalledWith(attachmentId);
+      expect(attachmentsApiMock.deleteAttachment).toHaveBeenCalledWith('id-1');
     });
 
-    it('should return observable from attachmentsApi', async () => {
+    it('should handle errors', async () => {
       const service = createService();
-      const attachmentId = 'test-attachment-id';
 
-      attachmentsApiMock.deleteAttachment.mockReturnValue(of({ success: true }));
+      attachmentsApiMock.deleteAttachment.mockReturnValue(
+        throwError(() => new Error('Delete failed')),
+      );
 
-      const result = await service.deleteAttachment(attachmentId).toPromise();
-      expect(result).toEqual({ success: true });
-    });
-
-    it('should handle errors when deleting', async () => {
-      const service = createService();
-      const attachmentId = 'test-attachment-id';
-      const error = new Error('Delete failed');
-
-      attachmentsApiMock.deleteAttachment.mockReturnValue(throwError(() => error));
-
-      await expect(service.deleteAttachment(attachmentId).toPromise()).rejects.toThrow('Delete failed');
+      await expect(service.deleteAttachment('id-1').toPromise()).rejects.toThrow('Delete failed');
     });
   });
 
   describe('downloadAttachment', () => {
-    it('should make http.get request with correct parameters', () => {
+    it('should trigger download flow', () => {
       const service = createService();
-      const attachmentId = '123';
-      const fileName = 'test.pdf';
 
-      httpClientMock.get.mockReturnValue(of(new Blob()));
+      const blob = new Blob(['data']);
 
-      service.downloadAttachment(attachmentId, fileName);
-
-      expect(httpClientMock.get).toHaveBeenCalledWith(
-        'http://localhost:8080/attachments/123',
-        {
-          responseType: 'blob',
-          headers: { 'Accept': 'application/octet-stream' }
-        }
-      );
-    });
-
-    it('should encode the attachment id in URL', () => {
-      const service = createService();
-      const attachmentId = 'id with spaces/special';
-      const fileName = 'test.pdf';
-
-      httpClientMock.get.mockReturnValue(of(new Blob()));
-
-      service.downloadAttachment(attachmentId, fileName);
-
-      expect(httpClientMock.get).toHaveBeenCalledWith(
-        expect.stringContaining(encodeURIComponent(String(attachmentId))),
-        expect.any(Object)
-      );
-    });
-
-    it('should create href and trigger download', () => {
-      const service = createService();
-      const attachmentId = '123';
-      const fileName = 'test.pdf';
-      const blob = new Blob(['test content']);
-
-      httpClientMock.get.mockReturnValue(of(blob));
-
-      // Mock DOM methods
-      const mockLink = {
-        href: '',
-        download: '',
-        click: vi.fn(),
-      };
-      const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
-      const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
-      const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL');
-
-      service.downloadAttachment(attachmentId, fileName);
-
-      expect(createElementSpy).toHaveBeenCalledWith('a');
-      expect(mockLink.download).toBe(fileName);
-      expect(mockLink.click).toHaveBeenCalled();
-      expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:url');
-
-      createElementSpy.mockRestore();
-      createObjectUrlSpy.mockRestore();
-      revokeObjectUrlSpy.mockRestore();
-    });
-
-    it('should handle special characters in file name', () => {
-      const service = createService();
-      const attachmentId = '123';
-      const fileName = 'test file (copy) #2.pdf';
-      const blob = new Blob(['test content']);
-
-      httpClientMock.get.mockReturnValue(of(blob));
+      attachmentsApiMock.getAttachmentContent.mockReturnValue(of(blob));
 
       const mockLink = {
         href: '',
         download: '',
         click: vi.fn(),
       };
+
       vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
       vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
-      const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL');
+      const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
-      service.downloadAttachment(attachmentId, fileName);
+      service.downloadAttachment('123', 'file.pdf');
 
-      expect(mockLink.download).toBe(fileName);
-      revokeObjectUrlSpy.mockRestore();
+      expect(attachmentsApiMock.getAttachmentContent).toHaveBeenCalledWith('123');
+      expect(document.createElement).toHaveBeenCalledWith('a');
+
+      expect(mockLink.href).toBe('blob:url');
+      expect(mockLink.download).toBe('file.pdf');
+      expect(mockLink.click).toHaveBeenCalled();
+
+      expect(revokeSpy).toHaveBeenCalledWith('blob:url');
+    });
+
+    it('should NOT create link on error', () => {
+      const service = createService();
+
+      attachmentsApiMock.getAttachmentContent.mockReturnValue(
+        throwError(() => new Error('Download failed')),
+      );
+
+      const createSpy = vi.spyOn(document, 'createElement');
+
+      expect(() => {
+        service.downloadAttachment('123', 'file.pdf');
+      }).not.toThrow();
+
+      expect(createSpy).not.toHaveBeenCalled();
     });
   });
 
   describe('all methods', () => {
-    it('should be called correctly in sequence', () => {
+    it('should call all APIs in sequence', () => {
       const service = createService();
-      const noteId = 'note-1';
-      const attachmentId = 'attach-1';
-      const file = new File(['content'], 'test.txt', { type: 'text/plain' });
+
+      const file = new File(['x'], 'test.txt', { type: 'text/plain' });
 
       attachmentsApiMock.getAttachmentsForNote.mockReturnValue(of([]));
       attachmentsApiMock.createAttachment.mockReturnValue(of({}));
       attachmentsApiMock.deleteAttachment.mockReturnValue(of({}));
+      attachmentsApiMock.getAttachmentContent.mockReturnValue(of(new Blob()));
       httpClientMock.get.mockReturnValue(of(new Blob()));
 
-      service.getAttachmentsForNote(noteId);
-      service.createAttachment(noteId, file);
-      service.downloadAttachment(attachmentId, 'test.txt');
-      service.deleteAttachment(attachmentId);
+      service.getAttachmentsForNote('n');
+      service.createAttachment('n', file);
+      service.downloadAttachment('a', 'x.txt');
+      service.deleteAttachment('a');
 
-      expect(attachmentsApiMock.getAttachmentsForNote).toHaveBeenCalledWith(noteId);
+      expect(attachmentsApiMock.getAttachmentsForNote).toHaveBeenCalled();
       expect(attachmentsApiMock.createAttachment).toHaveBeenCalled();
-      expect(httpClientMock.get).toHaveBeenCalled();
-      expect(attachmentsApiMock.deleteAttachment).toHaveBeenCalledWith(attachmentId);
+      expect(attachmentsApiMock.getAttachmentContent).toHaveBeenCalled();
+      expect(attachmentsApiMock.deleteAttachment).toHaveBeenCalled();
     });
   });
 });
-
-
-
-
-

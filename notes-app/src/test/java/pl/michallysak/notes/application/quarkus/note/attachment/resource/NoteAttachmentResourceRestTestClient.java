@@ -51,7 +51,7 @@ public class NoteAttachmentResourceRestTestClient extends RestTestClient {
         .headers(authorizationHeaders)
         .header("Accept", MediaType.APPLICATION_OCTET_STREAM)
         .when()
-        .get(getAttachmentPath(attachmentId.toString()));
+        .get(getAttachmentPath(attachmentId.toString() + "/content"));
   }
 
   public Response getAttachmentsForNote(UUID noteId) {

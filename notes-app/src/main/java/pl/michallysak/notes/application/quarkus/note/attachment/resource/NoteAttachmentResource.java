@@ -23,7 +23,6 @@ import pl.michallysak.notes.application.quarkus.note.attachment.controller.Attac
 import pl.michallysak.notes.application.quarkus.note.attachment.controller.NoteAttachmentController;
 import pl.michallysak.notes.application.quarkus.note.attachment.dto.AttachmentResponse;
 import pl.michallysak.notes.application.quarkus.note.attachment.dto.CreateAttachmentMultipartForm;
-import pl.michallysak.notes.common.exception.ValidationException;
 
 @Tag(name = "Attachments API", description = "Operations on note attachments")
 @Path("/attachments")
@@ -53,24 +52,37 @@ public class NoteAttachmentResource {
 
   @GET
   @Path("/{id}")
-  @Operation(
-      summary = "Get item metadata or binary content",
-      operationId = "getAttachmentOrContent")
+  @Operation(summary = "Get attachment metadata", operationId = "getAttachment")
   @APIResponse(
       responseCode = "200",
       description = "Attachment response",
-      content = {
-        @Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            schema = @Schema(implementation = AttachmentResponse.class)),
-        @Content(
-            mediaType = MediaType.APPLICATION_OCTET_STREAM,
-            schema = @Schema(type = SchemaType.STRING, format = "binary"))
-      })
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM})
-  public Response getAttachmentOrContent(
-      @PathParam("id") UUID id, @HeaderParam("Accept") String accept) {
-    return routeAttachmentOrContent(id, accept);
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_JSON,
+              schema = @Schema(implementation = AttachmentResponse.class)))
+  public AttachmentResponse getAttachmentMetadata(@PathParam("id") UUID id) {
+    return noteAttachmentController.getAttachment(id);
+  }
+
+  @GET
+  @Path("/{id}/content")
+  @Operation(summary = "Get attachment binary content", operationId = "getAttachmentContent")
+  @APIResponse(
+      responseCode = "200",
+      description = "Attachment response",
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_OCTET_STREAM,
+              schema = @Schema(type = SchemaType.STRING, format = "binary")))
+  @Produces(MediaType.APPLICATION_OCTET_STREAM)
+  public Response getAttachmentContent(@PathParam("id") UUID id) {
+    AttachmentContent content = noteAttachmentController.downloadAttachmentContent(id);
+    String type =
+        Optional.ofNullable(content.contentType()).orElse(MediaType.APPLICATION_OCTET_STREAM);
+    return Response.ok(content.value())
+        .type(type)
+        .header("Content-Disposition", "attachment; filename=\"" + content.fileName() + "\"")
+        .build();
   }
 
   @GET
@@ -91,28 +103,5 @@ public class NoteAttachmentResource {
   @APIResponse(responseCode = "204", description = "Attachment deleted")
   public void deleteAttachment(@PathParam("id") UUID id) {
     noteAttachmentController.deleteAttachment(id);
-  }
-
-  Response routeAttachmentOrContent(UUID id, String accept) {
-    if (accept == null) {
-      throw new ValidationException("Accept header is required");
-    }
-
-    if (accept.contains(MediaType.APPLICATION_OCTET_STREAM)) {
-      AttachmentContent content = noteAttachmentController.downloadAttachmentContent(id);
-      String type =
-          Optional.ofNullable(content.contentType()).orElse(MediaType.APPLICATION_OCTET_STREAM);
-      return Response.ok(content.value())
-          .type(type)
-          .header("Content-Disposition", "attachment; filename=\"" + content.fileName() + "\"")
-          .build();
-    }
-
-    if (accept.contains(MediaType.APPLICATION_JSON)) {
-      AttachmentResponse meta = noteAttachmentController.getAttachment(id);
-      return Response.ok(meta).type(MediaType.APPLICATION_JSON).build();
-    }
-
-    throw new ValidationException("Unsupported Accept header value: " + accept);
   }
 }
