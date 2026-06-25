@@ -18,13 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
 import pl.michallysak.notes.application.quarkus.common.openapi.OpenApiConfig;
 import pl.michallysak.notes.application.quarkus.note.controller.NoteController;
-import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.*;
 
 @Tag(name = "Notes API", description = "Operations on notes")
 @Path("/notes")
@@ -193,5 +187,72 @@ public class NoteResource {
       content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   public void removeAccess(@PathParam("id") UUID id, @PathParam("targetUserId") UUID targetUserId) {
     noteController.removeAccess(id, targetUserId);
+  }
+
+  @PUT
+  @Path("/publicNote/{publicShareId}")
+  @Operation(
+      summary = "Make note public",
+      operationId = "makeNotePublic",
+      description = "Makes the note public with the specified permissions")
+  @APIResponse(responseCode = "204", description = "Note made public")
+  @APIResponse(
+      responseCode = "400",
+      description = "Invalid request",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "403",
+      description = "Insufficient permissions",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "404",
+      description = "Note not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public NoteResponse getPublicNote(@PathParam("publicShareId") UUID publicShareId) {
+    return noteController.getPublicNote(publicShareId);
+  }
+
+  @PUT
+  @Path("/{id}/public")
+  @Operation(
+      summary = "Make note public",
+      operationId = "makeNotePublic",
+      description = "Makes the note public with the specified permissions")
+  @APIResponse(responseCode = "204", description = "Note made public")
+  @APIResponse(
+      responseCode = "400",
+      description = "Invalid request",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "403",
+      description = "Insufficient permissions",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "404",
+      description = "Note not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public NotePublicShareResponse makeNotePublic(
+      @PathParam("id") UUID id, @Valid SetNotePublicRequest request) {
+    UUID uuid = noteController.makeNotePublic(id, request);
+    return NotePublicShareResponse.builder().publicShareId(uuid).build();
+  }
+
+  @DELETE
+  @Path("/{id}/public")
+  @Operation(
+      summary = "Undo note public",
+      operationId = "undoNotePublic",
+      description = "Reverts the note from being public")
+  @APIResponse(responseCode = "204", description = "Note public access removed")
+  @APIResponse(
+      responseCode = "403",
+      description = "Insufficient permissions",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  @APIResponse(
+      responseCode = "404",
+      description = "Note not found",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  public void undoNotePublic(@PathParam("id") UUID id) {
+    noteController.undoNotePublic(id);
   }
 }

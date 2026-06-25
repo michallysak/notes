@@ -118,4 +118,29 @@ public class NoteServiceImpl implements NoteService {
     note.read(actingUserId);
     return note.getEffectivePermissions(actingUserId);
   }
+
+  @Override
+  public UUID makeNotePublic(UUID noteId, UUID actingUserId, Set<NotePermission> notePermission) {
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    UUID publicShareId = note.makeNotePublic(actingUserId, notePermission);
+    noteRepository.saveNote(note);
+    return publicShareId;
+  }
+
+  @Override
+  public void undoNotePublic(UUID noteId, UUID actingUserId) {
+    Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    note.undoNotePublic(actingUserId);
+    noteRepository.saveNote(note);
+  }
+
+  @Override
+  public NoteValue getPublicNote(UUID publicShareId, UUID actingUserId) {
+    Note note =
+        noteRepository
+            .findNoteByPublicShareId(publicShareId)
+            .orElseThrow(NoteNotFoundException::new);
+    note.read(actingUserId);
+    return NoteValue.from(note, actingUserId);
+  }
 }

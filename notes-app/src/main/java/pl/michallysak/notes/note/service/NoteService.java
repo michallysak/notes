@@ -4,13 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NotePagedQuery;
-import pl.michallysak.notes.note.model.NoteShare;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
-import pl.michallysak.notes.note.model.Paged;
-import pl.michallysak.notes.note.model.SetNotePermissions;
+import pl.michallysak.notes.note.model.*;
 
 public interface NoteService {
 
@@ -35,4 +29,10 @@ public interface NoteService {
 
   Set<NoteShare> getEffectivePermissions(UUID noteId, UUID actingUserId)
       throws NoteNotFoundException;
+
+  UUID makeNotePublic(UUID noteId, UUID actingUserId, Set<NotePermission> permissions);
+
+  void undoNotePublic(UUID noteId, UUID actingUserId);
+
+  NoteValue getPublicNote(UUID publicShareId, UUID actingUserId);
 }

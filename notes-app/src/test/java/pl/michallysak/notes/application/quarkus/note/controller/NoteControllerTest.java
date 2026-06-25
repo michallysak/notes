@@ -14,13 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.common.SortList;
-import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.*;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.model.*;
@@ -340,5 +334,62 @@ class NoteControllerTest {
     // then
     assertEquals(1, result.size());
     assertEquals(response, result.getFirst());
+  }
+
+  @Test
+  void makeNotePublic_shouldDelegateToServiceAndReturnId() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    UUID publicShareId = UUID.randomUUID();
+    SetNotePublicRequest request = mock(SetNotePublicRequest.class);
+    when(request.getPermissions()).thenReturn(Set.of());
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteService.makeNotePublic(noteId, AUTHOR_ID, request.getPermissions()))
+        .thenReturn(publicShareId);
+
+    // when
+    UUID result = noteController.makeNotePublic(noteId, request);
+
+    // then
+    assertEquals(publicShareId, result);
+    verify(currentUserProvider).getCurrentUserId();
+    verify(noteService).makeNotePublic(noteId, AUTHOR_ID, request.getPermissions());
+  }
+
+  @Test
+  void undoNotePublic_shouldDelegateToService() {
+    // given
+    UUID noteId = UUID.randomUUID();
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+
+    // when
+    noteController.undoNotePublic(noteId);
+
+    // then
+    verify(currentUserProvider).getCurrentUserId();
+    verify(noteService).undoNotePublic(noteId, AUTHOR_ID);
+  }
+
+  @Test
+  void getPublicNote_shouldReturnMappedResponse() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+
+    NoteValue noteValue = mock(NoteValue.class);
+    NoteResponse response = mock(NoteResponse.class);
+
+    when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
+    when(noteValue.shares()).thenReturn(Set.of());
+    when(noteService.getPublicNote(publicShareId, AUTHOR_ID)).thenReturn(noteValue);
+    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+
+    // when
+    NoteResponse result = noteController.getPublicNote(publicShareId);
+
+    // then
+    assertEquals(response, result);
+    verify(currentUserProvider).getCurrentUserId();
+    verify(noteService).getPublicNote(publicShareId, AUTHOR_ID);
+    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
   }
 }

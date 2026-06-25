@@ -23,6 +23,7 @@ public class NoteImpl implements Note {
   private boolean isPinned;
   private final UUID authorId;
   private NoteStyle style;
+  private NotePublicShare publicShare;
   private final NoteValidator noteValidator;
   private final Set<NoteShare> shares = new HashSet<>();
 
@@ -35,6 +36,7 @@ public class NoteImpl implements Note {
     this.content = createNote.content();
     this.created = OffsetDateTime.now();
     this.updated = null;
+    this.publicShare = null;
     this.isPinned = false;
   }
 
@@ -48,6 +50,7 @@ public class NoteImpl implements Note {
     this.updated = noteValue.updated().orElse(null);
     this.isPinned = noteValue.pinned();
     this.style = noteValue.style();
+    this.publicShare = noteValue.publicShare().orElse(null);
 
     if (noteValue.shares() != null) {
       this.shares.addAll(Set.copyOf(noteValue.shares()));
@@ -57,6 +60,11 @@ public class NoteImpl implements Note {
   @Override
   public Optional<OffsetDateTime> getUpdated() {
     return Optional.ofNullable(updated);
+  }
+
+  @Override
+  public Optional<NotePublicShare> getPublicShare() {
+    return Optional.ofNullable(publicShare);
   }
 
   @Override
@@ -140,13 +148,29 @@ public class NoteImpl implements Note {
         .collect(Collectors.toSet());
   }
 
+  @Override
+  public UUID makeNotePublic(UUID actingUserId, Set<NotePermission> notePermissions) {
+    checkOwnership(actingUserId);
+    if (notePermissions == null || notePermissions.isEmpty()) {
+      throw new IllegalArgumentException("Permissions cannot be empty");
+    }
+    publicShare = new NotePublicShare(UUID.randomUUID(), notePermissions);
+    return publicShare.publicShareId();
+  }
+
+  @Override
+  public void undoNotePublic(UUID actingUserId) {
+    checkOwnership(actingUserId);
+    publicShare = null;
+  }
+
   private void checkOwnership(UUID actingUserId) {
     if (!authorId.equals(actingUserId)) {
       throw new NoteAccessException(id, actingUserId);
     }
   }
 
-  private void checkPermission(UUID userId, NotePermission required) {
+  private void checkPermission(UUID userId, NotePermission notePermission) {
     if (authorId.equals(userId)) {
       return;
     }
@@ -154,7 +178,7 @@ public class NoteImpl implements Note {
     shares.stream()
         .filter(s -> s.userId().equals(userId))
         .findFirst()
-        .filter(s -> s.allows(required))
+        .filter(s -> s.allows(notePermission))
         .orElseThrow(() -> new NoteAccessException(id, userId));
   }
 }

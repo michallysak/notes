@@ -17,14 +17,12 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
+import pl.michallysak.notes.application.quarkus.note.persistence.NotePublicShareEntity;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NoteShare;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.validator.NoteValidator;
 import pl.michallysak.notes.user.repository.UserEntity;
 
@@ -34,6 +32,7 @@ import pl.michallysak.notes.user.repository.UserEntity;
     imports = {UserEntity.class})
 @ApplicationScoped
 public abstract class NoteMapper {
+
   protected NoteValidator noteValidator;
 
   public abstract CreateNote mapToCreateNote(CreateNoteRequest createNoteRequest, UUID authorId);
@@ -71,8 +70,25 @@ public abstract class NoteMapper {
     return new NoteImpl(mapToNoteValue(noteEntity), noteValidator);
   }
 
+  @Mapping(target = "id", source = "publicShareId")
+  @Mapping(target = "note", ignore = true)
+  protected abstract NotePublicShareEntity notePublicShareToEntity(NotePublicShare value);
+
+  @Mapping(target = "publicShareId", source = "id")
+  protected abstract NotePublicShare entityToNotePublicShare(NotePublicShareEntity value);
+
+  protected NotePublicShareEntity optionalNotePublicShareToEntity(Optional<NotePublicShare> value) {
+
+    return value != null && value.isPresent() ? notePublicShareToEntity(value.get()) : null;
+  }
+
+  protected Optional<NotePublicShare> entityToOptionalNotePublicShare(NotePublicShareEntity value) {
+
+    return Optional.ofNullable(value).map(this::entityToNotePublicShare);
+  }
+
   protected OffsetDateTime mapToOffsetDateTime(Optional<OffsetDateTime> value) {
-    return value.orElse(null);
+    return value == null ? null : value.orElse(null);
   }
 
   protected Optional<OffsetDateTime> mapToOptionalOffsetDateTime(OffsetDateTime value) {

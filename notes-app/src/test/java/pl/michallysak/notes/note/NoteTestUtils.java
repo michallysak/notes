@@ -26,6 +26,7 @@ public class NoteTestUtils {
         .content("validContent")
         .created(OffsetDateTime.now())
         .updated(Optional.empty())
+        .publicShare(Optional.empty())
         .pinned(true);
   }
 

@@ -98,4 +98,12 @@ public class InMemoryNoteRepository implements NoteRepository {
   public void deleteNotes() {
     notes.clear();
   }
+
+  @Override
+  public Optional<Note> findNoteByPublicShareId(UUID publicShareId) {
+    return notes.values().stream()
+        .filter(note -> note.getPublicShare().isPresent())
+        .filter(note -> note.getPublicShare().get().publicShareId().equals(publicShareId))
+        .findFirst();
+  }
 }

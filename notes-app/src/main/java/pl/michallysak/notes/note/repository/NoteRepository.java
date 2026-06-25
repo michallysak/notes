@@ -22,4 +22,6 @@ public interface NoteRepository {
   boolean deleteNoteWithId(UUID id);
 
   void deleteNotes();
+
+  Optional<Note> findNoteByPublicShareId(UUID publicShareId);
 }

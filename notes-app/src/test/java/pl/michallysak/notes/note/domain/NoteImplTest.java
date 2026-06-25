@@ -15,12 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.exception.NoteAccessException;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NotePermission;
-import pl.michallysak.notes.note.model.NoteShare;
-import pl.michallysak.notes.note.model.NoteStyle;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.validator.NoteValidator;
 
 @ExtendWith(MockitoExtension.class)
@@ -562,5 +557,111 @@ class NoteImplTest {
     Set<NoteShare> effective = note.getEffectivePermissions(otherUserId);
     // then
     assertTrue(effective.isEmpty());
+  }
+
+  @Test
+  void makeNotePublic_shouldCreatePublicShareAndReturnId_whenUserIsAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    Set<NotePermission> permissions = Set.of(NotePermission.READ, NotePermission.EDIT);
+
+    // when
+    UUID publicShareId = note.makeNotePublic(note.getAuthorId(), permissions);
+
+    // then
+    assertNotNull(publicShareId);
+    assertTrue(note.getPublicShare().isPresent());
+
+    NotePublicShare publicShare = note.getPublicShare().orElseThrow();
+    assertEquals(publicShareId, publicShare.publicShareId());
+    assertEquals(permissions, publicShare.permissions());
+  }
+
+  @Test
+  void makeNotePublic_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    UUID notAuthorId = UUID.randomUUID();
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+
+    // when
+    Executable executable = () -> note.makeNotePublic(notAuthorId, permissions);
+
+    // then
+    assertThrows(NoteAccessException.class, executable);
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  void makeNotePublic_shouldThrowIllegalArgumentException_whenPermissionsAreEmpty(
+      Set<NotePermission> permissions) {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    // when
+    Executable executable = () -> note.makeNotePublic(note.getAuthorId(), permissions);
+
+    // then
+    assertThrows(IllegalArgumentException.class, executable);
+  }
+
+  @Test
+  void makeNotePublic_shouldOverwritePreviousPublicShare_whenCalledAgain() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    Set<NotePermission> firstPermissions = Set.of(NotePermission.READ);
+    Set<NotePermission> secondPermissions = Set.of(NotePermission.EDIT);
+
+    UUID firstId = note.makeNotePublic(note.getAuthorId(), firstPermissions);
+
+    // when
+    UUID secondId = note.makeNotePublic(note.getAuthorId(), secondPermissions);
+
+    // then
+    assertNotEquals(firstId, secondId);
+
+    NotePublicShare publicShare = note.getPublicShare().orElseThrow();
+    assertEquals(secondId, publicShare.publicShareId());
+    assertEquals(secondPermissions, publicShare.permissions());
+  }
+
+  @Test
+  void undoNotePublic_shouldRemovePublicShare_whenUserIsAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    note.makeNotePublic(note.getAuthorId(), Set.of(NotePermission.READ));
+    assertTrue(note.getPublicShare().isPresent());
+
+    // when
+    note.undoNotePublic(note.getAuthorId());
+
+    // then
+    assertTrue(note.getPublicShare().isEmpty());
+  }
+
+  @Test
+  void undoNotePublic_shouldThrowNoteAccessException_whenUserIsNotAuthor() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    note.makeNotePublic(note.getAuthorId(), Set.of(NotePermission.READ));
+
+    UUID notAuthorId = UUID.randomUUID();
+
+    // when
+    Executable executable = () -> note.undoNotePublic(notAuthorId);
+
+    // then
+    assertThrows(NoteAccessException.class, executable);
   }
 }

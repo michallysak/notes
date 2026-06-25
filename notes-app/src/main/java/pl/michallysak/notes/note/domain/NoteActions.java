@@ -20,4 +20,8 @@ public interface NoteActions {
   Set<NoteShare> getShares(UUID actingUserId);
 
   Set<NoteShare> getEffectivePermissions(UUID actingUserId);
+
+  UUID makeNotePublic(UUID actingUserId, Set<NotePermission> notePermissions);
+
+  void undoNotePublic(UUID actingUserId);
 }

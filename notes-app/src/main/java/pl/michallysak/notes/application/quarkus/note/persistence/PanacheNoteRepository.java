@@ -122,4 +122,9 @@ public class PanacheNoteRepository
   public void deleteNotes() {
     deleteAll();
   }
+
+  @Override
+  public Optional<Note> findNoteByPublicShareId(UUID publicShareId) {
+    return find("publicShare.id", publicShareId).firstResultOptional().map(noteMapper::mapToDomain);
+  }
 }

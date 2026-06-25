@@ -207,7 +207,7 @@ class UserMapperTest {
     newerCredential.setCreated(now);
     newerCredential.setValue(NEWER_CREDENTIAL_PASSWORD);
 
-    entity.setCredentials(java.util.List.of(newerCredential, olderCredential));
+    entity.setCredentials(List.of(newerCredential, olderCredential));
     entity.setCreated(olderCredential.getCreated());
 
     PBKDF2HashedPassword olderHashed =

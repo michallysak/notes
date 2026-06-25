@@ -3,6 +3,7 @@ package pl.michallysak.notes.application.quarkus.note.mapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -22,17 +23,13 @@ import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteStyleDTO;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
+import pl.michallysak.notes.application.quarkus.note.persistence.NotePublicShareEntity;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.NoteTestUtils;
 import pl.michallysak.notes.note.domain.Note;
 import pl.michallysak.notes.note.domain.NoteImpl;
-import pl.michallysak.notes.note.model.CreateNote;
-import pl.michallysak.notes.note.model.NotePermission;
-import pl.michallysak.notes.note.model.NoteShare;
-import pl.michallysak.notes.note.model.NoteStyle;
-import pl.michallysak.notes.note.model.NoteUpdate;
-import pl.michallysak.notes.note.model.NoteValue;
+import pl.michallysak.notes.note.model.*;
 import pl.michallysak.notes.note.validator.NoteValidator;
 import pl.michallysak.notes.user.repository.UserEntity;
 
@@ -149,8 +146,7 @@ class NoteMapperTest {
     Email email = Email.of("user@example.com");
     NoteShareResponse shareResponse = noteMapper.mapToNoteShareResponse(share, email);
     // when
-    NoteResponse noteResponse =
-        noteMapper.mapToNoteResponse(value, java.util.List.of(shareResponse));
+    NoteResponse noteResponse = noteMapper.mapToNoteResponse(value, List.of(shareResponse));
     // then
     assertEquals(value.id(), noteResponse.getId());
     assertEquals(value.authorId(), noteResponse.getAuthorId());
@@ -631,11 +627,81 @@ class NoteMapperTest {
     Email email = Email.of("user@example.com");
     NoteShareResponse shareResponse = noteMapper.mapToNoteShareResponse(share, email);
     // when
-    NoteResponse noteResponse =
-        noteMapper.mapToNoteResponse(value, java.util.List.of(shareResponse));
+    NoteResponse noteResponse = noteMapper.mapToNoteResponse(value, List.of(shareResponse));
     // then
     assertNotNull(noteResponse);
     assertNotNull(noteResponse.getShares());
     assertFalse(noteResponse.getShares().isEmpty());
+  }
+
+  @Test
+  void notePublicShareToEntity_shouldMapCorrectly() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+    NotePublicShare value = new NotePublicShare(publicShareId, permissions);
+
+    // when
+    NotePublicShareEntity entity = noteMapper.notePublicShareToEntity(value);
+
+    // then
+    assertNotNull(entity);
+    assertEquals(publicShareId, entity.getId());
+    assertEquals(permissions, entity.getPermissions());
+    assertNull(entity.getNote());
+  }
+
+  @Test
+  void notePublicShareToEntity_shouldReturnNull_whenValueIsNull() {
+    // given
+    NotePublicShare value = null;
+
+    // when
+    NotePublicShareEntity entity = noteMapper.notePublicShareToEntity(value);
+
+    // then
+    assertNull(entity);
+  }
+
+  @Test
+  void entityToNotePublicShare_shouldMapCorrectly() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    NotePublicShareEntity entity = new NotePublicShareEntity();
+    entity.setId(publicShareId);
+
+    // when
+    NotePublicShare value = noteMapper.entityToNotePublicShare(entity);
+
+    // then
+    assertNotNull(value);
+    assertEquals(publicShareId, value.publicShareId());
+  }
+
+  @Test
+  void entityToNotePublicShare_shouldReturnNull_whenEntityIsNull() {
+    // given
+    NotePublicShareEntity entity = null;
+
+    // when
+    NotePublicShare value = noteMapper.entityToNotePublicShare(entity);
+
+    // then
+    assertNull(value);
+  }
+
+  @Test
+  void entityToNotePublicShare_shouldReturnNull_whenPermissionIsNotNull() {
+    // given
+    NotePublicShareEntity entity = new NotePublicShareEntity();
+    Set<NotePermission> read = Set.of(NotePermission.READ);
+    entity.setPermissions(read);
+
+    // when
+    NotePublicShare value = noteMapper.entityToNotePublicShare(entity);
+
+    // then
+    assertNotNull(value);
+    assertEquals(read, value.permissions());
   }
 }

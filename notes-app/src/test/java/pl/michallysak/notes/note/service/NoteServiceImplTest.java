@@ -1,7 +1,6 @@
 package pl.michallysak.notes.note.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static pl.michallysak.notes.note.NoteTestUtils.createNotePagedQuery;
@@ -295,5 +294,60 @@ class NoteServiceImplTest {
     Executable executable = () -> service.getEffectivePermissions(noteId, userId);
     // then
     assertThrows(NoteNotFoundException.class, executable);
+  }
+
+  @Test
+  void makeNotePublic_shouldSaveAndReturnShareId() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+    UUID expectedShareId = UUID.randomUUID();
+
+    when(repository.findNoteWithId(any())).thenReturn(Optional.of(note));
+    doNothing().when(repository).saveNote(any());
+
+    // when
+    UUID result = service.makeNotePublic(note.getId(), AUTHOR_ID, permissions);
+
+    // then
+    verify(repository).findNoteWithId(note.getId());
+    verify(repository).saveNote(note);
+    assertNotNull(result);
+  }
+
+  @Test
+  void undoNotePublic_shouldPersistChanges() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    when(repository.findNoteWithId(any())).thenReturn(Optional.of(note));
+
+    // when
+    service.undoNotePublic(note.getId(), AUTHOR_ID);
+
+    // then
+    verify(repository).findNoteWithId(note.getId());
+    verify(repository).saveNote(note);
+  }
+
+  @Test
+  void getPublicNote_shouldReturnMappedValue() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    UUID publicShareId = UUID.randomUUID();
+
+    when(repository.findNoteByPublicShareId(publicShareId)).thenReturn(Optional.of(note));
+
+    // when
+    NoteValue result = service.getPublicNote(publicShareId, AUTHOR_ID);
+
+    // then
+    verify(repository).findNoteByPublicShareId(publicShareId);
+    assertEquals(NoteValue.from(note, AUTHOR_ID), result);
   }
 }

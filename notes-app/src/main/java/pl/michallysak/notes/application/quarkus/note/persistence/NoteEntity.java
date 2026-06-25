@@ -1,13 +1,7 @@
 package pl.michallysak.notes.application.quarkus.note.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,6 +43,9 @@ public class NoteEntity extends PanacheEntityBase {
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private NoteStyle style;
+
+  @OneToOne(mappedBy = "note", orphanRemoval = true)
+  private NotePublicShareEntity publicShare;
 
   @OneToMany(mappedBy = "note", orphanRemoval = true)
   private Set<NoteShareEntity> shares = new HashSet<>();

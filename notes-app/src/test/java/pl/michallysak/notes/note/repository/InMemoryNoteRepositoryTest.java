@@ -511,6 +511,27 @@ class InMemoryNoteRepositoryTest {
     assertEquals(1, result.total());
   }
 
+  @Test
+  void findNoteByPublicShareId_shouldReturnNoteWithGivenPublicShareId() {
+    // given
+    Note note1 = createNote();
+    Note note2 = createNote();
+    Note note3 = createNote();
+
+    UUID authorId = note1.getAuthorId();
+
+    UUID publicShareId = note1.makeNotePublic(authorId, Set.of(NotePermission.READ));
+
+    NoteRepository noteRepository = createNoteRepository(note1, note2, note3);
+
+    // when
+    Optional<Note> note = noteRepository.findNoteByPublicShareId(publicShareId);
+
+    // then
+    assertTrue(note.isPresent());
+    assertEquals(publicShareId, note.get().getPublicShare().orElseThrow().publicShareId());
+  }
+
   private NoteRepository createNoteRepository(Note... notes) {
     return new InMemoryNoteRepository(Arrays.asList(notes));
   }

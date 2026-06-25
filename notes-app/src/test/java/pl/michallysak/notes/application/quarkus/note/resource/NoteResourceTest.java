@@ -12,13 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.common.SortList;
 import pl.michallysak.notes.application.quarkus.note.controller.NoteController;
-import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteQueryBean;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.*;
 
 @ExtendWith(MockitoExtension.class)
 class NoteResourceTest {
@@ -132,5 +126,41 @@ class NoteResourceTest {
     // then
     assertEquals(responses, result);
     verify(noteController).getPermissions(id);
+  }
+
+  @Test
+  void getPublicNote_shouldDelegateToController() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    NoteResponse response = mock(NoteResponse.class);
+    when(noteController.getPublicNote(publicShareId)).thenReturn(response);
+    // when
+    NoteResponse result = noteResource.getPublicNote(publicShareId);
+    // then
+    assertEquals(response, result);
+    verify(noteController).getPublicNote(publicShareId);
+  }
+
+  @Test
+  void makeNotePublic_shouldDelegateToController() {
+    // given
+    UUID id = UUID.randomUUID();
+    UUID publicShareId = UUID.randomUUID();
+    SetNotePublicRequest request = mock(SetNotePublicRequest.class);
+    when(noteController.makeNotePublic(id, request)).thenReturn(publicShareId);
+    // when
+    noteResource.makeNotePublic(id, request);
+    // then
+    verify(noteController).makeNotePublic(id, request);
+  }
+
+  @Test
+  void undoNotePublic_shouldDelegateToController() {
+    // given
+    UUID id = UUID.randomUUID();
+    // when
+    noteResource.undoNotePublic(id);
+    // then
+    verify(noteController).undoNotePublic(id);
   }
 }

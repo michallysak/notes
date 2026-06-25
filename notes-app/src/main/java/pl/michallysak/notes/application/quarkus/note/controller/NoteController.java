@@ -1,16 +1,12 @@
 package pl.michallysak.notes.application.quarkus.note.controller;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.PagedResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.SetNotePermissionsRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.*;
 import pl.michallysak.notes.application.quarkus.note.mapper.NoteMapper;
 import pl.michallysak.notes.common.Email;
 import pl.michallysak.notes.note.model.*;
@@ -104,6 +100,23 @@ public class NoteController {
   }
 
   private NoteResponse noteValueToResponse(NoteValue noteValue) {
+    List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
+    return noteMapper.mapToNoteResponse(noteValue, shares);
+  }
+
+  public UUID makeNotePublic(UUID id, @Valid SetNotePublicRequest request) {
+    UUID currentUserId = currentUserProvider.getCurrentUserId();
+    return noteService.makeNotePublic(id, currentUserId, request.getPermissions());
+  }
+
+  public void undoNotePublic(UUID id) {
+    UUID currentUserId = currentUserProvider.getCurrentUserId();
+    noteService.undoNotePublic(id, currentUserId);
+  }
+
+  public NoteResponse getPublicNote(UUID publicShareId) {
+    UUID currentUserId = currentUserProvider.getCurrentUserId();
+    NoteValue noteValue = noteService.getPublicNote(publicShareId, currentUserId);
     List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
     return noteMapper.mapToNoteResponse(noteValue, shares);
   }

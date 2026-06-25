@@ -529,4 +529,39 @@ class PanacheNoteRepositoryTest {
     assertEquals(1, page.total());
     verify(noteRepository).find("author.id = ?1 order by created desc", authorId);
   }
+
+  @Test
+  void findNoteByPublicShareId_shouldCallFindAndMapResult() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    NoteEntity entity = new NoteEntity();
+    PanacheQuery<NoteEntity> query = mock(PanacheQuery.class);
+    doReturn(query).when(noteRepository).find("publicShare.id", publicShareId);
+    when(query.firstResultOptional()).thenReturn(Optional.of(entity));
+
+    // when
+    noteRepository.findNoteByPublicShareId(publicShareId);
+
+    // then
+    verify(noteRepository).find("publicShare.id", publicShareId);
+    verify(query).firstResultOptional();
+    verify(noteMapper).mapToDomain(entity);
+  }
+
+  @Test
+  void findNoteByPublicShareId_shouldNotMapWhenNoteNotFound() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    PanacheQuery<NoteEntity> query = mock(PanacheQuery.class);
+    doReturn(query).when(noteRepository).find("publicShare.id", publicShareId);
+    when(query.firstResultOptional()).thenReturn(Optional.empty());
+
+    // when
+    noteRepository.findNoteByPublicShareId(publicShareId);
+
+    // then
+    verify(noteRepository).find("publicShare.id", publicShareId);
+    verify(query).firstResultOptional();
+    verify(noteMapper, never()).mapToDomain(any());
+  }
 }
