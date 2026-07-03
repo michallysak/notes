@@ -37,6 +37,7 @@
     "PERMISSION_CHANGED": "Your permissions for this note have changed",
     "SHARE_DIALOG": {
       "TITLE": "Share note",
+      "PEOPLE_TITLE": "People with access",
       "EMAIL_PLACEHOLDER": "User email",
       "ADD": "Add",
       "EMPTY": "No shared users yet",
@@ -44,6 +45,12 @@
       "PERMISSION": {
         "READ": "Read",
         "EDIT": "Edit"
+      },
+      "PUBLIC": {
+        "TITLE": "Public access",
+        "DESCRIPTION": "Allow anyone with the link to open this note.",
+        "MAKE": "Make public",
+        "UNDO": "Undo public"
       },
       "PERMISSION_REVOKED": "Permission revoked",
       "PERMISSION_CHANGED": "Permission changed"

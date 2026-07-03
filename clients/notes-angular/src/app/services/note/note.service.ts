@@ -259,6 +259,14 @@ export class NoteService {
     return this.notesApi.setNotePermissions(body, id);
   }
 
+  makeNotePublic(id: string, permission: NotePermission = NotePermission.READ) {
+    return this.notesApi.makeNotePublic_1({ permissions: [permission] }, id);
+  }
+
+  undoNotePublic(id: string) {
+    return this.notesApi.undoNotePublic(id);
+  }
+
   removeNoteAccess(id: string, targetUserId: string) {
     return this.notesApi.removeNoteAccess(id, targetUserId);
   }

@@ -17,6 +17,8 @@ describe('NoteShareDialogComponent', () => {
     notes$: of([]),
     setNotePermissions: vi.fn(),
     removeNoteAccess: vi.fn(),
+    makeNotePublic: vi.fn(),
+    undoNotePublic: vi.fn(),
   };
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
@@ -47,6 +49,10 @@ describe('NoteShareDialogComponent', () => {
     noteService.setNotePermissions.mockReturnValue(of({}));
     noteService.removeNoteAccess.mockReset();
     noteService.removeNoteAccess.mockReturnValue(of({}));
+    noteService.makeNotePublic.mockReset();
+    noteService.makeNotePublic.mockReturnValue(of({}));
+    noteService.undoNotePublic.mockReset();
+    noteService.undoNotePublic.mockReturnValue(of({}));
 
     await TestBed.configureTestingModule({
       imports: [NoteShareDialogComponent],
@@ -102,6 +108,21 @@ describe('NoteShareDialogComponent', () => {
     expect(fixture.debugElement.query(By.css('input[type="email"]'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('p-select[formControlName="permission"]'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('p-button[type="submit"]'))).toBeTruthy();
+  });
+
+  it('makes note public with the selected permission', () => {
+    component.onMakePublic(NotePermission.EDIT);
+
+    expect(noteService.makeNotePublic).toHaveBeenCalledWith('note-1', NotePermission.EDIT);
+    expect(component.publicEnabled()).toBe(true);
+  });
+
+  it('undoes note public access', () => {
+    component.publicEnabled.set(true);
+    component.onUndoPublic();
+
+    expect(noteService.undoNotePublic).toHaveBeenCalledWith('note-1');
+    expect(component.publicEnabled()).toBe(false);
   });
 
   it('renders loading spinner when loading', () => {

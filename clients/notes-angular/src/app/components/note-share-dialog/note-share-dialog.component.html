@@ -10,79 +10,125 @@
   (onHide)="onHide()"
 >
   <div class="share-dialog">
-    <form class="share-dialog-form" [formGroup]="form" (ngSubmit)="onShare()">
-      <input
-        pInputText
-        type="email"
-        formControlName="email"
-        [placeholder]="'NOTES.SHARE_DIALOG.EMAIL_PLACEHOLDER' | translate"
-        autocomplete="off"
-        fluid
-      />
-      <p-select class="share-select" [options]="permissionOptions" [appendTo]="'body'" formControlName="permission">
-        <ng-template #selectedItem let-permission>
-          {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
-        </ng-template>
-        <ng-template #item let-permission>
-          {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
-        </ng-template>
-      </p-select>
-      <p-button
-        type="submit"
-        [label]="'NOTES.SHARE_DIALOG.ADD' | translate"
-        [disabled]="form.invalid || saving()"
-      ></p-button>
-    </form>
-
-    @if (userNotFound()) {
-      <p-message severity="warn" size="small" variant="simple">{{
-        'NOTES.SHARE_DIALOG.USER_NOT_FOUND' | translate
-      }}</p-message>
-    }
-
-    @if (loading()) {
-      <div class="share-loading">
-        <p-progress-spinner strokeWidth="4" style="width: 20px; height: 20px"></p-progress-spinner>
-      </div>
-    } @else {
-      @if (shares().length === 0) {
-        <div class="share-empty">{{ 'NOTES.SHARE_DIALOG.EMPTY' | translate }}</div>
-      } @else {
-        <div class="share-list">
-          @for (share of shares(); track share.userId || share.email) {
-            <div class="share-row">
-              <div class="share-user">
-                <div class="share-email">{{ share.email || share.userId }}</div>
-                <div class="share-permission">{{ permissionsLabel(share) }}</div>
-              </div>
-              <p-select
-                class="share-select"
-                [options]="permissionOptions"
-                [appendTo]="'body'"
-                [ngModel]="share.selectedPermission"
-                [ngModelOptions]="{ standalone: true }"
-                [disabled]="!share.email || removingUserId() === share.userId"
-                (onChange)="onPermissionChange(share, $event.value)"
-              >
-                <ng-template #selectedItem let-permission>
-                  {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
-                </ng-template>
-                <ng-template #item let-permission>
-                  {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
-                </ng-template>
-              </p-select>
-              <p-button
-                icon="pi pi-times"
-                severity="danger"
-                variant="text"
-                [disabled]="!share.userId || removingUserId() === share.userId"
-                (onClick)="onRemove(share)"
-              ></p-button>
-            </div>
+    <section class="share-section">
+      <h3 class="share-section-title">{{ 'NOTES.SHARE_DIALOG.PUBLIC.TITLE' | translate }}</h3>
+      <div class="share-public">
+        <div class="share-public-info">
+          <div class="share-public-description">{{ 'NOTES.SHARE_DIALOG.PUBLIC.DESCRIPTION' | translate }}</div>
+        </div>
+        <div class="share-public-actions">
+          <p-select
+            class="share-select"
+            [options]="permissionOptions"
+            [appendTo]="'body'"
+            [ngModel]="publicPermission()"
+            [ngModelOptions]="{ standalone: true }"
+            [disabled]="publicUpdating()"
+            (onChange)="onPublicPermissionChange($event.value)"
+          >
+            <ng-template #selectedItem let-permission>
+              {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
+            </ng-template>
+            <ng-template #item let-permission>
+              {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
+            </ng-template>
+          </p-select>
+          @if (publicEnabled()) {
+            <p-button
+              type="button"
+              [label]="'NOTES.SHARE_DIALOG.PUBLIC.UNDO' | translate"
+              [disabled]="publicUpdating()"
+              (onClick)="onUndoPublic()"
+            ></p-button>
+          } @else {
+            <p-button
+              type="button"
+              [label]="'NOTES.SHARE_DIALOG.PUBLIC.MAKE' | translate"
+              [disabled]="publicUpdating()"
+              (onClick)="onMakePublic()"
+            ></p-button>
           }
         </div>
+      </div>
+    </section>
+
+    <section class="share-section share-section-people">
+      <h3 class="share-section-title">{{ 'NOTES.SHARE_DIALOG.PEOPLE_TITLE' | translate }}</h3>
+
+      <form class="share-dialog-form" [formGroup]="form" (ngSubmit)="onShare()">
+        <input
+          pInputText
+          type="email"
+          formControlName="email"
+          [placeholder]="'NOTES.SHARE_DIALOG.EMAIL_PLACEHOLDER' | translate"
+          autocomplete="off"
+          fluid
+        />
+        <p-select class="share-select" [options]="permissionOptions" [appendTo]="'body'" formControlName="permission">
+          <ng-template #selectedItem let-permission>
+            {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
+          </ng-template>
+          <ng-template #item let-permission>
+            {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
+          </ng-template>
+        </p-select>
+        <p-button
+          type="submit"
+          [label]="'NOTES.SHARE_DIALOG.ADD' | translate"
+          [disabled]="form.invalid || saving()"
+        ></p-button>
+      </form>
+
+      @if (userNotFound()) {
+        <p-message severity="warn" size="small" variant="simple">{{
+          'NOTES.SHARE_DIALOG.USER_NOT_FOUND' | translate
+        }}</p-message>
       }
-    }
+
+      @if (loading()) {
+        <div class="share-loading">
+          <p-progress-spinner strokeWidth="4" style="width: 20px; height: 20px"></p-progress-spinner>
+        </div>
+      } @else {
+        @if (shares().length === 0) {
+          <div class="share-empty">{{ 'NOTES.SHARE_DIALOG.EMPTY' | translate }}</div>
+        } @else {
+          <div class="share-list">
+            @for (share of shares(); track share.userId || share.email) {
+              <div class="share-row">
+                <div class="share-user">
+                  <div class="share-email">{{ share.email || share.userId }}</div>
+                  <div class="share-permission">{{ permissionsLabel(share) }}</div>
+                </div>
+                <p-select
+                  class="share-select"
+                  [options]="permissionOptions"
+                  [appendTo]="'body'"
+                  [ngModel]="share.selectedPermission"
+                  [ngModelOptions]="{ standalone: true }"
+                  [disabled]="!share.email || removingUserId() === share.userId"
+                  (onChange)="onPermissionChange(share, $event.value)"
+                >
+                  <ng-template #selectedItem let-permission>
+                    {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
+                  </ng-template>
+                  <ng-template #item let-permission>
+                    {{ ('NOTES.SHARE_DIALOG.PERMISSION.' + permission) | translate }}
+                  </ng-template>
+                </p-select>
+                <p-button
+                  icon="pi pi-times"
+                  severity="danger"
+                  variant="text"
+                  [disabled]="!share.userId || removingUserId() === share.userId"
+                  (onClick)="onRemove(share)"
+                ></p-button>
+              </div>
+            }
+          </div>
+        }
+      }
+    </section>
   </div>
 </p-dialog>
 

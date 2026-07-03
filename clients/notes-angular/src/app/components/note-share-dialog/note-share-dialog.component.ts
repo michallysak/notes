@@ -50,6 +50,9 @@ export class NoteShareDialogComponent implements OnChanges, OnDestroy {
   saving = signal(false);
   removingUserId = signal<string | null>(null);
   userNotFound = signal(false);
+  publicEnabled = signal(false);
+  publicPermission = signal(NotePermission.READ);
+  publicUpdating = signal(false);
   permissionOptions: NotePermission[] = [NotePermission.READ, NotePermission.EDIT];
 
   private destroy$ = new Subject<void>();
@@ -85,6 +88,11 @@ export class NoteShareDialogComponent implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    if (changes['note']?.currentValue?.id !== changes['note']?.previousValue?.id) {
+      this.publicEnabled.set(false);
+      this.publicPermission.set(NotePermission.READ);
+    }
+
     if (changes['visible']?.currentValue && this.note?.id) {
       this.syncSharesFromNote(this.note);
     }
@@ -108,6 +116,62 @@ export class NoteShareDialogComponent implements OnChanges, OnDestroy {
     this.saving.set(false);
     this.removingUserId.set(null);
     this.userNotFound.set(false);
+  }
+
+  onMakePublic(permissionRaw?: NotePermission | null | undefined) {
+    const noteId = this.note?.id;
+    if (!noteId || this.publicUpdating()) {
+      return;
+    }
+
+    const permission = this.toPermission(permissionRaw) ?? this.publicPermission();
+    if (!permission) {
+      return;
+    }
+
+    this.publicPermission.set(permission);
+    this.publicUpdating.set(true);
+    this.noteService
+      .makeNotePublic(noteId, permission)
+      .pipe(finalize(() => this.publicUpdating.set(false)))
+      .subscribe({
+        next: () => {
+          this.publicEnabled.set(true);
+          this.emitSharedState(noteId);
+        },
+        error: (err) => console.error('make public failed', err),
+      });
+  }
+
+  onUndoPublic() {
+    const noteId = this.note?.id;
+    if (!noteId || this.publicUpdating()) {
+      return;
+    }
+
+    this.publicUpdating.set(true);
+    this.noteService
+      .undoNotePublic(noteId)
+      .pipe(finalize(() => this.publicUpdating.set(false)))
+      .subscribe({
+        next: () => {
+          this.publicEnabled.set(false);
+          this.emitSharedState(noteId);
+        },
+        error: (err) => console.error('undo public failed', err),
+      });
+  }
+
+  onPublicPermissionChange(permissionRaw: NotePermission | null | undefined) {
+    const permission = this.toPermission(permissionRaw);
+    if (!permission) {
+      return;
+    }
+
+    this.publicPermission.set(permission);
+    if (this.publicEnabled()) {
+      this.onMakePublic(permission);
+    }
   }
 
   onShare() {
@@ -195,7 +259,11 @@ export class NoteShareDialogComponent implements OnChanges, OnDestroy {
         : NotePermission.READ,
     }));
     this.shares.set(mapped);
-    this.sharedStateChanged.emit({ noteId: note.id, isShared: mapped.length > 0 });
+    this.emitSharedState(note.id);
+  }
+
+  private emitSharedState(noteId: string) {
+    this.sharedStateChanged.emit({ noteId, isShared: this.publicEnabled() || this.shares().length > 0 });
   }
 
   private updateSharePermission(share: ShareItem, permission: NotePermission) {
