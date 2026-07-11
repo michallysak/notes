@@ -44,14 +44,15 @@ class NoteControllerTest {
     when(noteMapper.mapToCreateNote(any(CreateNoteRequest.class), eq(AUTHOR_ID)))
         .thenReturn(createNote);
     when(noteService.createNote(createNote)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     NoteResponse result = noteController.createNote(request);
     // then
     assertEquals(response, result);
     verify(noteMapper).mapToCreateNote(request, AUTHOR_ID);
     verify(noteService).createNote(createNote);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), anyList());
   }
 
   @Test
@@ -66,8 +67,10 @@ class NoteControllerTest {
     when(noteValue2.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNotes(AUTHOR_ID)).thenReturn(noteValues);
-    when(noteMapper.mapToNoteResponse(eq(noteValue1), anyList())).thenReturn(response1);
-    when(noteMapper.mapToNoteResponse(eq(noteValue2), anyList())).thenReturn(response2);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue1), anyList()))
+        .thenReturn(response1);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue2), anyList()))
+        .thenReturn(response2);
     // when
     List<NoteResponse> result = noteController.getNotes();
     // then
@@ -75,8 +78,8 @@ class NoteControllerTest {
     assertTrue(result.contains(response1));
     assertTrue(result.contains(response2));
     verify(noteService).getCreatedNotes(AUTHOR_ID);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue1), anyList());
-    verify(noteMapper).mapToNoteResponse(eq(noteValue2), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue1), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue2), anyList());
   }
 
   @Test
@@ -89,7 +92,8 @@ class NoteControllerTest {
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.search(AUTHOR_ID, query))
         .thenReturn(new Paged<>(List.of(noteValue), 1, 10, 20));
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     PagedResponse<NoteResponse> result = noteController.searchNotes(query);
     // then
@@ -99,7 +103,7 @@ class NoteControllerTest {
     assertEquals(10, result.getSize());
     assertEquals(20, result.getTotal());
     verify(noteService).search(AUTHOR_ID, query);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), anyList());
   }
 
   @Test
@@ -111,13 +115,14 @@ class NoteControllerTest {
     when(noteValue.shares()).thenReturn(Set.of());
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNote(id, AUTHOR_ID)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     NoteResponse result = noteController.getNote(id);
     // then
     assertEquals(response, result);
     verify(noteService).getCreatedNote(id, AUTHOR_ID);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), anyList());
   }
 
   @Test
@@ -132,14 +137,15 @@ class NoteControllerTest {
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteMapper.mapToNoteUpdate(request, AUTHOR_ID)).thenReturn(noteUpdate);
     when(noteService.updateNote(id, noteUpdate)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     NoteResponse result = noteController.updateNote(id, request);
     // then
     assertEquals(response, result);
     verify(noteMapper).mapToNoteUpdate(request, AUTHOR_ID);
     verify(noteService).updateNote(id, noteUpdate);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), anyList());
   }
 
   @Test
@@ -263,12 +269,13 @@ class NoteControllerTest {
     when(noteMapper.mapToCreateNote(any(CreateNoteRequest.class), eq(AUTHOR_ID)))
         .thenReturn(createNote);
     when(noteService.createNote(createNote)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     NoteResponse result = noteController.createNote(request);
     // then
     assertEquals(response, result);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), eq(List.of()));
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), eq(List.of()));
   }
 
   @Test
@@ -280,12 +287,13 @@ class NoteControllerTest {
     when(noteValue.shares()).thenReturn(null);
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNote(id, AUTHOR_ID)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     NoteResponse result = noteController.getNote(id);
     // then
     assertEquals(response, result);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), eq(List.of()));
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), eq(List.of()));
   }
 
   @Test
@@ -300,12 +308,13 @@ class NoteControllerTest {
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteMapper.mapToNoteUpdate(request, AUTHOR_ID)).thenReturn(noteUpdate);
     when(noteService.updateNote(id, noteUpdate)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     // when
     NoteResponse result = noteController.updateNote(id, request);
     // then
     assertEquals(response, result);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), eq(List.of()));
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), eq(List.of()));
   }
 
   @Test
@@ -326,7 +335,8 @@ class NoteControllerTest {
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteService.getCreatedNotes(AUTHOR_ID)).thenReturn(List.of(noteValue));
     when(noteMapper.mapToNoteShareResponse(noteShare, sharedUserEmail)).thenReturn(shareResponse);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
     when(userService.getUser(sharedUserId))
         .thenReturn(UserValue.builder().id(sharedUserId).email(sharedUserEmail).build());
     // when
@@ -381,7 +391,8 @@ class NoteControllerTest {
     when(currentUserProvider.getCurrentUserId()).thenReturn(AUTHOR_ID);
     when(noteValue.shares()).thenReturn(Set.of());
     when(noteService.getPublicNote(publicShareId, AUTHOR_ID)).thenReturn(noteValue);
-    when(noteMapper.mapToNoteResponse(eq(noteValue), anyList())).thenReturn(response);
+    when(noteMapper.mapToNoteResponseWithPublicShare(eq(noteValue), anyList()))
+        .thenReturn(response);
 
     // when
     NoteResponse result = noteController.getPublicNote(publicShareId);
@@ -390,6 +401,6 @@ class NoteControllerTest {
     assertEquals(response, result);
     verify(currentUserProvider).getCurrentUserId();
     verify(noteService).getPublicNote(publicShareId, AUTHOR_ID);
-    verify(noteMapper).mapToNoteResponse(eq(noteValue), anyList());
+    verify(noteMapper).mapToNoteResponseWithPublicShare(eq(noteValue), anyList());
   }
 }

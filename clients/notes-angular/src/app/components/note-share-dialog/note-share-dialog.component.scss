@@ -59,6 +59,17 @@
     align-items: center;
   }
 
+  &-public-link {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
+    input {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
   &-empty {
     color: var(--p-text-muted-color);
   }
@@ -107,6 +118,5 @@
     min-width: 8rem;
   }
 }
-
 
 

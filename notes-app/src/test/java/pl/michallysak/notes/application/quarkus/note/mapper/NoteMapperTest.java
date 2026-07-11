@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteDtoRequestUtils;
+import pl.michallysak.notes.application.quarkus.note.dto.NotePublicShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.NoteStyleDTO;
@@ -691,17 +692,59 @@ class NoteMapperTest {
   }
 
   @Test
-  void entityToNotePublicShare_shouldReturnNull_whenPermissionIsNotNull() {
+  void mapToNotePublicShareResponse_shouldMapPermissions() {
     // given
-    NotePublicShareEntity entity = new NotePublicShareEntity();
-    Set<NotePermission> read = Set.of(NotePermission.READ);
-    entity.setPermissions(read);
+    UUID publicShareId = UUID.randomUUID();
+    Set<NotePermission> permissions = Set.of(NotePermission.READ, NotePermission.EDIT);
+    NotePublicShare notePublicShare = new NotePublicShare(publicShareId, permissions);
 
     // when
-    NotePublicShare value = noteMapper.entityToNotePublicShare(entity);
+    NotePublicShareResponse response = noteMapper.mapToNotePublicShareResponse(notePublicShare);
 
     // then
-    assertNotNull(value);
-    assertEquals(read, value.permissions());
+    assertNotNull(response);
+    assertEquals(publicShareId, response.getPublicShareId());
+    assertEquals(permissions, response.getPermissions());
+  }
+
+  @Test
+  void mapToNotePublicShareResponse_shouldReturnNull_whenNotePublicShareIsNull() {
+    // given
+    NotePublicShare notePublicShare = null;
+
+    // when
+    NotePublicShareResponse response = noteMapper.mapToNotePublicShareResponse(notePublicShare);
+
+    // then
+    assertNull(response);
+  }
+
+  @Test
+  void mapToNotePublicShareResponse_shouldReturnNull_whenOptionalIsEmpty() {
+    // given
+    Optional<NotePublicShare> publicShare = Optional.empty();
+
+    // when
+    NotePublicShareResponse response = noteMapper.mapToNotePublicShareResponse(publicShare);
+
+    // then
+    assertNull(response);
+  }
+
+  @Test
+  void mapToNotePublicShareResponse_shouldMapPermissions_whenOptionalIsPresent() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+    NotePublicShare notePublicShare = new NotePublicShare(publicShareId, permissions);
+    Optional<NotePublicShare> publicShare = Optional.of(notePublicShare);
+
+    // when
+    NotePublicShareResponse response = noteMapper.mapToNotePublicShareResponse(publicShare);
+
+    // then
+    assertNotNull(response);
+    assertEquals(publicShareId, response.getPublicShareId());
+    assertEquals(permissions, response.getPermissions());
   }
 }

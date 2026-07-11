@@ -1,11 +1,13 @@
 package pl.michallysak.notes.application.quarkus.note.dto;
 
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import pl.michallysak.notes.note.model.NotePermission;
 
 @Getter
 @Builder
@@ -15,4 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public class NotePublicShareResponse {
   @Schema(description = "Public share id", examples = "b3b6c8e2-8c2e-4e2a-9b2e-8c2e4e2a9b2e")
   private UUID publicShareId;
+
+  @Schema(description = "Granted permissions")
+  private Set<NotePermission> permissions;
 }

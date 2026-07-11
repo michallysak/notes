@@ -28,7 +28,7 @@ public class NoteController {
     CreateNote createNote = noteMapper.mapToCreateNote(request, currentUserId);
     NoteValue noteValue = noteService.createNote(createNote);
     List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
-    return noteMapper.mapToNoteResponse(noteValue, shares);
+    return noteMapper.mapToNoteResponseWithPublicShare(noteValue, shares);
   }
 
   public List<NoteResponse> getNotes() {
@@ -50,7 +50,7 @@ public class NoteController {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     NoteValue noteValue = noteService.getCreatedNote(id, currentUserId);
     List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
-    return noteMapper.mapToNoteResponse(noteValue, shares);
+    return noteMapper.mapToNoteResponseWithPublicShare(noteValue, shares);
   }
 
   public NoteResponse updateNote(UUID id, NoteUpdateRequest request) {
@@ -58,7 +58,7 @@ public class NoteController {
     NoteUpdate noteUpdate = noteMapper.mapToNoteUpdate(request, currentUserId);
     NoteValue noteValue = noteService.updateNote(id, noteUpdate);
     List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
-    return noteMapper.mapToNoteResponse(noteValue, shares);
+    return noteMapper.mapToNoteResponseWithPublicShare(noteValue, shares);
   }
 
   public void deleteNote(UUID id) {
@@ -101,7 +101,7 @@ public class NoteController {
 
   private NoteResponse noteValueToResponse(NoteValue noteValue) {
     List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
-    return noteMapper.mapToNoteResponse(noteValue, shares);
+    return noteMapper.mapToNoteResponseWithPublicShare(noteValue, shares);
   }
 
   public UUID makeNotePublic(UUID id, @Valid SetNotePublicRequest request) {
@@ -118,6 +118,6 @@ public class NoteController {
     UUID currentUserId = currentUserProvider.getCurrentUserId();
     NoteValue noteValue = noteService.getPublicNote(publicShareId, currentUserId);
     List<NoteShareResponse> shares = mapNoteSharesToResponse(noteValue.shares());
-    return noteMapper.mapToNoteResponse(noteValue, shares);
+    return noteMapper.mapToNoteResponseWithPublicShare(noteValue, shares);
   }
 }

@@ -126,6 +126,14 @@ export class NoteCardComponent {
     this.onClick.emit(this.note);
   }
 
+  get hasUserShares(): boolean {
+    return (this.note?.shares?.length ?? 0) > 0;
+  }
+
+  get isPublic(): boolean {
+    return !!this.note?.publicShare?.publicShareId;
+  }
+
   onPinClick(evt: Event) {
     evt.stopPropagation();
     this.pinClick.emit(this.note);

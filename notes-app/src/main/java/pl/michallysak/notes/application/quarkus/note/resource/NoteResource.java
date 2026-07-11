@@ -189,13 +189,13 @@ public class NoteResource {
     noteController.removeAccess(id, targetUserId);
   }
 
-  @PUT
+  @GET
   @Path("/publicNote/{publicShareId}")
   @Operation(
-      summary = "Make note public",
-      operationId = "makeNotePublic",
-      description = "Makes the note public with the specified permissions")
-  @APIResponse(responseCode = "204", description = "Note made public")
+      summary = "Get public note",
+      operationId = "getPublicNote",
+      description = "Retrieves the public note with the specified permissions")
+  @APIResponse(responseCode = "200", description = "Note retrieved")
   @APIResponse(
       responseCode = "400",
       description = "Invalid request",
@@ -234,7 +234,10 @@ public class NoteResource {
   public NotePublicShareResponse makeNotePublic(
       @PathParam("id") UUID id, @Valid SetNotePublicRequest request) {
     UUID uuid = noteController.makeNotePublic(id, request);
-    return NotePublicShareResponse.builder().publicShareId(uuid).build();
+    return NotePublicShareResponse.builder()
+        .publicShareId(uuid)
+        .permissions(request.getPermissions())
+        .build();
   }
 
   @DELETE

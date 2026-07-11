@@ -49,6 +49,17 @@
             ></p-button>
           }
         </div>
+        @if (publicEnabled()) {
+          <div class="share-public-link">
+            <input pInputText [value]="publicLink()" readonly fluid />
+            <p-button
+              type="button"
+              [label]="'NOTES.SHARE_DIALOG.PUBLIC.COPY_LINK' | translate"
+              [disabled]="!publicLink()"
+              (onClick)="onCopyPublicLink()"
+            ></p-button>
+          </div>
+        }
       </div>
     </section>
 
@@ -131,7 +142,6 @@
     </section>
   </div>
 </p-dialog>
-
 
 
 

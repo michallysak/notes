@@ -154,6 +154,10 @@ public class NoteImpl implements Note {
     if (notePermissions == null || notePermissions.isEmpty()) {
       throw new IllegalArgumentException("Permissions cannot be empty");
     }
+    if (publicShare != null) {
+      publicShare = new NotePublicShare(publicShare.publicShareId(), notePermissions);
+      return publicShare.publicShareId();
+    }
     publicShare = new NotePublicShare(UUID.randomUUID(), notePermissions);
     return publicShare.publicShareId();
   }
@@ -172,6 +176,10 @@ public class NoteImpl implements Note {
 
   private void checkPermission(UUID userId, NotePermission notePermission) {
     if (authorId.equals(userId)) {
+      return;
+    }
+
+    if (publicShare != null && publicShare.allows(notePermission)) {
       return;
     }
 

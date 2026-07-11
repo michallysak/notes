@@ -3,6 +3,7 @@ package pl.michallysak.notes.note.domain;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.SneakyThrows;
@@ -385,8 +386,10 @@ class NoteImplTest {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote, noteValidator);
-    // when then (should not throw)
-    assertDoesNotThrow(() -> note.read(note.getAuthorId()));
+    //  when
+    Executable executable = () -> note.read(note.getAuthorId());
+    // then
+    assertDoesNotThrow(executable);
   }
 
   @Test
@@ -401,8 +404,10 @@ class NoteImplTest {
             .shares(new HashSet<>(shares))
             .build();
     Note note = new NoteImpl(noteValue, noteValidator);
-    // when then (should not throw)
-    assertDoesNotThrow(() -> note.read(readerUserId));
+    // when
+    Executable executable = () -> note.read(readerUserId);
+    // then
+    assertDoesNotThrow(executable);
   }
 
   @Test
@@ -417,8 +422,10 @@ class NoteImplTest {
             .shares(new HashSet<>(shares))
             .build();
     Note note = new NoteImpl(noteValue, noteValidator);
-    // when then (should not throw)
-    assertDoesNotThrow(() -> note.read(editorUserId));
+    // when
+    Executable executable = () -> note.read(editorUserId);
+    // then
+    assertDoesNotThrow(executable);
   }
 
   @Test
@@ -436,12 +443,50 @@ class NoteImplTest {
   }
 
   @Test
+  void read_shouldSucceed_whenNoteIsPublicWithReadPermission() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID randomUserId = UUID.randomUUID();
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .publicShare(
+                Optional.of(new NotePublicShare(UUID.randomUUID(), Set.of(NotePermission.READ))))
+            .build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // when
+    Executable executable = () -> note.read(randomUserId);
+    // then
+    assertDoesNotThrow(executable);
+  }
+
+  @Test
+  void read_shouldSucceed_whenNoteIsPublicWithEditPermission() {
+    // given
+    UUID authorId = UUID.randomUUID();
+    UUID randomUserId = UUID.randomUUID();
+    NoteValue noteValue =
+        NoteTestUtils.createNoteValueBuilder()
+            .authorId(authorId)
+            .publicShare(
+                Optional.of(new NotePublicShare(UUID.randomUUID(), Set.of(NotePermission.EDIT))))
+            .build();
+    Note note = new NoteImpl(noteValue, noteValidator);
+    // when
+    Executable executable = () -> note.read(randomUserId);
+    // then
+    assertDoesNotThrow(executable);
+  }
+
+  @Test
   void delete_shouldSucceed_whenUserIsAuthor() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote, noteValidator);
-    // when then (should not throw)
-    assertDoesNotThrow(() -> note.delete(note.getAuthorId()));
+    // when
+    Executable executable = () -> note.delete(note.getAuthorId());
+    // then
+    assertDoesNotThrow(executable);
   }
 
   @ParameterizedTest
@@ -611,7 +656,28 @@ class NoteImplTest {
   }
 
   @Test
-  void makeNotePublic_shouldOverwritePreviousPublicShare_whenCalledAgain() {
+  void makeNotePublic_shouldReturnSameId_whenAlreadyPublicWithSamePermissions() {
+    // given
+    CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
+    Note note = new NoteImpl(createNote, noteValidator);
+
+    Set<NotePermission> permissions = Set.of(NotePermission.READ);
+
+    UUID firstId = note.makeNotePublic(note.getAuthorId(), permissions);
+
+    // when
+    UUID secondId = note.makeNotePublic(note.getAuthorId(), permissions);
+
+    // then
+    assertEquals(firstId, secondId);
+
+    NotePublicShare publicShare = note.getPublicShare().orElseThrow();
+    assertEquals(firstId, publicShare.publicShareId());
+    assertEquals(permissions, publicShare.permissions());
+  }
+
+  @Test
+  void makeNotePublic_shouldReturnSameId_andUpdatePermissions_whenAlreadyPublicWithDifferentPermissions() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote, noteValidator);
@@ -625,10 +691,10 @@ class NoteImplTest {
     UUID secondId = note.makeNotePublic(note.getAuthorId(), secondPermissions);
 
     // then
-    assertNotEquals(firstId, secondId);
+    assertEquals(firstId, secondId);
 
     NotePublicShare publicShare = note.getPublicShare().orElseThrow();
-    assertEquals(secondId, publicShare.publicShareId());
+    assertEquals(firstId, publicShare.publicShareId());
     assertEquals(secondPermissions, publicShare.permissions());
   }
 

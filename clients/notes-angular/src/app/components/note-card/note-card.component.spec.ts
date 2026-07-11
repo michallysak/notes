@@ -65,20 +65,54 @@ describe('NoteCardComponent', () => {
     expect(queryElement('app-note-change-datetime')).toBeTruthy();
   });
 
-  it('renders shared badge when shared is true', async () => {
-    fixture.componentRef.setInput('note', createNote({ shared: true }));
+  it('renders shared badge when the note has user shares', async () => {
+    fixture.componentRef.setInput('note', createNote({
+      shared: true,
+      shares: [{ userId: 'u-2', email: 'u2@ex.com', permissions: [] }] as any,
+    }));
     fixture.detectChanges();
     await fixture.whenStable();
 
     expect(queryElement('.shared-badge')).toBeTruthy();
   });
 
-  it('does not render shared badge when shared is false', async () => {
-    fixture.componentRef.setInput('note', createNote({ shared: false }));
+  it('does not render shared badge when there are no user shares', async () => {
+    fixture.componentRef.setInput('note', createNote({ shared: false, shares: [] }));
     fixture.detectChanges();
     await fixture.whenStable();
 
     expect(queryElement('.shared-badge')).toBeFalsy();
+  });
+
+  it('renders public badge when the note is public', async () => {
+    fixture.componentRef.setInput('note', createNote({
+      publicShare: { publicShareId: 'public-1', permissions: [] },
+    } as any));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(queryElement('.public-badge')).toBeTruthy();
+  });
+
+  it('does not render public badge when the note is not public', async () => {
+    fixture.componentRef.setInput('note', createNote());
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(queryElement('.public-badge')).toBeFalsy();
+  });
+
+  it('hides the shared badge for a note that is only public', async () => {
+    fixture.componentRef.setInput('note', createNote({
+      shared: true,
+      shares: [],
+      publicShare: { publicShareId: 'public-1', permissions: [] },
+    } as any));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(queryElement('.shared-badge')).toBeFalsy();
+    expect(queryElement('.public-badge')).toBeTruthy();
   });
 
    it('renders controls and menu when isAuthor is true', async () => {

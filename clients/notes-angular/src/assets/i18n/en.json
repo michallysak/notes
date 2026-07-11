@@ -29,6 +29,7 @@
     "SECTION_SHARED": "Shared with you",
     "SHARE": "Share",
     "SHARED": "Shared",
+    "PUBLIC": "Public",
     "DELETE": "Delete",
     "PIN": "Pin note",
     "UNPIN": "Unpin note",
@@ -50,7 +51,10 @@
         "TITLE": "Public access",
         "DESCRIPTION": "Allow anyone with the link to open this note.",
         "MAKE": "Make public",
-        "UNDO": "Undo public"
+        "UNDO": "Undo public",
+        "COPY_LINK": "Copy link",
+        "LINK_COPIED": "Public link copied",
+        "LINK_COPY_FAILED": "Could not copy the public link"
       },
       "PERMISSION_REVOKED": "Permission revoked",
       "PERMISSION_CHANGED": "Permission changed"

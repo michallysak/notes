@@ -12,7 +12,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NoteCardComponent } from '../note-card/note-card.component';
-import { NotesAPIService, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
+import { NotesAPIService, NotePermission, NoteResponse, NoteUpdateRequest } from '@notes/notes_service';
 import { AuthService } from '../../services/auth/auth.service';
 import { NoteService } from '../../services/note/note.service';
 import { Note } from '../../types/note';
@@ -235,12 +235,16 @@ export class NoteSearchComponent implements OnDestroy, OnInit {
     const shares = res.shares || [];
     const currentUser = this.auth.getCurrentUserValue();
     const currentUserId = currentUser?.id;
+    const publicShare = (res as NoteResponse & {
+      publicShare?: { publicShareId?: string; permissions?: NotePermission[] } | null;
+    }).publicShare;
+    const publicPermissions = publicShare?.permissions ?? [];
 
-    const shared = shares.length > 0;
+    const shared = shares.length > 0 || !!publicShare?.publicShareId;
     const isAuthor = res.authorId === currentUserId;
     const canEdit = isAuthor || shares.some(
-      (p: any) => p.userId === currentUserId && (p.permissions ?? []).includes('EDIT')
-    );
+      (p: any) => p.userId === currentUserId && (p.permissions ?? []).includes(NotePermission.EDIT)
+    ) || publicPermissions.includes(NotePermission.EDIT);
 
     return { ...res, shared, canEdit };
   }

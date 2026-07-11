@@ -285,6 +285,21 @@ describe('NoteSearchComponent', () => {
     const results = component.searchResults.value;
     expect(results.data[0].canEdit).toBe(false);
   });
+  it('should set canEdit to true for public EDIT note', () => {
+    mockAuthService.getCurrentUserValue.mockReturnValue({ id: 'other-user' });
+    const noteResponse = {
+      id: 'public-note',
+      authorId: 'auth-1',
+      shares: [],
+      publicShare: { publicShareId: 'public-1', permissions: ['EDIT'] }
+    };
+    mockNotesApi.searchNotes.mockReturnValue(of({ data: [noteResponse], total: 1 }));
+    component.form.get('searchQuery')?.setValue('test');
+    (component as any).performSearch();
+    const results = component.searchResults.value;
+    expect(results.data[0].canEdit).toBe(true);
+    expect(results.data[0].shared).toBe(true);
+  });
   it('should handle search with undefined shares', () => {
     const noteResponse = {
       id: '1',

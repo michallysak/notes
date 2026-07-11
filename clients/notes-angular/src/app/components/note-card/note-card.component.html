@@ -3,9 +3,14 @@
     <div class="card-header">
       <div class="title-row">
         <h3 class="text-trim" [style.color]="cardTextColor()">{{ note.title }}</h3>
-        @if (note.shared) {
+        @if (hasUserShares) {
           <span class="shared-badge" pTooltip="{{ 'NOTES.SHARED' | translate }}">
             <i class="pi pi-users"></i>
+          </span>
+        }
+        @if (isPublic) {
+          <span class="public-badge" pTooltip="{{ 'NOTES.PUBLIC' | translate }}">
+            <i class="pi pi-globe"></i>
           </span>
         }
       </div>

@@ -12,10 +12,7 @@ import lombok.Setter;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import pl.michallysak.notes.application.quarkus.note.dto.CreateNoteRequest;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteShareResponse;
-import pl.michallysak.notes.application.quarkus.note.dto.NoteUpdateRequest;
+import pl.michallysak.notes.application.quarkus.note.dto.*;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteEntity;
 import pl.michallysak.notes.application.quarkus.note.persistence.NotePublicShareEntity;
 import pl.michallysak.notes.application.quarkus.note.persistence.NoteShareEntity;
@@ -41,11 +38,20 @@ public abstract class NoteMapper {
       NoteUpdateRequest noteUpdateRequest, UUID actingUserId);
 
   @Mapping(target = "shares", ignore = true)
+  @Mapping(target = "publicShare", ignore = true)
   public abstract NoteResponse mapToNoteResponse(NoteValue noteValue);
 
   @Mapping(target = "shares", source = "shares")
+  @Mapping(target = "publicShare", ignore = true)
   public abstract NoteResponse mapToNoteResponse(
       NoteValue noteValue, List<NoteShareResponse> shares);
+
+  public NoteResponse mapToNoteResponseWithPublicShare(
+      NoteValue noteValue, List<NoteShareResponse> shares) {
+    NoteResponse response = mapToNoteResponse(noteValue, shares);
+    response.setPublicShare(mapToNotePublicShareResponse(noteValue.publicShare()));
+    return response;
+  }
 
   @Mapping(target = "email", ignore = true)
   public abstract NoteShareResponse mapToNoteShareResponse(NoteShare noteShare);
@@ -85,6 +91,23 @@ public abstract class NoteMapper {
   protected Optional<NotePublicShare> entityToOptionalNotePublicShare(NotePublicShareEntity value) {
 
     return Optional.ofNullable(value).map(this::entityToNotePublicShare);
+  }
+
+  protected NotePublicShareResponse mapToNotePublicShareResponse(NotePublicShare notePublicShare) {
+    if (notePublicShare == null) {
+      return null;
+    }
+    return NotePublicShareResponse.builder()
+        .publicShareId(notePublicShare.publicShareId())
+        .permissions(notePublicShare.permissions())
+        .build();
+  }
+
+  protected NotePublicShareResponse mapToNotePublicShareResponse(
+      Optional<NotePublicShare> publicShare) {
+    return publicShare != null && publicShare.isPresent()
+        ? mapToNotePublicShareResponse(publicShare.get())
+        : null;
   }
 
   protected OffsetDateTime mapToOffsetDateTime(Optional<OffsetDateTime> value) {

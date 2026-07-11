@@ -5,10 +5,12 @@ import { of, throwError } from 'rxjs';
 import { NotePermission, NoteShareResponse } from '@notes/notes_service';
 import { Select } from 'primeng/select';
 import { MessageService } from 'primeng/api';
+import { provideRouter } from '@angular/router';
 import { NoteShareDialogComponent } from './note-share-dialog.component';
 import { NoteService } from '../../services/note/note.service';
 import { NoteEventsService } from '../../services/note/note-events.service';
 import { Note } from '../../types/note';
+import { NotificationService } from '../../services/notification/notification.service';
 
 describe('NoteShareDialogComponent', () => {
   let component: NoteShareDialogComponent;
@@ -19,6 +21,12 @@ describe('NoteShareDialogComponent', () => {
     removeNoteAccess: vi.fn(),
     makeNotePublic: vi.fn(),
     undoNotePublic: vi.fn(),
+  };
+  const notificationService = {
+    show: vi.fn(),
+  };
+  const clipboard = {
+    writeText: vi.fn().mockResolvedValue(undefined),
   };
 
   const createNote = (overrides: Partial<Note> = {}): Note => ({
@@ -53,14 +61,17 @@ describe('NoteShareDialogComponent', () => {
     noteService.makeNotePublic.mockReturnValue(of({}));
     noteService.undoNotePublic.mockReset();
     noteService.undoNotePublic.mockReturnValue(of({}));
+    notificationService.show.mockReset();
 
     await TestBed.configureTestingModule({
       imports: [NoteShareDialogComponent],
       providers: [
+        provideRouter([]),
         provideTranslateService({ lang: 'en', fallbackLang: 'en' }),
         { provide: NoteService, useValue: noteService },
         MessageService,
         { provide: NoteEventsService, useValue: { domainEvents$: of(null) } },
+        { provide: NotificationService, useValue: notificationService },
       ],
     }).compileComponents();
 
@@ -69,6 +80,11 @@ describe('NoteShareDialogComponent', () => {
     fixture.componentRef.setInput('note', createNote({ id: 'note-1', shares: [] }));
     fixture.componentRef.setInput('visible', true);
     fixture.detectChanges();
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: clipboard,
+      configurable: true,
+    });
   });
 
   afterEach(() => {
@@ -95,6 +111,23 @@ describe('NoteShareDialogComponent', () => {
     expect(emitSpy).toHaveBeenCalledWith({ noteId: 'note-1', isShared: true });
   });
 
+  it('initializes public state from note public share', () => {
+    component.note = createNote({
+      id: 'note-1',
+      shares: [],
+      publicShare: { publicShareId: 'public-1', permissions: [NotePermission.EDIT] } as any,
+    } as any);
+    component.visible = true;
+
+    component.ngOnChanges({
+      visible: { currentValue: true } as any,
+    });
+
+    expect(component.publicEnabled()).toBe(true);
+    expect(component.publicShareId()).toBe('public-1');
+    expect(component.publicPermission()).toBe(NotePermission.EDIT);
+  });
+
   it('resets state onHide', () => {
     component.userNotFound.set(true);
     component.saving.set(true);
@@ -111,18 +144,33 @@ describe('NoteShareDialogComponent', () => {
   });
 
   it('makes note public with the selected permission', () => {
+    noteService.makeNotePublic.mockReturnValue(of('public-1'));
+
     component.onMakePublic(NotePermission.EDIT);
 
     expect(noteService.makeNotePublic).toHaveBeenCalledWith('note-1', NotePermission.EDIT);
     expect(component.publicEnabled()).toBe(true);
+    expect(component.publicShareId()).toBe('public-1');
+    expect(component.publicLink()).toContain('/public/public-1');
   });
 
   it('undoes note public access', () => {
+    component.publicShareId.set('public-1');
     component.publicEnabled.set(true);
     component.onUndoPublic();
 
     expect(noteService.undoNotePublic).toHaveBeenCalledWith('note-1');
     expect(component.publicEnabled()).toBe(false);
+    expect(component.publicShareId()).toBeNull();
+  });
+
+  it('copies public link to clipboard', async () => {
+    component.publicShareId.set('public-1');
+
+    await component.onCopyPublicLink();
+
+    expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('/public/public-1'));
+    expect(notificationService.show).toHaveBeenCalledWith('NOTES.SHARE_DIALOG.PUBLIC.LINK_COPIED', 'success', 3000);
   });
 
   it('renders loading spinner when loading', () => {

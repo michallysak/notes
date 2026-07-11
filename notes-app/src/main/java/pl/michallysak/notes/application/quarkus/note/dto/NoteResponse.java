@@ -7,9 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
@@ -52,4 +54,7 @@ public class NoteResponse {
       required = true,
       description = "List of users with access to the note and their permissions")
   private List<NoteShareResponse> shares;
+
+  @Schema(description = "Public share details if the note is public")
+  private NotePublicShareResponse publicShare;
 }

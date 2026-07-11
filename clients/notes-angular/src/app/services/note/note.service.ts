@@ -6,6 +6,7 @@ import {
   NotePermission,
   NoteCreatedEventDTO,
   NoteDeletedEventDTO,
+  NotePublicShareResponse,
   NoteResponse,
   NotesAPIService,
   NoteUpdatedEventDTO,
@@ -18,6 +19,13 @@ import {
 import { Note } from '../../types/note';
 import { NoteEventsService } from './note-events.service';
 import { AuthService } from '../auth/auth.service';
+
+type NoteResponseWithPublicShare = NoteResponse & {
+  publicShare?: {
+    publicShareId?: string;
+    permissions?: NotePermission[];
+  } | null;
+};
 
 export interface NotesSection {
   data: Note[];
@@ -260,32 +268,68 @@ export class NoteService {
   }
 
   makeNotePublic(id: string, permission: NotePermission = NotePermission.READ) {
-    return this.notesApi.makeNotePublic_1({ permissions: [permission] }, id);
+    return this.notesApi.makeNotePublic({ permissions: [permission] }, id).pipe(
+      map((res: NotePublicShareResponse) => {
+        if (!res?.publicShareId) {
+          throw new Error('Public share id missing from response');
+        }
+
+        return res.publicShareId;
+      }),
+      tap((publicShareId) =>
+        this.applyPublicShare(id, { publicShareId, permissions: [permission] }),
+      ),
+    );
   }
 
   undoNotePublic(id: string) {
-    return this.notesApi.undoNotePublic(id);
+    return this.notesApi.undoNotePublic(id).pipe(tap(() => this.applyPublicShare(id, null)));
+  }
+
+  getPublicNote(publicShareId: string) {
+    return this.notesApi.getPublicNote(publicShareId).pipe(map((res: NoteResponse) => this.mapToNote(res)));
   }
 
   removeNoteAccess(id: string, targetUserId: string) {
     return this.notesApi.removeNoteAccess(id, targetUserId);
   }
 
-  private mapToNote(res: NoteResponse): Note {
+  private mapToNote(res: NoteResponseWithPublicShare): Note {
     const shares = res.shares || [];
     const currentUser = this.auth.getCurrentUserValue();
     const currentUserId = currentUser?.id;
+    const publicPermissions = res.publicShare?.permissions ?? [];
 
-    const shared = shares.length > 0;
+    const shared = shares.length > 0 || this.hasPublicShare(res);
     const isAuthor = res.authorId === currentUserId;
     const canEdit = isAuthor || shares.some(
       (p) => p.userId === currentUserId && (p.permissions ?? []).includes(NotePermission.EDIT)
-    );
+    ) || publicPermissions.includes(NotePermission.EDIT);
 
     return {
       ...res,
       shared,
       canEdit,
     };
+  }
+
+  private hasPublicShare(note: NoteResponseWithPublicShare): boolean {
+    return !!note.publicShare?.publicShareId;
+  }
+
+  private applyPublicShare(
+    id: string,
+    publicShare: { publicShareId: string; permissions: NotePermission[] } | null,
+  ) {
+    const current = this.notesSubject.value.find((n) => n.id === id);
+    if (!current) {
+      return;
+    }
+
+    const updated = this.mapToNote({
+      ...current,
+      publicShare: publicShare ?? undefined,
+    });
+    this.upsertNoteInSubject(updated);
   }
 }

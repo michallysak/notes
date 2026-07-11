@@ -1,0 +1,16 @@
+<div class="public-note-page">
+  @if (loading()) {
+    <div class="public-note-page-spinner">
+      <p-progress-spinner strokeWidth="4" style="width: 24px; height: 24px"></p-progress-spinner>
+    </div>
+  } @else {
+    @if (note(); as currentNote) {
+      <app-note-change-dialog
+        [visible]="dialogVisible()"
+        (visibleChange)="onDialogVisibleChange($event)"
+        [note]="currentNote"
+        [readonly]="readonly()"
+      ></app-note-change-dialog>
+    }
+  }
+</div>
