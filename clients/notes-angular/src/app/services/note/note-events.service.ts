@@ -10,6 +10,8 @@ import {
   NoteDeletedEventDTO,
   NotePermissionsSetEventDTO,
   NoteAccessRemovedEventDTO,
+  NotePublicShareUpsertedEventDTO,
+  NotePublicShareRemovedEventDTO,
   DomainEventDTO,
 } from '@notes/notes_service';
 
@@ -38,12 +40,27 @@ export class NoteEventsService implements OnDestroy {
   }
 
   private connect() {
+    if (this.stream) {
+      return;
+    }
     let noteCreatedEventType = NoteCreatedEventDTO.TypeEnum.NOTECREATEDEVENT;
     let noteUpdatedEventType = NoteUpdatedEventDTO.TypeEnum.NOTEUPDATEDEVENT;
     let noteDeletedEventType = NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT;
     let notePermissionsSetEventType = NotePermissionsSetEventDTO.TypeEnum.NOTEPERMISSIONSSETEVENT;
     let noteAccessRemovedEventType = NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT;
-    const requestedEvents = [noteCreatedEventType, noteUpdatedEventType, noteDeletedEventType, notePermissionsSetEventType, noteAccessRemovedEventType];
+    let notePublicShareUpsertedEventType =
+      NotePublicShareUpsertedEventDTO.TypeEnum.NOTEPUBLICSHAREUPSERTEDEVENT;
+    let notePublicShareRemovedEventType =
+      NotePublicShareRemovedEventDTO.TypeEnum.NOTEPUBLICSHAREREMOVEDEVENT;
+    const requestedEvents = [
+      noteCreatedEventType,
+      noteUpdatedEventType,
+      noteDeletedEventType,
+      notePermissionsSetEventType,
+      noteAccessRemovedEventType,
+      notePublicShareUpsertedEventType,
+      notePublicShareRemovedEventType,
+    ];
 
     const keySub = this.noteSse.createStreamKey(requestedEvents).subscribe(({ key }) => {
       if (key && this.basePath) {
@@ -70,6 +87,14 @@ export class NoteEventsService implements OnDestroy {
         const accessRemoved$ = this.stream.get<NoteAccessRemovedEventDTO>(noteAccessRemovedEventType);
         this.forwardToSubject(accessRemoved$, this.domainEventsSubject, this.connectSub);
 
+        const publicShareUpserted$ =
+          this.stream.get<NotePublicShareUpsertedEventDTO>(notePublicShareUpsertedEventType);
+        this.forwardToSubject(publicShareUpserted$, this.domainEventsSubject, this.connectSub);
+
+        const publicShareRemoved$ =
+          this.stream.get<NotePublicShareRemovedEventDTO>(notePublicShareRemovedEventType);
+        this.forwardToSubject(publicShareRemoved$, this.domainEventsSubject, this.connectSub);
+
         return;
       }
     });
@@ -78,12 +103,10 @@ export class NoteEventsService implements OnDestroy {
   }
 
   private disconnect() {
-    if (!this.connectSub) {
-      return;
-    }
     try {
       this.connectSub.unsubscribe();
     } catch (_) {}
+    this.connectSub = new Subscription();
     try {
       this.stream?.close();
     } catch (_) {}

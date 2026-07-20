@@ -23,6 +23,13 @@ public class SseConnection {
     this.expiresAt = Objects.requireNonNull(expiresAt);
   }
 
+  protected SseConnection(Set<String> events, Instant expiresAt) {
+    this.streamKey = UUID.randomUUID().toString();
+    this.userId = null;
+    this.events = Objects.requireNonNull(events);
+    this.expiresAt = Objects.requireNonNull(expiresAt);
+  }
+
   boolean isExpired() {
     return Instant.now().isAfter(expiresAt);
   }

@@ -6,7 +6,6 @@ import {
   NotePermission,
   NoteCreatedEventDTO,
   NoteDeletedEventDTO,
-  NotePublicShareResponse,
   NoteResponse,
   NotesAPIService,
   NoteUpdatedEventDTO,
@@ -15,6 +14,8 @@ import {
   DomainEventDTO,
   NotePermissionsSetEventDTO,
   NoteAccessRemovedEventDTO,
+  NotePublicShareRemovedEventDTO,
+  NotePublicShareUpsertedEventDTO,
 } from '@notes/notes_service';
 import { Note } from '../../types/note';
 import { NoteEventsService } from './note-events.service';
@@ -95,6 +96,24 @@ export class NoteService {
                   }
                 }
               });
+            }
+          }
+          break;
+        case NotePublicShareUpsertedEventDTO.TypeEnum.NOTEPUBLICSHAREUPSERTEDEVENT:
+          if (value.payload) {
+            this.upsertNoteInSubject(this.mapToNote(value.payload as NoteResponse));
+          }
+          break;
+        case NotePublicShareRemovedEventDTO.TypeEnum.NOTEPUBLICSHAREREMOVEDEVENT:
+          if (value.payload?.noteId) {
+            const noteId = value.payload.noteId;
+            const existing = this.notesSubject.value.find((n) => n.id === noteId);
+            if (existing) {
+              const updated = this.mapToNote({
+                ...existing,
+                publicShare: undefined,
+              });
+              this.upsertNoteInSubject(updated);
             }
           }
           break;
@@ -269,21 +288,18 @@ export class NoteService {
 
   makeNotePublic(id: string, permission: NotePermission = NotePermission.READ) {
     return this.notesApi.makeNotePublic({ permissions: [permission] }, id).pipe(
-      map((res: NotePublicShareResponse) => {
+      map((res: { publicShareId?: string }) => {
         if (!res?.publicShareId) {
           throw new Error('Public share id missing from response');
         }
 
         return res.publicShareId;
       }),
-      tap((publicShareId) =>
-        this.applyPublicShare(id, { publicShareId, permissions: [permission] }),
-      ),
     );
   }
 
   undoNotePublic(id: string) {
-    return this.notesApi.undoNotePublic(id).pipe(tap(() => this.applyPublicShare(id, null)));
+    return this.notesApi.undoNotePublic(id);
   }
 
   getPublicNote(publicShareId: string) {
@@ -315,21 +331,5 @@ export class NoteService {
 
   private hasPublicShare(note: NoteResponseWithPublicShare): boolean {
     return !!note.publicShare?.publicShareId;
-  }
-
-  private applyPublicShare(
-    id: string,
-    publicShare: { publicShareId: string; permissions: NotePermission[] } | null,
-  ) {
-    const current = this.notesSubject.value.find((n) => n.id === id);
-    if (!current) {
-      return;
-    }
-
-    const updated = this.mapToNote({
-      ...current,
-      publicShare: publicShare ?? undefined,
-    });
-    this.upsertNoteInSubject(updated);
   }
 }

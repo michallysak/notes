@@ -598,6 +598,28 @@ describe('NotesListComponent', () => {
       expect(state.readonly).toBe(true);
       vi.useRealTimers();
     });
+
+    it('updates the open dialog when the selected note changes from notes$ stream', () => {
+      fixture = TestBed.createComponent(NotesListComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const note = createNote({ id: 'note-1', title: 'Original', content: 'Original content' });
+      component.clickNote.set({ visible: true, note, readonly: false });
+      (component as any).previousReadonlyState = false;
+
+      const updatedNote = createNote({
+        id: 'note-1',
+        title: 'Updated',
+        content: 'Updated content',
+        canEdit: true,
+      });
+      noteServiceMock.notes$.next([updatedNote]);
+
+      const state = component.clickNote();
+      expect(state.note).toEqual(updatedNote);
+      expect(state.readonly).toBe(false);
+    });
   });
 
   it('calls shareDialogClose from visibleChange binding', () => {

@@ -23,6 +23,8 @@ import pl.michallysak.notes.note.domain.event.NoteAccessRemovedEvent;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
 import pl.michallysak.notes.note.domain.event.NotePermissionsSetEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareRemovedEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareUpsertedEvent;
 import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.*;
@@ -303,7 +305,6 @@ class NoteServiceImplTest {
     Note note = new NoteImpl(createNote, noteValidator);
 
     Set<NotePermission> permissions = Set.of(NotePermission.READ);
-    UUID expectedShareId = UUID.randomUUID();
 
     when(repository.findNoteWithId(any())).thenReturn(Optional.of(note));
     doNothing().when(repository).saveNote(any());
@@ -314,14 +315,28 @@ class NoteServiceImplTest {
     // then
     verify(repository).findNoteWithId(note.getId());
     verify(repository).saveNote(note);
+    verify(eventPublisher)
+        .publish(
+            argThat(
+                events ->
+                    events.stream().anyMatch(e -> e instanceof NotePublicShareUpsertedEvent)
+                        && events.stream()
+                            .filter(e -> e instanceof NotePublicShareUpsertedEvent)
+                            .map(e -> (NotePublicShareUpsertedEvent) e)
+                            .allMatch(e -> e.getPayload().id().equals(note.getId()))
+                        && events.stream()
+                            .filter(e -> e instanceof NotePublicShareUpsertedEvent)
+                            .map(e -> (NotePublicShareUpsertedEvent) e)
+                            .allMatch(e -> e.getPayload().publicShare().isPresent())));
     assertNotNull(result);
   }
 
   @Test
-  void undoNotePublic_shouldPersistChanges() {
+  void undoNotePublic_shouldPersistChangesAndPublishEvent() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote, noteValidator);
+    UUID publicShareId = note.makeNotePublic(AUTHOR_ID, Set.of(NotePermission.READ));
 
     when(repository.findNoteWithId(any())).thenReturn(Optional.of(note));
 
@@ -331,6 +346,20 @@ class NoteServiceImplTest {
     // then
     verify(repository).findNoteWithId(note.getId());
     verify(repository).saveNote(note);
+    verify(eventPublisher)
+        .publish(
+            argThat(
+                events ->
+                    events.stream().anyMatch(e -> e instanceof NotePublicShareRemovedEvent)
+                        && events.stream()
+                            .filter(e -> e instanceof NotePublicShareRemovedEvent)
+                            .map(e -> (NotePublicShareRemovedEvent) e)
+                            .allMatch(e -> e.getPayload().getNoteId().equals(note.getId()))
+                        && events.stream()
+                            .filter(e -> e instanceof NotePublicShareRemovedEvent)
+                            .map(e -> (NotePublicShareRemovedEvent) e)
+                            .allMatch(
+                                e -> e.getPayload().getPublicShareId().equals(publicShareId))));
   }
 
   @Test

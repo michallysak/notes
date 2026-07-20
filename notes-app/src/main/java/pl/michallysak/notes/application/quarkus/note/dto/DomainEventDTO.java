@@ -10,7 +10,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
       NoteUpdatedEventDTO.class,
       NoteDeletedEventDTO.class,
       NotePermissionsSetEventDTO.class,
-      NoteAccessRemovedEventDTO.class
+      NoteAccessRemovedEventDTO.class,
+      NotePublicShareUpsertedEventDTO.class,
+      NotePublicShareRemovedEventDTO.class
     },
     discriminatorProperty = "type",
     discriminatorMapping = {
@@ -22,7 +24,13 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
           schema = NotePermissionsSetEventDTO.class),
       @DiscriminatorMapping(
           value = NoteAccessRemovedEventDTO.TYPE,
-          schema = NoteAccessRemovedEventDTO.class)
+          schema = NoteAccessRemovedEventDTO.class),
+      @DiscriminatorMapping(
+          value = NotePublicShareUpsertedEventDTO.TYPE,
+          schema = NotePublicShareUpsertedEventDTO.class),
+      @DiscriminatorMapping(
+          value = NotePublicShareRemovedEventDTO.TYPE,
+          schema = NotePublicShareRemovedEventDTO.class)
     })
 public interface DomainEventDTO<T> {
 

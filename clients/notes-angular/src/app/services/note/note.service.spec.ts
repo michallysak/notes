@@ -1,6 +1,15 @@
 import { BehaviorSubject, Subject, of, EMPTY, throwError } from 'rxjs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotePermission, NoteCreatedEventDTO, NoteUpdatedEventDTO, NoteDeletedEventDTO, NotePermissionsSetEventDTO, NoteAccessRemovedEventDTO } from '@notes/notes_service';
+import {
+  NotePermission,
+  NoteCreatedEventDTO,
+  NoteUpdatedEventDTO,
+  NoteDeletedEventDTO,
+  NotePermissionsSetEventDTO,
+  NoteAccessRemovedEventDTO,
+  NotePublicShareRemovedEventDTO,
+  NotePublicShareUpsertedEventDTO,
+} from '@notes/notes_service';
 import { NoteService } from './note.service';
 import { Note } from '../../types/note';
 
@@ -34,9 +43,9 @@ describe('NoteService', () => {
       setNotePermissions: vi.fn().mockReturnValue(of({})),
       removeNoteAccess: vi.fn().mockReturnValue(of({})),
       getNote: vi.fn().mockReturnValue(of({})),
-      makeNotePublic: vi.fn().mockReturnValue(of({ id: 'public-note', shares: [] })),
-      makeNotePublic_1: vi.fn().mockReturnValue(of({ publicShareId: 'public-1' })),
+      makeNotePublic: vi.fn().mockReturnValue(of({ publicShareId: 'public-1' })),
       undoNotePublic: vi.fn().mockReturnValue(of({})),
+      getPublicNote: vi.fn().mockReturnValue(of({})),
     };
 
     authService = {
@@ -436,6 +445,43 @@ describe('NoteService', () => {
       expect(notesApi.getNote).toHaveBeenCalledWith('sse-7');
       expect(latest.length).toBe(0);
     });
+
+    it('upserts note on NOTEPUBLICSHAREUPSERTEDEVENT', () => {
+      let latest: Note[] = [];
+      service.notes$.subscribe(notes => latest = notes);
+
+      const payload = createNote({
+        id: 'sse-8',
+        title: 'Public Share Updated',
+        publicShare: { publicShareId: 'public-8', permissions: [NotePermission.EDIT] } as any,
+      });
+      events.next({ type: NotePublicShareUpsertedEventDTO.TypeEnum.NOTEPUBLICSHAREUPSERTEDEVENT, payload });
+
+      expect(latest.length).toBe(1);
+      expect(latest[0].id).toBe('sse-8');
+      expect(latest[0].canEdit).toBe(true);
+    });
+
+    it('clears publicShare state on NOTEPUBLICSHAREREMOVEDEVENT', () => {
+      let latest: Note[] = [];
+      const existing = createNote({
+        id: 'sse-9',
+        authorId: 'other-user',
+        publicShare: { publicShareId: 'public-9', permissions: [NotePermission.EDIT] } as any,
+      });
+      (service as any).notesSubject.next([existing]);
+      service.notes$.subscribe(notes => latest = notes);
+
+      events.next({
+        type: NotePublicShareRemovedEventDTO.TypeEnum.NOTEPUBLICSHAREREMOVEDEVENT,
+        payload: { noteId: 'sse-9', publicShareId: 'public-9' },
+      });
+
+      expect(latest).toHaveLength(1);
+      expect(latest[0].publicShare?.publicShareId).toBeFalsy();
+      expect(latest[0].shared).toBe(false);
+      expect(latest[0].canEdit).toBe(false);
+    });
   });
 
   it('getNoteById calls notesApi.getNote and maps it', () => {
@@ -457,11 +503,11 @@ describe('NoteService', () => {
       publicShareId = value;
     });
 
-    expect(notesApi.makeNotePublic_1).toHaveBeenCalledWith({ permissions: [NotePermission.READ] }, 'note-1');
+    expect(notesApi.makeNotePublic).toHaveBeenCalledWith({ permissions: [NotePermission.READ] }, 'note-1');
     expect(publicShareId).toBe('public-1');
   });
 
-  it('makeNotePublic marks the existing note as public in the subject', async () => {
+  it('makeNotePublic does not optimistically mutate note state before SSE reconciliation', async () => {
     notesApi.searchNotes.mockReturnValue(of({ data: [{ id: 'note-1', authorId: 'auth-1', shares: [] }] }));
     service.loadNotes();
 
@@ -471,12 +517,12 @@ describe('NoteService', () => {
     service.makeNotePublic('note-1', NotePermission.EDIT).subscribe();
 
     const updated = notesList.find((n) => n.id === 'note-1');
-    expect(updated?.publicShare?.publicShareId).toBe('public-1');
-    expect(updated?.shared).toBe(true);
+    expect(updated?.publicShare?.publicShareId).toBeFalsy();
+    expect(updated?.shared).toBe(false);
     expect(updated?.canEdit).toBe(true);
   });
 
-  it('undoNotePublic clears the public state of the note in the subject', () => {
+  it('undoNotePublic does not optimistically mutate note state before SSE reconciliation', () => {
     notesApi.searchNotes.mockReturnValue(of({
       data: [{ id: 'note-1', authorId: 'other-author', shares: [], publicShare: { publicShareId: 'public-1', permissions: [NotePermission.EDIT] } }],
     }));
@@ -488,9 +534,9 @@ describe('NoteService', () => {
     service.undoNotePublic('note-1').subscribe();
 
     const updated = notesList.find((n) => n.id === 'note-1');
-    expect(updated?.publicShare?.publicShareId).toBeFalsy();
-    expect(updated?.shared).toBe(false);
-    expect(updated?.canEdit).toBe(false);
+    expect(updated?.publicShare?.publicShareId).toBe('public-1');
+    expect(updated?.shared).toBe(true);
+    expect(updated?.canEdit).toBe(true);
   });
 
   it('getPublicNote fetches and maps the public note', () => {
@@ -499,14 +545,14 @@ describe('NoteService', () => {
       shares: [],
       publicShare: { publicShareId: 'public-1', permissions: [NotePermission.READ] },
     };
-    notesApi.makeNotePublic.mockReturnValue(of(apiNote));
+    notesApi.getPublicNote.mockReturnValue(of(apiNote));
 
     let fetchedNote: Note | undefined;
     service.getPublicNote('public-1').subscribe((note) => {
       fetchedNote = note;
     });
 
-    expect(notesApi.makeNotePublic).toHaveBeenCalledWith('public-1');
+    expect(notesApi.getPublicNote).toHaveBeenCalledWith('public-1');
     expect(fetchedNote?.id).toBe('public-note');
     expect(fetchedNote?.shared).toBe(true);
   });

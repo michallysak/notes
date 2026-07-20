@@ -132,14 +132,15 @@ export class NotesListComponent implements OnInit, OnDestroy {
         const newReadonly = !updatedNote.canEdit;
         const currentReadonly = this.previousReadonlyState;
 
+        this.clickNote.set({
+          visible: true,
+          note: updatedNote,
+          readonly: newReadonly,
+        });
+        this.previousReadonlyState = newReadonly;
+
         if (currentReadonly !== null && currentReadonly !== newReadonly) {
           setTimeout(() => {
-            this.clickNote.set({
-              visible: true,
-              note: updatedNote,
-              readonly: newReadonly
-            });
-            this.previousReadonlyState = newReadonly;
             this.notificationService.show('NOTES.PERMISSION_CHANGED', 'info', 5000);
           });
         }

@@ -6,6 +6,7 @@ import static pl.michallysak.notes.helpers.TestExtensions.toJsonString;
 import static pl.michallysak.notes.helpers.TestExtensions.waitGivenMillis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 import jakarta.ws.rs.core.MediaType;
@@ -28,11 +29,14 @@ class NoteSseResourceIT extends BaseIT {
       Set.of("NOTE_CREATED_EVENT", "NOTE_UPDATED_EVENT", "NOTE_DELETED_EVENT");
   private static final Set<String> PERMISSION_EVENTS =
       Set.of("NOTE_PERMISSIONS_SET_EVENT", "NOTE_ACCESS_REMOVED_EVENT");
+  private static final Set<String> PUBLIC_SHARE_EVENTS =
+      Set.of("NOTE_PUBLIC_SHARE_UPSERTED_EVENT", "NOTE_PUBLIC_SHARE_REMOVED_EVENT");
 
   static {
     ALL_EVENTS = new HashSet<>();
     ALL_EVENTS.addAll(NOTE_EVENTS);
     ALL_EVENTS.addAll(PERMISSION_EVENTS);
+    ALL_EVENTS.addAll(PUBLIC_SHARE_EVENTS);
   }
 
   @Test
@@ -273,6 +277,93 @@ class NoteSseResourceIT extends BaseIT {
         "Should NOT receive permission event for note by another user");
   }
 
+  @Test
+  void connectToNotesEvents_shouldReceiveSseMessage_whenPublicShareIsUpserted() {
+    // given
+    String jwtOwner = createUser(EMAIL_1);
+    String jwtTarget = createUser(EMAIL_2);
+    String key = createStreamKey(jwtTarget, PUBLIC_SHARE_EVENTS);
+    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.withKey(key);
+    // when
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          CreateNoteRequest createNoteRequest =
+              NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
+          String noteId = createNote(jwtOwner, createNoteRequest);
+          NoteResourceRestTestClient noteClient = NoteResourceRestTestClient.auth(jwtOwner);
+          SetNotePermissionsRequest permissionsRequest =
+              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
+          noteClient
+              .setPermissions(noteId, toJsonString(permissionsRequest))
+              .then()
+              .statusCode(204);
+          makeNotePublic(jwtOwner, noteId);
+          waitGivenMillis(200);
+        });
+    // then
+    assertTrue(notesEventsSseTestClient.getExceptions().isEmpty());
+    assertFalse(notesEventsSseTestClient.getEvents().isEmpty());
+    InboundSseEvent sseEvent = notesEventsSseTestClient.getEvents().getFirst();
+    assertDoesNotThrow(() -> UUID.fromString(sseEvent.getId()));
+    assertEquals("NOTE_PUBLIC_SHARE_UPSERTED_EVENT", sseEvent.getName());
+    String msg = sseEvent.readData();
+    try {
+      JsonNode payload = OBJECT_MAPPER.readTree(msg);
+      assertNotNull(payload.get("id"));
+      assertNotNull(payload.get("publicShare"));
+      assertNotNull(payload.get("publicShare").get("publicShareId"));
+      assertNotNull(payload.get("publicShare").get("permissions"));
+      assertFalse(payload.get("shares").isEmpty());
+      assertEquals("READ", payload.get("publicShare").get("permissions").get(0).asText());
+    } catch (JsonProcessingException e) {
+      fail("JSON parsing failed. Payload: " + msg, e);
+    }
+  }
+
+  @Test
+  void connectToNotesEvents_shouldReceiveSseMessage_whenPublicShareIsRemoved() {
+    // given
+    String jwtOwner = createUser(EMAIL_1);
+    String jwtTarget = createUser(EMAIL_2);
+    String key = createStreamKey(jwtTarget, PUBLIC_SHARE_EVENTS);
+    NotesEventsSseTestClient notesEventsSseTestClient = NotesEventsSseTestClient.withKey(key);
+    // when
+    notesEventsSseTestClient.runWithContext(
+        (source, ctx) -> {
+          source.open();
+          CreateNoteRequest createNoteRequest =
+              NoteDtoRequestUtils.getCreateNoteRequestBuilder().build();
+          String noteId = createNote(jwtOwner, createNoteRequest);
+          NoteResourceRestTestClient noteClient = NoteResourceRestTestClient.auth(jwtOwner);
+          SetNotePermissionsRequest permissionsRequest =
+              NoteDtoRequestUtils.createSetNotePermissionsRequestBuilder().email(EMAIL_2).build();
+          noteClient
+              .setPermissions(noteId, toJsonString(permissionsRequest))
+              .then()
+              .statusCode(204);
+          makeNotePublic(jwtOwner, noteId);
+          waitGivenMillis(100);
+          notesEventsSseTestClient.getEvents().clear();
+          undoNotePublic(jwtOwner, noteId);
+          waitGivenMillis(200);
+        });
+    // then
+    assertTrue(notesEventsSseTestClient.getExceptions().isEmpty());
+    assertFalse(notesEventsSseTestClient.getEvents().isEmpty());
+    InboundSseEvent sseEvent = notesEventsSseTestClient.getEvents().getFirst();
+    assertDoesNotThrow(() -> UUID.fromString(sseEvent.getId()));
+    assertEquals("NOTE_PUBLIC_SHARE_REMOVED_EVENT", sseEvent.getName());
+    String msg = sseEvent.readData();
+    try {
+      JsonNode payload = OBJECT_MAPPER.readTree(msg);
+      assertNotNull(payload.get("noteId"));
+      assertNotNull(payload.get("publicShareId"));
+    } catch (JsonProcessingException e) {
+      fail("JSON parsing failed. Payload: " + msg, e);
+    }
+  }
+
   private String createStreamKey(String jwt, Set<String> events) {
     return createStreamKeyResponse(jwt, events).then().statusCode(201).extract().path("key");
   }
@@ -284,5 +375,26 @@ class NoteSseResourceIT extends BaseIT {
         .body(toJsonString(events))
         .when()
         .post("/notes/events");
+  }
+
+  private void makeNotePublic(String jwt, String noteId) {
+    given()
+        .header("Authorization", "Bearer " + jwt)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{\"permissions\":[\"READ\"]}")
+        .when()
+        .put("/notes/" + noteId + "/public")
+        .then()
+        .statusCode(200);
+  }
+
+  private void undoNotePublic(String jwt, String noteId) {
+    given()
+        .header("Authorization", "Bearer " + jwt)
+        .contentType(MediaType.APPLICATION_JSON)
+        .when()
+        .delete("/notes/" + noteId + "/public")
+        .then()
+        .statusCode(204);
   }
 }

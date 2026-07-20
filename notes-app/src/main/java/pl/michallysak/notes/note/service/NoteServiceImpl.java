@@ -12,6 +12,8 @@ import pl.michallysak.notes.note.domain.event.NoteAccessRemovedEvent;
 import pl.michallysak.notes.note.domain.event.NoteCreatedEvent;
 import pl.michallysak.notes.note.domain.event.NoteDeletedEvent;
 import pl.michallysak.notes.note.domain.event.NotePermissionsSetEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareRemovedEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareUpsertedEvent;
 import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
 import pl.michallysak.notes.note.exception.NoteNotFoundException;
 import pl.michallysak.notes.note.model.*;
@@ -124,14 +126,26 @@ public class NoteServiceImpl implements NoteService {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
     UUID publicShareId = note.makeNotePublic(actingUserId, notePermission);
     noteRepository.saveNote(note);
+    NoteValue noteValue = NoteValue.from(note, actingUserId);
+    NotePublicShareUpsertedEvent notePublicShareUpsertedEvent =
+        NotePublicShareUpsertedEvent.from(noteValue);
+    eventPublisher.publish(Collections.singletonList(notePublicShareUpsertedEvent));
     return publicShareId;
   }
 
   @Override
   public void undoNotePublic(UUID noteId, UUID actingUserId) {
     Note note = noteRepository.findNoteWithId(noteId).orElseThrow(NoteNotFoundException::new);
+    UUID publicShareId = note.getPublicShare().map(NotePublicShare::publicShareId).orElse(null);
     note.undoNotePublic(actingUserId);
     noteRepository.saveNote(note);
+    if (publicShareId == null) {
+      return;
+    }
+    NoteValue noteValue = NoteValue.from(note, actingUserId);
+    NotePublicShareRemovedEvent notePublicShareRemovedEvent =
+        NotePublicShareRemovedEvent.from(noteValue, publicShareId);
+    eventPublisher.publish(Collections.singletonList(notePublicShareRemovedEvent));
   }
 
   @Override

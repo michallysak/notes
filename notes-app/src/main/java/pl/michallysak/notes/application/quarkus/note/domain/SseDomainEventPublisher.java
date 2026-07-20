@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,11 +20,24 @@ import pl.michallysak.notes.application.quarkus.common.dto.ErrorResponse;
 import pl.michallysak.notes.application.quarkus.note.dto.KeyResponse;
 import pl.michallysak.notes.note.domain.event.DomainEvent;
 import pl.michallysak.notes.note.domain.event.DomainEventPublisher;
+import pl.michallysak.notes.note.domain.event.NotePublicShareRemovedEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareUpsertedEvent;
+import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
+import pl.michallysak.notes.note.model.NotePublicShare;
+import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 
 @ApplicationScoped
 @RequiredArgsConstructor
 public class SseDomainEventPublisher implements DomainEventPublisher {
+
+  public static final String NOTE_PUBLIC_SHARE_UPSERTED_EVENT = "NOTE_PUBLIC_SHARE_UPSERTED_EVENT";
+  public static final String NOTE_PUBLIC_SHARE_REMOVED_EVENT = "NOTE_PUBLIC_SHARE_REMOVED_EVENT";
+  public static final String NOTE_UPDATED_EVENT = "NOTE_UPDATED_EVENT";
+  public static final Set<String> PUBLIC_SHARE_EVENTS =
+      Set.of(NOTE_PUBLIC_SHARE_UPSERTED_EVENT, NOTE_PUBLIC_SHARE_REMOVED_EVENT, NOTE_UPDATED_EVENT);
+
+  private static final Duration publicSseTtl = Duration.parse("PT15M");
   private final ObjectMapper objectMapper;
   private final Logger logger;
   private final CurrentUserProvider currentUserProvider;
@@ -53,6 +67,22 @@ public class SseDomainEventPublisher implements DomainEventPublisher {
     String streamKey = sseConnection.getStreamKey();
     keys.put(streamKey, sseConnection);
     logger.info("Created stream key for user %s expiresAt %s".formatted(userId, expiresAt));
+
+    return new KeyResponse(streamKey, expiresAt);
+  }
+
+  public KeyResponse createPublicStreamKey(UUID publicShareId) {
+    Objects.requireNonNull(publicShareId, "publicShareId cannot be null");
+    Instant expiresAt = Instant.now().plus(publicSseTtl);
+
+    PublicNoteSseConnection sseConnection =
+        new PublicNoteSseConnection(publicShareId, PUBLIC_SHARE_EVENTS, expiresAt);
+
+    String streamKey = sseConnection.getStreamKey();
+    keys.put(streamKey, sseConnection);
+    logger.info(
+        "Created public stream key for publicShareId %s expiresAt %s"
+            .formatted(publicShareId, expiresAt));
 
     return new KeyResponse(streamKey, expiresAt);
   }
@@ -122,25 +152,107 @@ public class SseDomainEventPublisher implements DomainEventPublisher {
       Set<UUID> recipients = event.getRecipients();
       if (recipients == null || recipients.isEmpty()) {
         logger.info("No recipient found %s".formatted(event.getRecipients()));
-        continue;
+      } else {
+        List<SseConnection> connections =
+            keys.values().stream()
+                .filter(c -> !(c instanceof PublicNoteSseConnection))
+                .filter(c -> recipients.contains(c.getUserId()))
+                .filter(c -> c.containsEvent(sseEvent.getName()))
+                .toList();
+
+        if (connections.isEmpty()) {
+          logger.info("No connections found");
+        } else {
+          send(connections, sseEvent);
+        }
       }
 
-      List<SseConnection> connections =
-          keys.values().stream()
-              .filter(c -> recipients.contains(c.getUserId()))
-              .filter(c -> c.containsEvent(sseEvent.getName()))
-              .toList();
-
-      if (connections.isEmpty()) {
-        logger.info("No connections found");
-        continue;
-      }
-
-      send(connections, sseEvent);
+      publishToPublicConnections(event, sseEvent);
     }
   }
 
-  private void send(List<SseConnection> connections, OutboundSseEvent sseEvent) {
+  private void publishToPublicConnections(DomainEvent<?> event, OutboundSseEvent sseEvent) {
+    Optional<UUID> publicShareId = publicShareIdOf(event);
+    if (publicShareId.isEmpty()) {
+      return;
+    }
+
+    List<PublicNoteSseConnection> publicConnections =
+        keys.values().stream()
+            .filter(PublicNoteSseConnection.class::isInstance)
+            .map(PublicNoteSseConnection.class::cast)
+            .filter(c -> c.isViewingPublicShare(publicShareId.get()))
+            .filter(c -> c.containsEvent(sseEvent.getName()))
+            .toList();
+
+    if (publicConnections.isEmpty()) {
+      return;
+    }
+
+    OutboundSseEvent publicEvent;
+    try {
+      publicEvent = event.getPayload() instanceof NoteValue ? buildPublicEvent(event) : sseEvent;
+    } catch (Exception e) {
+      logger.error("Failed to serialize public event payload", e);
+      return;
+    }
+
+    send(publicConnections, publicEvent);
+
+    if (event instanceof NotePublicShareRemovedEvent) {
+      closePublicConnections(publicConnections);
+    }
+  }
+
+  private Optional<UUID> publicShareIdOf(DomainEvent<?> event) {
+    if (event instanceof NotePublicShareUpsertedEvent || event instanceof NoteUpdatedEvent) {
+      NoteValue note = (NoteValue) event.getPayload();
+      return note.publicShare().map(NotePublicShare::publicShareId);
+    }
+    if (event instanceof NotePublicShareRemovedEvent removed) {
+      return Optional.ofNullable(removed.getPayload().getPublicShareId());
+    }
+    return Optional.empty();
+  }
+
+  private OutboundSseEvent buildPublicEvent(DomainEvent<?> event) throws JsonProcessingException {
+    NoteValue payload = (NoteValue) event.getPayload();
+    NoteValue publicView =
+        NoteValue.builder()
+            .id(payload.id())
+            .authorId(payload.authorId())
+            .title(payload.title())
+            .content(payload.content())
+            .created(payload.created())
+            .updated(payload.updated())
+            .pinned(payload.pinned())
+            .style(payload.style())
+            .shares(Set.of())
+            .publicShare(payload.publicShare())
+            .build();
+
+    String jsonPayload = objectMapper.writeValueAsString(publicView);
+    return sse.newEventBuilder()
+        .name(toUpperSnakeCase(event.getClass().getSimpleName()))
+        .id(event.getId().toString())
+        .data(String.class, jsonPayload)
+        .build();
+  }
+
+  private void closePublicConnections(List<PublicNoteSseConnection> connections) {
+    for (PublicNoteSseConnection connection : connections) {
+      keys.remove(connection.getStreamKey());
+      SseEventSink sink = connection.getSink();
+      if (sink != null) {
+        try {
+          sink.close();
+        } catch (Exception ignored) {
+        }
+      }
+    }
+  }
+
+  private void send(List<? extends SseConnection> connections, OutboundSseEvent sseEvent) {
     for (SseConnection connection : connections) {
       try {
         connection.send(sseEvent);

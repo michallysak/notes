@@ -9,6 +9,7 @@ import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -24,6 +25,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.michallysak.notes.application.quarkus.common.JsonWebTokenProvider;
 import pl.michallysak.notes.application.quarkus.note.dto.KeyResponse;
 import pl.michallysak.notes.note.domain.event.DomainEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareRemovedEvent;
+import pl.michallysak.notes.note.domain.event.NotePublicShareUpsertedEvent;
+import pl.michallysak.notes.note.domain.event.NoteUpdatedEvent;
+import pl.michallysak.notes.note.model.NotePermission;
+import pl.michallysak.notes.note.model.NotePublicShare;
+import pl.michallysak.notes.note.model.NoteValue;
 import pl.michallysak.notes.user.service.CurrentUserProvider;
 
 @ExtendWith(MockitoExtension.class)
@@ -331,6 +338,89 @@ public class SseDomainEventPublisherTest {
     verify(logger).error(contains("Failed to serialize event payload"), any(Throwable.class));
   }
 
+  // --- public stream / routing tests ---
+
+  @Test
+  void createPublicStreamKey_shouldReturnKeyResponse() {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    // when
+    KeyResponse keyResponse = publisher.createPublicStreamKey(publicShareId);
+    // then
+    assertNotNull(keyResponse);
+    assertNotNull(keyResponse.getKey());
+    verify(logger).info(contains("Created public stream key"));
+  }
+
+  @Test
+  void createPublicStreamKey_shouldThrowNullPointerException_whenPublicShareIdNull() {
+    // when
+    Executable executable = () -> publisher.createPublicStreamKey(null);
+    // then
+    assertThrows(NullPointerException.class, executable);
+  }
+
+  @Test
+  void publish_shouldSendUpsertedEventToMatchingPublicConnection() throws Exception {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    bindPublicConnection(publicShareId);
+    when(eventSink.isClosed()).thenReturn(false);
+    when(eventSink.send(any())).thenReturn(mock(CompletionStage.class));
+    NotePublicShareUpsertedEvent event =
+        NotePublicShareUpsertedEvent.from(publicNoteValue(publicShareId));
+    setupSseEventMock("NOTE_PUBLIC_SHARE_UPSERTED_EVENT");
+    // when
+    publisher.publish(List.of(event));
+    // then
+    verify(eventSink).send(any());
+  }
+
+  @Test
+  void publish_shouldNotSendToPublicConnection_whenPublicShareIdDoesNotMatch() throws Exception {
+    // given
+    bindPublicConnection(UUID.randomUUID());
+    NotePublicShareUpsertedEvent event =
+        NotePublicShareUpsertedEvent.from(publicNoteValue(UUID.randomUUID()));
+    setupSseEventMock("NOTE_PUBLIC_SHARE_UPSERTED_EVENT");
+    // when
+    publisher.publish(List.of(event));
+    // then
+    verify(eventSink, never()).send(any());
+  }
+
+  @Test
+  void publish_shouldSendUpdatedEventToMatchingPublicConnection() throws Exception {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    bindPublicConnection(publicShareId);
+    when(eventSink.isClosed()).thenReturn(false);
+    when(eventSink.send(any())).thenReturn(mock(CompletionStage.class));
+    NoteUpdatedEvent event = NoteUpdatedEvent.from(publicNoteValue(publicShareId));
+    setupSseEventMock("NOTE_UPDATED_EVENT");
+    // when
+    publisher.publish(List.of(event));
+    // then
+    verify(eventSink).send(any());
+  }
+
+  @Test
+  void publish_shouldSendAndCloseMatchingPublicConnection_onRemovedEvent() throws Exception {
+    // given
+    UUID publicShareId = UUID.randomUUID();
+    bindPublicConnection(publicShareId);
+    when(eventSink.isClosed()).thenReturn(false);
+    when(eventSink.send(any())).thenReturn(mock(CompletionStage.class));
+    NotePublicShareRemovedEvent event =
+        NotePublicShareRemovedEvent.from(publicNoteValue(publicShareId), publicShareId);
+    setupSseEventMock("NOTE_PUBLIC_SHARE_REMOVED_EVENT");
+    // when
+    publisher.publish(List.of(event));
+    // then
+    verify(eventSink).send(any());
+    verify(eventSink).close();
+  }
+
   // --- cleanupExpiredKeys tests ---
 
   @Test
@@ -372,8 +462,37 @@ public class SseDomainEventPublisherTest {
     publisher.stream(eventSink, sse, keyResponse.getKey());
   }
 
+  private void bindPublicConnection(UUID publicShareId) {
+    KeyResponse keyResponse = publisher.createPublicStreamKey(publicShareId);
+    publisher.stream(eventSink, sse, keyResponse.getKey());
+  }
+
+  private NoteValue publicNoteValue(UUID publicShareId) {
+    return NoteValue.builder()
+        .id(UUID.randomUUID())
+        .authorId(UUID.randomUUID())
+        .title("title")
+        .content("content")
+        .created(OffsetDateTime.now())
+        .updated(Optional.empty())
+        .pinned(false)
+        .style(null)
+        .shares(Set.of())
+        .publicShare(Optional.of(new NotePublicShare(publicShareId, Set.of(NotePermission.READ))))
+        .build();
+  }
+
   private void setupSseEventMock() throws Exception {
     setupSseEventMock(true);
+  }
+
+  private void setupSseEventMock(String eventName) throws Exception {
+    when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+    OutboundSseEvent.Builder builder = mock(OutboundSseEvent.Builder.class, RETURNS_SELF);
+    OutboundSseEvent sseEvent = mock(OutboundSseEvent.class);
+    lenient().when(sseEvent.getName()).thenReturn(eventName);
+    when(builder.build()).thenReturn(sseEvent);
+    when(sse.newEventBuilder()).thenReturn(builder);
   }
 
   private void setupSseEventMock(boolean stubEventName) throws Exception {

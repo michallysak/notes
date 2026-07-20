@@ -12,6 +12,8 @@ import {
   NoteDeletedEventDTO,
   NotePermissionsSetEventDTO,
   NoteAccessRemovedEventDTO,
+  NotePublicShareUpsertedEventDTO,
+  NotePublicShareRemovedEventDTO,
 } from '@notes/notes_service';
 
 const makeStream = () => ({
@@ -59,6 +61,34 @@ describe('NoteEventsService', () => {
     expect(mockSse.openSharedEventStream).toHaveBeenCalledOnce();
   });
 
+  it('opens a stream when logged-in state is preceded by a logged-out emission (regression: reused closed connectSub)', () => {
+    const authSubj = new Subject<boolean>();
+    const keySubj = new Subject<{ key: string }>();
+    const stream = makeStream();
+    const mockSse = {
+      openSharedEventStream: vi.fn().mockReturnValue(stream),
+    } as unknown as SseService;
+    const mockAuth = { logged$: authSubj.asObservable() } as unknown as AuthService;
+    const mockNoteSse = {
+      createStreamKey: vi.fn().mockReturnValue(keySubj.asObservable()),
+    } as unknown as NoteSseResourceService;
+
+    TestBed.configureTestingModule({
+      providers: [{ provide: BASE_PATH, useValue: 'http://localhost:8080' }],
+    });
+    TestBed.runInInjectionContext(() => new NoteEventsService(mockSse, mockAuth, mockNoteSse));
+
+    // Real AuthService.logged$ is backed by a BehaviorSubject(null): it emits false
+    // (unauthenticated) before the session is restored and it emits true.
+    authSubj.next(false);
+    authSubj.next(true);
+    // The stream key resolves asynchronously, as a real HTTP response would.
+    keySubj.next({ key: 'k' });
+    vi.runAllTimers();
+
+    expect(mockSse.openSharedEventStream).toHaveBeenCalledOnce();
+  });
+
   it('passes correct settings to openSharedEventStream', () => {
     const { mockSse, authSubj } = configureTest({ key: 'my-key' });
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -86,6 +116,8 @@ describe('NoteEventsService', () => {
       NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT,
       NotePermissionsSetEventDTO.TypeEnum.NOTEPERMISSIONSSETEVENT,
       NoteAccessRemovedEventDTO.TypeEnum.NOTEACCESSREMOVEDEVENT,
+      NotePublicShareUpsertedEventDTO.TypeEnum.NOTEPUBLICSHAREUPSERTEDEVENT,
+      NotePublicShareRemovedEventDTO.TypeEnum.NOTEPUBLICSHAREREMOVEDEVENT,
     ]);
   });
 
@@ -156,6 +188,82 @@ describe('NoteEventsService', () => {
 
     const event = { id: 'id', type: NoteDeletedEventDTO.TypeEnum.NOTEDELETEDEVENT, payload: { id: '1' } };
     deletedSubj.next(event);
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual(event);
+  });
+
+  it('forwards public-share upserted events from stream.get() to domainEvents$', () => {
+    const upsertedSubj = new Subject<any>();
+    const authSubj = new Subject<boolean>();
+    const stream = {
+      get: vi.fn((eventType: string) => {
+        if (eventType === NotePublicShareUpsertedEventDTO.TypeEnum.NOTEPUBLICSHAREUPSERTEDEVENT) {
+          return upsertedSubj.asObservable();
+        }
+        return new Subject().asObservable();
+      }),
+      close: vi.fn(),
+    };
+    const mockSse = { openSharedEventStream: vi.fn().mockReturnValue(stream) } as unknown as SseService;
+    const mockAuth = { logged$: authSubj.asObservable() } as unknown as AuthService;
+    const mockNoteSse = { createStreamKey: vi.fn().mockReturnValue(of({ key: 'k' })) } as unknown as NoteSseResourceService;
+
+    TestBed.configureTestingModule({ providers: [{ provide: BASE_PATH, useValue: 'http://localhost:8080' }] });
+
+    let svc!: NoteEventsService;
+    TestBed.runInInjectionContext(() => { svc = new NoteEventsService(mockSse, mockAuth, mockNoteSse); });
+
+    const received: unknown[] = [];
+    svc.domainEvents$.subscribe((v: any) => received.push(v));
+
+    authSubj.next(true);
+    vi.runAllTimers();
+
+    const event = {
+      id: 'id',
+      type: NotePublicShareUpsertedEventDTO.TypeEnum.NOTEPUBLICSHAREUPSERTEDEVENT,
+      payload: { id: '1', publicShare: { publicShareId: 'share-1', permissions: ['READ'] } },
+    };
+    upsertedSubj.next(event);
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual(event);
+  });
+
+  it('forwards public-share removed events from stream.get() to domainEvents$', () => {
+    const removedSubj = new Subject<any>();
+    const authSubj = new Subject<boolean>();
+    const stream = {
+      get: vi.fn((eventType: string) => {
+        if (eventType === NotePublicShareRemovedEventDTO.TypeEnum.NOTEPUBLICSHAREREMOVEDEVENT) {
+          return removedSubj.asObservable();
+        }
+        return new Subject().asObservable();
+      }),
+      close: vi.fn(),
+    };
+    const mockSse = { openSharedEventStream: vi.fn().mockReturnValue(stream) } as unknown as SseService;
+    const mockAuth = { logged$: authSubj.asObservable() } as unknown as AuthService;
+    const mockNoteSse = { createStreamKey: vi.fn().mockReturnValue(of({ key: 'k' })) } as unknown as NoteSseResourceService;
+
+    TestBed.configureTestingModule({ providers: [{ provide: BASE_PATH, useValue: 'http://localhost:8080' }] });
+
+    let svc!: NoteEventsService;
+    TestBed.runInInjectionContext(() => { svc = new NoteEventsService(mockSse, mockAuth, mockNoteSse); });
+
+    const received: unknown[] = [];
+    svc.domainEvents$.subscribe((v: any) => received.push(v));
+
+    authSubj.next(true);
+    vi.runAllTimers();
+
+    const event = {
+      id: 'id',
+      type: NotePublicShareRemovedEventDTO.TypeEnum.NOTEPUBLICSHAREREMOVEDEVENT,
+      payload: { noteId: '1', publicShareId: 'share-1' },
+    };
+    removedSubj.next(event);
 
     expect(received).toHaveLength(1);
     expect(received[0]).toEqual(event);

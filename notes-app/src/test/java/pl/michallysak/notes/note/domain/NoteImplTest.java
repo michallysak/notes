@@ -677,7 +677,8 @@ class NoteImplTest {
   }
 
   @Test
-  void makeNotePublic_shouldReturnSameId_andUpdatePermissions_whenAlreadyPublicWithDifferentPermissions() {
+  void
+      makeNotePublic_shouldReturnSameId_andUpdatePermissions_whenAlreadyPublicWithDifferentPermissions() {
     // given
     CreateNote createNote = NoteTestUtils.createCreateNoteBuilder().build();
     Note note = new NoteImpl(createNote, noteValidator);
